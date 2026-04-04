@@ -1,6 +1,6 @@
 {
   "name": "0th-skills",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Lightweight development workflow for solo builders. 5 skills: think, plan, build, debug, ship.",
   "author": {
     "name": "0th Canvas",
@@ -17,7 +17,7 @@
     "solo-dev",
     "codex"
   ],
-  "skills": "./",
+  "skills": "./skills/",
   "interface": {
     "displayName": "0th",
     "shortDescription": "A lightweight build workflow for solo builders",
