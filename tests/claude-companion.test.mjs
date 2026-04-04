@@ -54,7 +54,7 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-test("stores Claude session ids and auto-resumes review rounds for the same key", () => {
+test("when the same review key is used again, it resumes the saved Claude review thread", () => {
   const tempDir = makeTempDir();
   const binDir = path.join(tempDir, "bin");
   const stateDir = path.join(tempDir, "state");
@@ -114,7 +114,7 @@ test("stores Claude session ids and auto-resumes review rounds for the same key"
   assert.equal(logLines[1].args[resumeIndex + 1], "session-1");
 });
 
-test("resume-last reuses the most recent saved session", () => {
+test("when resume-last is requested, it continues the most recent Claude review thread", () => {
   const tempDir = makeTempDir();
   const binDir = path.join(tempDir, "bin");
   const stateDir = path.join(tempDir, "state");

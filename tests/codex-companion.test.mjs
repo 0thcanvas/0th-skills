@@ -40,7 +40,7 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-test("stores Codex thread ids and auto-resumes review rounds for the same key", () => {
+test("when the same review key is used again, it resumes the saved Codex review thread", () => {
   const tempDir = makeTempDir();
   const binDir = path.join(tempDir, "bin");
   const stateDir = path.join(tempDir, "state");
@@ -93,7 +93,7 @@ test("stores Codex thread ids and auto-resumes review rounds for the same key", 
   assert.deepEqual(logLines[1].args.slice(0, 4), ["exec", "resume", "--json", "thread-1"]);
 });
 
-test("resume-last reuses the most recent saved Codex session", () => {
+test("when resume-last is requested, it continues the most recent Codex review thread", () => {
   const tempDir = makeTempDir();
   const binDir = path.join(tempDir, "bin");
   const stateDir = path.join(tempDir, "state");
