@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Review and land code via PR. Always creates a PR — no direct merges to main. Runs tests, Codex reviews the diff, user inspects the file list and changes. Use when implementation is complete and ready to land."
+description: "Review and land code via PR. Always creates a PR — no direct merges to main. Runs tests, sends the diff to the counterpart reviewer, and lets the user inspect the file list and changes. Use when implementation is complete and ready to land."
 ---
 
 # Ship
@@ -62,21 +62,24 @@ EOF
 
 PR title: short, imperative ("Add spaced repetition engine", not "Added some stuff for SR").
 
-### 4. Codex Reviews the Diff
+### 4. Counterpart Reviews the Diff
 
-Send the branch diff to Codex for review. Codex responds with:
+Send the branch diff to the counterpart reviewer:
+- In Claude-hosted runs, use Codex
+- In Codex-hosted runs, use Claude
+- The counterpart responds with:
 - **Blockers:** must fix before merge
 - **Suggestions:** worth considering, user decides
 - **Nits:** style/minor, accept or skip
 
-If blockers exist: fix on the branch, push, re-run Codex review.
+If blockers exist: fix on the branch, push, re-run counterpart review.
 
 ### 5. User Inspects
 
 Present to user:
 - The PR URL
 - The file list (so they can see scope at a glance)
-- Codex's review (blockers/suggestions/nits)
+- The counterpart review (blockers/suggestions/nits)
 - Any concerns from the self-review
 
 User decides: merge, request changes, or close.
@@ -103,7 +106,7 @@ Squash keeps main history clean. Delete branch avoids clutter.
 STATUS: DONE
 PR: <url>
 Tests: X passing, 0 failing
-Codex review: [clean / N suggestions / N blockers resolved]
+Counterpart review: [clean / N suggestions / N blockers resolved]
 ```
 
 ## KB Integration

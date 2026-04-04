@@ -92,15 +92,17 @@ Target: 10-20 lines. If it's longer, you're writing a spec, not a decision.
 
 ### 5. Cross-Model Review
 
-Send the decision record to Codex for review:
+Send the decision record to the counterpart reviewer:
 - Include the decision record + relevant context (KB entries, codebase state)
-- Codex responds with concerns rated: nit / suggestion / blocker
+- In Claude-hosted runs, use Codex
+- In Codex-hosted runs, use Claude
+- The counterpart responds with concerns rated: nit / suggestion / blocker
 - Blockers: address before proceeding
 - Suggestions: present to user, incorporate if agreed
 - Nits: accept or skip, don't debate
-- If Codex raises no new information on round 2, stop the loop
+- If the counterpart raises no new information on round 2, stop the loop
 
-Present to user: the decision + any interesting disagreements + Codex's blockers.
+Present to user: the decision + any interesting disagreements + the counterpart's blockers.
 
 ### 6. User Approves
 

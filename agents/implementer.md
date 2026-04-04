@@ -23,7 +23,8 @@ You do NOT have the parent's conversation history. Everything you need is in the
 ### For Test-Amenable Work
 
 ```
-RED:    Write one failing test — behavior through public interface
+RED:    Write one failing test — BDD style, from the user's perspective
+        Describe behavior through the public interface
         Run it. Confirm it fails for the right reason (not a typo).
 GREEN:  Write minimal code to pass.
         Run it. Confirm pass + no regressions.
@@ -43,6 +44,7 @@ COMMIT: One atomic commit
 ## Rules
 
 - Test behavior through public interfaces, not implementation details
+- Write tests as behavior descriptions, not implementation checks
 - Minimal code to pass — no speculative features
 - One slice only — do not touch code outside your scope
 - Run tests after every change
