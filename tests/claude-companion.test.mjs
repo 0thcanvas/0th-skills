@@ -105,6 +105,10 @@ test("stores Claude session ids and auto-resumes review rounds for the same key"
   assert.equal(logLines.length, 2);
   assert.equal(logLines[0].args.includes("--resume"), false);
   assert.equal(logLines[1].args.includes("--resume"), true);
+  assert.equal(logLines[0].args.includes("--model"), true);
+
+  const modelIndex = logLines[0].args.indexOf("--model");
+  assert.equal(logLines[0].args[modelIndex + 1], "opus");
 
   const resumeIndex = logLines[1].args.indexOf("--resume");
   assert.equal(logLines[1].args[resumeIndex + 1], "session-1");

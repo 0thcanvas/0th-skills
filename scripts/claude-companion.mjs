@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
 const defaultStateDir = path.join(pluginRoot, ".0th", "reviews");
+const defaultReviewerModel = "opus";
 const lastSessionPath = (stateDir) => path.join(stateDir, ".last-session.json");
 
 function fail(message, code = 1) {
@@ -66,7 +67,7 @@ function parseArgs(argv) {
     stateDir: defaultStateDir,
     cwd: process.cwd(),
     pluginDir: pluginRoot,
-    model: null,
+    model: defaultReviewerModel,
     jsonSchema: null,
     promptArgs: []
   };
