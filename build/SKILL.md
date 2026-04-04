@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Implement features with TDD on a feature branch. Takes a direct instruction, decision record, or plan. Red-green-refactor per slice, verification gates, Codex diff review. Always branches, always PRs."
+description: "Implement features with TDD on a feature branch. Takes a direct instruction, decision record, or plan. Red-green-refactor per slice, with BDD-style tests that describe user-visible behavior. Always branches, always PRs."
 ---
 
 # Build
@@ -53,7 +53,8 @@ For each slice (or the single task if no plan):
 **If work is test-amenable (logic, APIs, data):**
 
 ```
-RED:    Write one failing test — describes behavior through public interface
+RED:    Write one failing test — BDD style, from the user's perspective
+        Describe externally visible behavior through the public interface
         Run it. Confirm it fails for the right reason.
 GREEN:  Write minimal code to pass.
         Run it. Confirm it passes. Confirm no regressions.
@@ -74,6 +75,8 @@ COMMIT: Atomic commit.
 Rules:
 - One slice at a time. Don't batch.
 - Test behavior through public interfaces, not implementation details.
+- Write tests as behavior descriptions, not implementation checks.
+- Prefer names and assertions that read like living documentation of what the user or caller experiences.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
 

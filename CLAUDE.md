@@ -17,7 +17,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **5-15 line decision records, not 300-line specs.** The human reviews code, not documents.
 - **Branch per feature, PR to land.** Always. The PR is the inspection point.
 - **TDD for testable work, before/after for everything else.** No code without verification.
-- **Cross-model review.** Claude writes, Codex reviews (nit/suggestion/blocker). Blockers get debated.
+- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Claude-hosted runs use Codex review. Codex-hosted runs use Claude review.
 - **Scale to uncertainty.** Low uncertainty = /build. Medium = /think then /build. High = /think with divergent design exploration.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.

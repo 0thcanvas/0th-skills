@@ -91,7 +91,9 @@ Target: 2-4 lines per slice. The plan is a checklist, not a tutorial. If a slice
 
 ### 5. Cross-Model Review
 
-Send to Codex with the decision record + plan:
+Send to the counterpart reviewer with the decision record + plan:
+- In Claude-hosted runs, use Codex
+- In Codex-hosted runs, use Claude
 - Missing slices? Wrong order? Scope creep beyond the decision?
 - Same severity protocol: nit / suggestion / blocker
 

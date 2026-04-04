@@ -1,13 +1,13 @@
 ---
-name: 0th:codex-review
+name: 0th:claude-review
 description: |
-  Send an artifact to Codex for cross-model review when the host model is Claude.
+  Send an artifact to Claude Code for cross-model review when the host model is Codex.
   Used by /think (decision records), /plan (slice lists), and /ship (diffs).
-  Constructs the Codex prompt with full context, invokes Codex, and returns the structured review.
+  Persists Claude session ids so multi-round review can resume without losing context.
 model: sonnet
 ---
 
-Send an artifact to Codex for independent review.
+Send an artifact to Claude Code for independent review.
 
 ## You Receive
 
@@ -15,12 +15,13 @@ The parent agent provides:
 - **Artifact:** the decision record, plan, or description of the diff to review
 - **Context:** relevant background (KB entries, architecture, what problem this solves)
 - **Review type:** decision / plan / code
+- **Review key:** stable identifier for this review thread
 
 ## Process
 
-### 1. Construct the Codex Prompt
+### 1. Construct the Claude Prompt
 
-Build a prompt that gives Codex everything it needs in one shot:
+Build a prompt that gives Claude everything it needs in one shot:
 
 ```
 Review this <type>:
@@ -38,25 +39,22 @@ Respond with:
 Be specific. Name what's wrong and why. If everything looks good, say so in one line.
 ```
 
-### 2. Invoke Codex
+### 2. Invoke Claude
 
-For decision/plan reviews:
+For any review type:
+
 ```bash
-node "${PLUGIN_ROOT}/scripts/codex-companion.mjs" task --key "<review-key>" "<prompt>"
+node "${PLUGIN_ROOT}/scripts/claude-companion.mjs" task --key "<review-key>" "<prompt>"
 ```
 
-For code reviews (diffs):
-```bash
-node "${PLUGIN_ROOT}/scripts/codex-companion.mjs" review --key "<review-key>" "<prompt>"
-```
-
-The same `--key` resumes the prior Codex thread automatically if one already exists.
+The same `--key` resumes the prior Claude thread automatically if one already exists.
 
 ### 3. Handle Debate (if needed)
 
 If the parent agent disagrees with a BLOCKER and sends a counter-argument:
+
 ```bash
-node "${PLUGIN_ROOT}/scripts/codex-companion.mjs" task --key "<review-key>" "<counter-argument>"
+node "${PLUGIN_ROOT}/scripts/claude-companion.mjs" task --key "<review-key>" "<counter-argument>"
 ```
 
 Max 3 rounds. If round 2 introduces no new information, stop.
@@ -64,7 +62,7 @@ Max 3 rounds. If round 2 introduces no new information, stop.
 ## What to Return
 
 ```
-CODEX REVIEW: <type>
+CLAUDE REVIEW: <type>
 
 Blockers:
 - <issue and why it matters> (or "none")
@@ -79,8 +77,6 @@ Overall: <one sentence assessment>
 ```
 
 Rules:
-- Return Codex's review as-is — don't editorialize or filter
-- If Codex fails to invoke, return the error — don't fake a review
-- Keep the prompt compact — Codex works better with focused context than dumps
-
-For Codex-hosted runs, use `agents/claude-review.md` instead.
+- Return Claude's review as-is — don't editorialize or filter
+- If Claude fails to invoke, return the error — don't fake a review
+- Keep the prompt compact — Claude review works better with focused context than dumps
