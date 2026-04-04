@@ -1,11 +1,13 @@
 {
   "name": "0th",
   "description": "Lightweight development workflow for solo builders. 5 skills: think, plan, build, debug, ship.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "0th Canvas"
   },
   "license": "MIT",
+  "skills": ".",
+  "agents": "./agents",
   "keywords": [
     "skills",
     "workflow",
