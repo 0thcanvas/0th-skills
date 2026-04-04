@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "0th",
+  "description": "Lightweight development workflow for solo builders",
+  "owner": {
+    "name": "0th Canvas"
+  },
+  "plugins": [
+    {
+      "name": "0th",
+      "description": "5 skills: think, plan, build, debug, ship. Plus 4 subagents for context isolation.",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}
