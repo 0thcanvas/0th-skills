@@ -1,11 +1,17 @@
 ---
 name: plan
 description: "Break a decision into vertical slices with acceptance criteria. Use when work spans multiple sessions, involves ordering dependencies, or needs parallel agent dispatch. Optional — skip when work is small enough to build directly."
+argument-hint: "[decision record path or scope]"
 ---
 
 # Plan
 
 Break a decision into buildable slices. Optional — only when the work needs structure.
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the initial scope or decision record
+reference. If `$ARGUMENTS` is empty, infer the scope from the conversation.
 
 ## When to Use
 
@@ -38,6 +44,9 @@ If resuming ongoing work:
 ### 1. Read the Decision
 
 Load the decision record from /think (or the user's direct instruction). Read all decision records it references via `depends-on`.
+
+On Codex-hosted runs, explicitly use `0th_explorer` when you need help mapping the current code
+paths or interfaces before you can slice the work cleanly.
 
 ### 2. Identify Durable Decisions
 

@@ -1,11 +1,17 @@
 ---
 name: think
 description: "Turn an idea into a decision through structured conversation. Use when starting new features, exploring approaches, or facing design uncertainty. Grills the user, explores alternatives, produces a short decision record."
+argument-hint: "[idea or design question]"
 ---
 
 # Think
 
 Turn an idea into a decision. Not a document — a decision.
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the idea or design question. If
+`$ARGUMENTS` is empty, infer it from the conversation.
 
 ## When to Use
 
@@ -42,6 +48,7 @@ If this is a new session on ongoing work:
 - Read relevant KB entries and project docs
 - Explore the codebase where the work will happen
 - Check recent commits in the affected area
+- On Codex-hosted runs, explicitly use `0th_explorer` when code ownership or execution paths are not already obvious from the initial read
 
 ### 2. Grill
 

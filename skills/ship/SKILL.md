@@ -1,11 +1,17 @@
 ---
 name: ship
 description: "Review and land code via PR. Always creates a PR — no direct merges to main. Runs tests, sends the diff to the counterpart reviewer, and lets the user inspect the file list and changes. Use when implementation is complete and ready to land."
+argument-hint: "[branch or PR-ready change]"
 ---
 
 # Ship
 
 Create a PR. Always. No exceptions.
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the branch, diff, or landing target.
+If `$ARGUMENTS` is empty, infer the shipping scope from the conversation and current git state.
 
 The PR is your inspection point — the one moment you see the full picture of what changed.
 
@@ -67,6 +73,7 @@ PR title: short, imperative ("Add spaced repetition engine", not "Added some stu
 Send the branch diff to the counterpart reviewer:
 - In Claude-hosted runs, use Codex
 - In Codex-hosted runs, use Claude
+- On Codex-hosted runs, explicitly invoke the `ask-claude-review` bridge helper so the Claude review loop is deliberate rather than inferred
 - The counterpart responds with:
 - **Blockers:** must fix before merge
 - **Suggestions:** worth considering, user decides

@@ -1,11 +1,17 @@
 ---
 name: debug
 description: "Systematic debugging with root cause investigation. Use when something is broken — bugs, test failures, unexpected behavior, build failures. Iron law: no fixes without root cause. 3-strike escalation."
+argument-hint: "[symptom or failing test]"
 ---
 
 # Debug
 
 Find the root cause, then fix it. Not the other way around.
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the starting symptom report. If
+`$ARGUMENTS` is empty, infer the symptom from the conversation.
 
 ## When to Use
 
@@ -50,6 +56,7 @@ If you haven't completed Phase 1, you cannot propose fixes.
 3. **Check recent changes.** `git log --oneline -20 -- <affected files>`. What changed?
 4. **Trace the data flow.** Where does the bad value originate? Keep tracing backward until you find the source.
 5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
+6. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
 
 Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
 

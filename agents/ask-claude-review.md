@@ -44,7 +44,7 @@ Be specific. Name what's wrong and why. If everything looks good, say so in one 
 For any review type:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/claude-companion.mjs" task --key "<review-key>" "<prompt>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/claude-companion.mjs" task --no-plugin-dir --key "<review-key>" "<prompt>"
 ```
 
 The same `--key` resumes the prior Claude thread automatically if one already exists.
@@ -54,7 +54,7 @@ The same `--key` resumes the prior Claude thread automatically if one already ex
 If the parent agent disagrees with a BLOCKER and sends a counter-argument:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/claude-companion.mjs" task --key "<review-key>" "<counter-argument>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/claude-companion.mjs" task --no-plugin-dir --key "<review-key>" "<counter-argument>"
 ```
 
 Max 3 rounds. If round 2 introduces no new information, stop.

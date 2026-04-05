@@ -106,9 +106,12 @@ test("when the same review key is used again, it resumes the saved Claude review
   assert.equal(logLines[0].args.includes("--resume"), false);
   assert.equal(logLines[1].args.includes("--resume"), true);
   assert.equal(logLines[0].args.includes("--model"), true);
+  assert.equal(logLines[0].args.includes("--plugin-dir"), true);
 
   const modelIndex = logLines[0].args.indexOf("--model");
   assert.equal(logLines[0].args[modelIndex + 1], "opus");
+  const pluginIndex = logLines[0].args.indexOf("--plugin-dir");
+  assert.equal(logLines[0].args[pluginIndex + 1], path.resolve(__dirname, ".."));
 
   const resumeIndex = logLines[1].args.indexOf("--resume");
   assert.equal(logLines[1].args[resumeIndex + 1], "session-1");
@@ -150,4 +153,97 @@ test("when resume-last is requested, it continues the most recent Claude review 
   const logEntry = JSON.parse(fs.readFileSync(logPath, "utf8").trim());
   const resumeIndex = logEntry.args.indexOf("--resume");
   assert.equal(logEntry.args[resumeIndex + 1], "session-9");
+});
+
+test("when a plugin dir is explicitly requested, it is forwarded to Claude", () => {
+  const tempDir = makeTempDir();
+  const binDir = path.join(tempDir, "bin");
+  const stateDir = path.join(tempDir, "state");
+  const logPath = path.join(tempDir, "claude.log");
+  const pluginDir = path.join(tempDir, "plugin");
+
+  fs.mkdirSync(binDir);
+  fs.mkdirSync(stateDir);
+  fs.mkdirSync(pluginDir);
+  writeStubClaude(binDir);
+
+  const env = {
+    ...process.env,
+    CLAUDE_BIN: path.join(binDir, "claude"),
+    CLAUDE_STUB_LOG: logPath
+  };
+
+  const result = spawnSync(
+    "node",
+    [scriptPath, "task", "--state-dir", stateDir, "--plugin-dir", pluginDir, "review this"],
+    { encoding: "utf8", env }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+
+  const logEntry = JSON.parse(fs.readFileSync(logPath, "utf8").trim());
+  const pluginIndex = logEntry.args.indexOf("--plugin-dir");
+  assert.equal(logEntry.args[pluginIndex + 1], pluginDir);
+});
+
+test("when no-plugin-dir is requested, the implicit plugin dir is suppressed", () => {
+  const tempDir = makeTempDir();
+  const binDir = path.join(tempDir, "bin");
+  const stateDir = path.join(tempDir, "state");
+  const logPath = path.join(tempDir, "claude.log");
+
+  fs.mkdirSync(binDir);
+  fs.mkdirSync(stateDir);
+  writeStubClaude(binDir);
+
+  const env = {
+    ...process.env,
+    CLAUDE_BIN: path.join(binDir, "claude"),
+    CLAUDE_STUB_LOG: logPath
+  };
+
+  const result = spawnSync(
+    "node",
+    [scriptPath, "task", "--state-dir", stateDir, "--no-plugin-dir", "review this"],
+    { encoding: "utf8", env }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+
+  const logEntry = JSON.parse(fs.readFileSync(logPath, "utf8").trim());
+  assert.equal(logEntry.args.includes("--plugin-dir"), false);
+});
+
+test("when Claude hangs past the timeout, the script exits with a clear timeout error", () => {
+  const tempDir = makeTempDir();
+  const binDir = path.join(tempDir, "bin");
+  const stateDir = path.join(tempDir, "state");
+  const stubPath = path.join(binDir, "claude");
+
+  fs.mkdirSync(binDir);
+  fs.mkdirSync(stateDir);
+
+  fs.writeFileSync(
+    stubPath,
+    `#!/usr/bin/env node
+setTimeout(() => {
+  process.stdout.write("[]");
+}, 1000);
+`
+  );
+  fs.chmodSync(stubPath, 0o755);
+
+  const env = {
+    ...process.env,
+    CLAUDE_BIN: stubPath
+  };
+
+  const result = spawnSync(
+    "node",
+    [scriptPath, "task", "--state-dir", stateDir, "--timeout-ms", "10", "review this"],
+    { encoding: "utf8", env }
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Claude review timed out after 10ms/);
 });

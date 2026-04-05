@@ -1,5 +1,9 @@
 name = "0th_reviewer"
 description = "Review a completed slice against its acceptance criteria."
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+nickname_candidates = ["Scope Guard", "Acceptance Eye", "Blocker Check"]
 developer_instructions = """
 Review a completed slice against its acceptance criteria.
 

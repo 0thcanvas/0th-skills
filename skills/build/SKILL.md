@@ -1,11 +1,17 @@
 ---
 name: build
 description: "Implement features with TDD on a feature branch. Takes a direct instruction, decision record, or plan. Red-green-refactor per slice, with BDD-style tests that describe user-visible behavior. Always branches, always PRs."
+argument-hint: "[instruction or plan path]"
 ---
 
 # Build
 
 Implement with TDD. Branch per feature, PR to land.
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the starting brief. If `$ARGUMENTS`
+is empty, infer the brief from the conversation.
 
 ## When to Use
 
@@ -45,6 +51,7 @@ If resuming ongoing work:
 - Read the decision record / plan / instruction
 - Read relevant KB entries for this domain
 - Understand the current codebase state
+- On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious
 
 ### 2. Build Per Slice
 
@@ -79,6 +86,8 @@ Rules:
 - Prefer names and assertions that read like living documentation of what the user or caller experiences.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
+- On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
+- On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
 
 ### 3. Mid-Build Bugs
 

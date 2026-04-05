@@ -1,5 +1,9 @@
 name = "0th_test_runner"
 description = "Run tests and return condensed results without flooding the parent context."
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+nickname_candidates = ["Green Bar", "Signal Runner", "Failure Lens"]
 developer_instructions = """
 Run tests for the current project and return condensed results.
 

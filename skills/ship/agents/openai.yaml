@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ship"
+  short_description: "Review, push, and open a pull request for completed work."
+  default_prompt: "$ship <branch or PR-ready change>"
+policy:
+  allow_implicit_invocation: true

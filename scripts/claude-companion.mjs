@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
 const defaultStateDir = path.join(pluginRoot, ".0th", "reviews");
 const defaultReviewerModel = "opus";
+const defaultTimeoutMs = Number(process.env.CLAUDE_COMPANION_TIMEOUT_MS || "180000");
 const lastSessionPath = (stateDir) => path.join(stateDir, ".last-session.json");
 
 function fail(message, code = 1) {
@@ -68,6 +69,7 @@ function parseArgs(argv) {
     cwd: process.cwd(),
     pluginDir: pluginRoot,
     model: defaultReviewerModel,
+    timeoutMs: defaultTimeoutMs,
     jsonSchema: null,
     promptArgs: []
   };
@@ -99,8 +101,16 @@ function parseArgs(argv) {
       options.pluginDir = rest[++index];
       continue;
     }
+    if (token === "--no-plugin-dir") {
+      options.pluginDir = null;
+      continue;
+    }
     if (token === "--model") {
       options.model = rest[++index];
+      continue;
+    }
+    if (token === "--timeout-ms") {
+      options.timeoutMs = Number(rest[++index]);
       continue;
     }
     if (token === "--json-schema") {
@@ -251,15 +261,33 @@ function main() {
 
   const result = spawnSync(claudeBin, args, {
     encoding: "utf8",
-    cwd: options.cwd
+    cwd: options.cwd,
+    timeout: options.timeoutMs
   });
+
+  if (result.error?.code === "ETIMEDOUT") {
+    const details = result.stderr?.trim() || result.stdout?.trim();
+    fail(
+      [
+        `Claude review timed out after ${options.timeoutMs}ms. Retry with --timeout-ms <longer-ms> if the review is expected to take longer.`,
+        details ? `Partial output:\n${details}` : null
+      ]
+        .filter(Boolean)
+        .join("\n\n")
+    );
+  }
 
   if (result.status !== 0) {
     process.stderr.write(result.stderr || result.stdout || "Claude invocation failed.\n");
     process.exit(result.status ?? 1);
   }
 
-  const payload = JSON.parse(result.stdout);
+  let payload;
+  try {
+    payload = JSON.parse(result.stdout);
+  } catch {
+    fail(`Claude response was not valid JSON.\n${result.stdout}`.trim());
+  }
   const parsed = extractResult(payload);
 
   saveSessionState({

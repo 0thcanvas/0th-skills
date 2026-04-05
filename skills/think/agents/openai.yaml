@@ -1,0 +1,6 @@
+interface:
+  display_name: "Think"
+  short_description: "Turn an idea or design question into a short decision record."
+  default_prompt: "$think <idea or design question>"
+policy:
+  allow_implicit_invocation: true

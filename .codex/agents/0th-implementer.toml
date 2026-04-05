@@ -1,5 +1,9 @@
 name = "0th_implementer"
 description = "Implement a single vertical slice with TDD in isolation."
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+nickname_candidates = ["Ink Worker", "Canvas Builder", "Slice Smith"]
 developer_instructions = """
 Implement a single vertical slice using TDD.
 

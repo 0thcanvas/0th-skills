@@ -1,11 +1,17 @@
 ---
 name: research
 description: "Run source-aware research for products, APIs, open-source tools, and papers. Use when the answer lives outside the repo and generic web search is not enough. Routes queries across official docs, GitHub, arXiv, specs, and broader web, then returns decision-ready findings."
+argument-hint: "[question]"
 ---
 
 # Research
 
 Research with source routing. Not "search once and summarize."
+
+## Direct Invocation
+
+If the user invoked this skill directly, treat `$ARGUMENTS` as the research question. If
+`$ARGUMENTS` is empty, infer the question from the conversation.
 
 ## When to Use
 
@@ -66,23 +72,28 @@ Use the best source for each sub-question:
 
 Primary sources first. Commentary second.
 
-### 4. Dispatch Searches to the web-researcher Subagent
+### 4. Dispatch Searches to a Host-Native Research Subagent
 
-Do not run `WebSearch` and `WebFetch` directly from this skill. Each search/fetch cycle goes
-through the `0th:web-researcher` subagent so raw page content stays out of this conversation.
+Do not run web lookups directly from this skill when a host-native research subagent is available.
+Each search/fetch cycle should go through the host's focused research agent so raw page content
+stays out of this conversation.
+
+Subagent choice by host:
+
+- **Claude-hosted runs:** use `0th:web-researcher`
+- **Codex-hosted runs:** use `0th_researcher`
 
 For every sub-question in your map:
 
-- Send one focused question to `0th:web-researcher`, with the target source bucket when you know it
+- Send one focused question to the research subagent, with the target source bucket when you know it
 - Wait for the condensed ANSWER / KEY DETAILS / SOURCES block
 - Collect the returned findings into your local map, then decide what to query next
 
 Dispatch subagents in parallel when the sub-questions are independent. Dispatch sequentially only
 when a later query depends on vocabulary learned from an earlier one.
 
-On Codex-hosted runs the subagent is not available. Fall back to running web search directly,
-but apply the same discipline: one sub-question per search cycle, condense before writing anything
-into your local map.
+If the host-native subagent is unavailable, fall back to running web search directly, but apply the
+same discipline: one sub-question per search cycle, condense before writing anything into your local map.
 
 ### 5. First Pass: Map the Space
 
@@ -157,7 +168,7 @@ If the findings are durable, write them to the KB in the relevant domain's `raw/
 - Do not confuse a branded feature with the underlying technical problem
 - Do not recommend tools without checking maintenance signals and recency
 - Do not cite papers you have not actually inspected
-- Do not pull raw page content into this conversation — delegate search/fetch cycles to `0th:web-researcher`
+- Do not pull raw page content into this conversation when the host-native research subagent can do the search/fetch cycle for you
 
 ## Handoff
 

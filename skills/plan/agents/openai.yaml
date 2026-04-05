@@ -1,0 +1,6 @@
+interface:
+  display_name: "Plan"
+  short_description: "Break a decision into vertical slices with acceptance criteria."
+  default_prompt: "$plan <decision record path or scope>"
+policy:
+  allow_implicit_invocation: true

@@ -25,6 +25,11 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Session resumption is explicit.** Every skill checks KB + git log + open decisions when starting a new session.
 - **Research is source-aware.** Use official docs, GitHub, papers, and direct source search, not one generic web query.
 - **Agent manifests are host-native.** Claude-side manifests live in `agents/*.md`, while Codex subagents use TOML under `.codex/agents/`.
+- **Shared behavior changes must update both hosts.** If a mirrored agent's behavior changes, update both `agents/*.md` and `.codex/agents/*.toml` in the same slice unless the difference is intentionally host-specific.
+- **Asymmetry must be explicit.** If an agent exists on only one host, document that in `README.md` and keep `tests/agent-parity.test.mjs` aligned with the intentional exception.
+- **Codex runtime policy is part of the product.** If a change affects subagent orchestration or safety assumptions, update `.codex/config.toml` too rather than relying on user defaults.
+- **Use the host-native research agent.** Claude-hosted research uses `0th:web-researcher`; Codex-hosted research uses `0th_researcher`.
+- **Do not duplicate Claude built-ins without a strong reason.** For read-only code mapping on Claude, prefer the built-in `Explore` agent instead of creating a custom 0th mirror.
 - **Cross-model review is script-driven.** The counterpart review helpers invoke the other CLI directly instead of relying on shared subagent manifests.
 - **Cross-model review helpers are named by target.** `ask-codex-review` means "ask Codex to review", not "Codex-native manifest".
 
