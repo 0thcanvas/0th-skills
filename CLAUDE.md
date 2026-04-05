@@ -11,6 +11,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 | `/build` | Implement with TDD | Always — the default |
 | `/debug` | Root cause then fix | Something is broken |
 | `/ship` | PR and land | Code is ready |
+| `/research` | Source-aware external research | Product, API, OSS, and paper research outside the repo |
 
 ## Principles
 
@@ -22,6 +23,10 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.
 - **Session resumption is explicit.** Every skill checks KB + git log + open decisions when starting a new session.
+- **Research is source-aware.** Use official docs, GitHub, papers, and direct source search, not one generic web query.
+- **Agent manifests are host-native.** Claude-side manifests live in `agents/*.md`, while Codex subagents use TOML under `.codex/agents/`.
+- **Cross-model review is script-driven.** The counterpart review helpers invoke the other CLI directly instead of relying on shared subagent manifests.
+- **Cross-model review helpers are named by target.** `ask-codex-review` means "ask Codex to review", not "Codex-native manifest".
 
 ## Design Philosophy
 
@@ -37,3 +42,4 @@ When the user's request matches a skill, invoke it. Key mappings:
 - Build, implement, add, create, fix (known solution) → /build
 - Bug, broken, error, "why is this", investigate → /debug
 - Ship, PR, merge, land, deploy → /ship
+- Research, compare tools, look up papers, evaluate APIs, "search the web" → /research

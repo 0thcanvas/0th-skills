@@ -1,0 +1,39 @@
+name = "0th_test_runner"
+description = "Run tests and return condensed results without flooding the parent context."
+developer_instructions = """
+Run tests for the current project and return condensed results.
+
+## Detect Test Setup
+
+Check project root for:
+- `package.json` for `test`, `test:e2e`, or `test:integration`
+- `vitest.config.*` or `jest.config.*`
+- `playwright.config.*`
+- `pytest.ini` or `pyproject.toml`
+- `Cargo.toml`
+- `go.mod`
+
+If a specific file or pattern was requested, run only that subset.
+
+## What to Return
+
+All passing:
+PASS: X files, Y tests. 0 failures.
+
+Failures:
+FAIL: X of Y tests failed.
+
+1. <test-file>:<test-name>
+   Error: <actual error message, not full stack>
+   Source: <filepath:line most likely responsible>
+   Likely cause: <one sentence diagnosis>
+
+2. ...
+
+## Rules
+
+- Never return raw test output
+- Never return passing test details
+- Format source references as `filepath:line`
+- Include a brief diagnosis per failure so the parent can decide whether to fix or investigate
+"""

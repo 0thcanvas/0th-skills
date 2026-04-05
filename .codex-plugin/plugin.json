@@ -1,7 +1,7 @@
 {
   "name": "0th-skills",
-  "version": "0.1.3",
-  "description": "Lightweight development workflow for solo builders. 5 skills: think, plan, build, debug, ship.",
+  "version": "0.1.4",
+  "description": "Lightweight development workflow for solo builders. 5 core skills plus source-aware research.",
   "author": {
     "name": "0th Canvas",
     "url": "https://github.com/0thcanvas"
@@ -15,13 +15,14 @@
     "tdd",
     "debugging",
     "solo-dev",
+    "research",
     "codex"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "0th",
     "shortDescription": "A lightweight build workflow for solo builders",
-    "longDescription": "Use 0th to turn ideas into decisions, break work into slices, build with TDD, debug from root cause, and ship changes through PRs.",
+    "longDescription": "Use 0th to turn ideas into decisions, break work into slices, build with TDD, debug from root cause, research external systems with source routing, and ship changes through PRs.",
     "developerName": "0th Canvas",
     "category": "Coding",
     "capabilities": [
@@ -33,7 +34,8 @@
     "defaultPrompt": [
       "Use the think skill to turn this idea into a short decision record.",
       "Use the build skill to implement this change with TDD on a feature branch.",
-      "Use the debug skill to investigate the root cause before fixing this failure."
+      "Use the debug skill to investigate the root cause before fixing this failure.",
+      "Use the research skill when the answer depends on external docs, open-source tools, or papers."
     ],
     "brandColor": "#1B1814",
     "screenshots": []

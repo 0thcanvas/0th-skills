@@ -4,7 +4,7 @@ description: |
   Review code changes against acceptance criteria. Dispatched by /build after each slice
   to verify the implementation matches the spec. Checks for scope creep, missing criteria,
   and code quality issues.
-model: sonnet
+model: opus
 ---
 
 Review a completed slice against its acceptance criteria.
