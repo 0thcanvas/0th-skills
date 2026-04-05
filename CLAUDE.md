@@ -32,6 +32,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Do not duplicate Claude built-ins without a strong reason.** For read-only code mapping on Claude, prefer the built-in `Explore` agent instead of creating a custom 0th mirror.
 - **Cross-model review is script-driven.** The counterpart review helpers invoke the other CLI directly instead of relying on shared subagent manifests.
 - **Cross-model review helpers are named by target.** `ask-codex-review` means "ask Codex to review", not "Codex-native manifest".
+- **Cross-model review details live in `README.md`.** Use that as the authoritative reference for bridge-helper behavior and state handling.
 
 ## Design Philosophy
 

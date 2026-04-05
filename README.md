@@ -36,6 +36,8 @@ question `best TS TOML parser`.
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review remains script-driven through `scripts/claude-companion.mjs` and `scripts/codex-companion.mjs`
 - The Claude-side review helpers are named by target for clarity: `ask-codex-review.md` and `ask-claude-review.md`
+- Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
+- On Codex-hosted runs, explicit requests for Claude review should use the `ask-claude-review` bridge helper or `scripts/claude-companion.mjs` directly rather than treating Claude as unavailable
 
 ### Agent types
 
@@ -85,7 +87,16 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ## Release notes
 
-### 0.2.0
+### 0.1.6
+
+- Added `references/` support files for `build`, `debug`, and `research` so the skill entrypoints can stay focused while deeper checklists and patterns remain available on demand
+- Moved companion review state defaults to a stable user state location instead of the plugin repo, with `OTH_SKILLS_STATE_DIR` and `--state-dir` overrides
+- Added workflow templates for decision records, KB raw findings, and PR bodies
+- Added skill-routing eval fixtures plus metadata tests for reference links
+- Added `scripts/install-smoke-check.mjs` for repo/install verification during release and reinstall checks
+- Added explicit build/plan guidance plus slice-checklist callouts for missing service or deployment boundaries when heavy local ML/runtime dependencies are introduced
+
+### 0.1.5
 
 - Added explicit Codex native agent config and project-level `.codex/config.toml`
 - Added host-native Codex `explorer` and `researcher` agents
@@ -101,9 +112,17 @@ Cross-model review is symmetric:
 - Claude hosts the build and asks Codex to review
 - Codex hosts the build and asks Claude to review
 
-For Codex-hosted review loops, use `scripts/claude-companion.mjs`. It shells out to the local `claude` CLI, stores Claude `session_id` values under `.0th/reviews/`, and automatically resumes the same review thread when you reuse the same review key.
+For Codex-hosted review loops, use `scripts/claude-companion.mjs`. It shells out to the local `claude` CLI, stores Claude `session_id` values in the companion state directory, and automatically resumes the same review thread when you reuse the same review key.
 
-For Claude-hosted review loops, use `scripts/codex-companion.mjs`. It shells out to the local `codex` CLI, stores Codex `thread_id` values under `.0th/reviews/`, and automatically resumes the same review thread when you reuse the same review key.
+For Claude-hosted review loops, use `scripts/codex-companion.mjs`. It shells out to the local `codex` CLI, stores Codex `thread_id` values in the companion state directory, and automatically resumes the same review thread when you reuse the same review key.
+
+By default, both companion scripts now store durable review state outside the plugin repo:
+
+- `$OTH_SKILLS_STATE_DIR` if set
+- otherwise `$XDG_STATE_HOME/0th-skills/reviews` if `XDG_STATE_HOME` is set
+- otherwise `~/.0th/reviews`
+
+Use `--state-dir` when you want a one-off override for testing.
 
 Example:
 
@@ -122,3 +141,12 @@ Run the local test suite with:
 ```bash
 node --test tests/*.test.mjs
 ```
+
+Smoke-check the repo or an installed plugin copy with:
+
+```bash
+node scripts/install-smoke-check.mjs --repo-root .
+node scripts/install-smoke-check.mjs --repo-root . --cache-root ~/.codex/plugins/cache/mini-local/0th-skills/local
+```
+
+The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

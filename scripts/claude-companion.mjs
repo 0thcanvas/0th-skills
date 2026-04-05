@@ -4,11 +4,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { resolveDefaultStateDir } from "./companion-state.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const pluginRoot = path.resolve(__dirname, "..");
-const defaultStateDir = path.join(pluginRoot, ".0th", "reviews");
+const defaultStateDir = resolveDefaultStateDir();
 const defaultReviewerModel = "opus";
 const defaultTimeoutMs = Number(process.env.CLAUDE_COMPANION_TIMEOUT_MS || "180000");
 const lastSessionPath = (stateDir) => path.join(stateDir, ".last-session.json");

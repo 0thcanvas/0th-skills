@@ -247,3 +247,34 @@ setTimeout(() => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Claude review timed out after 10ms/);
 });
+
+test("when no state dir is provided, Claude review state uses a stable user location", () => {
+  const tempDir = makeTempDir();
+  const homeDir = path.join(tempDir, "home");
+  const binDir = path.join(tempDir, "bin");
+  const logPath = path.join(tempDir, "claude.log");
+
+  fs.mkdirSync(homeDir);
+  fs.mkdirSync(binDir);
+  writeStubClaude(binDir);
+
+  const env = {
+    ...process.env,
+    HOME: homeDir,
+    XDG_STATE_HOME: "",
+    OTH_SKILLS_STATE_DIR: "",
+    CLAUDE_BIN: path.join(binDir, "claude"),
+    CLAUDE_STUB_LOG: logPath
+  };
+
+  const result = spawnSync("node", [scriptPath, "task", "--key", "ship-review", "review this"], {
+    encoding: "utf8",
+    env
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    fs.existsSync(path.join(homeDir, ".0th", "reviews", "ship-review.json")),
+    true
+  );
+});

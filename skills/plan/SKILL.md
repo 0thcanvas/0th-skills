@@ -55,6 +55,7 @@ Before slicing, note architectural decisions that span all slices:
 - Key interfaces and their contracts
 - Route structures
 - Auth/authz approach
+- Service or deployment boundaries when the work introduces heavy local runtimes, ML models, or worker processes
 
 These go in the plan header. 3-5 bullet points max.
 
@@ -103,6 +104,7 @@ Target: 2-4 lines per slice. The plan is a checklist, not a tutorial. If a slice
 Send to the counterpart reviewer with the decision record + plan:
 - In Claude-hosted runs, use Codex
 - In Codex-hosted runs, use Claude
+- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
 - Missing slices? Wrong order? Scope creep beyond the decision?
 - Same severity protocol: nit / suggestion / blocker
 

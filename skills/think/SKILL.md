@@ -41,6 +41,10 @@ If this is a new session on ongoing work:
 3. Read any open decision records in docs/decisions/
 4. Summarize what you found in 3-5 lines before proceeding
 
+## Template Files
+
+- See `templates/decision-record.md` for the canonical short-form decision record scaffold.
+
 ## Process
 
 ### 1. Understand Context
@@ -73,27 +77,8 @@ For hard design questions (multiple valid architectures, non-obvious tradeoffs):
 
 Once aligned, write the decision record. Always write it — even if you think you'll build in this session.
 
-**Format** — save to `docs/decisions/YYYY-MM-DD-<topic>.md`:
-
-```markdown
-# <Topic>
-
-**Date:** YYYY-MM-DD
-**Status:** active
-
-## Decision
-What we're building and the approach chosen, in 2-3 sentences.
-
-## Constraints
-- Key constraint or tradeoff that shaped the decision
-- Another constraint
-
-## Not Doing
-- What we explicitly excluded and why (one line each)
-
-## Depends On
-- Link to other decision records this interacts with (if any)
-```
+**Format** — use `templates/decision-record.md` and save the result to
+`docs/decisions/YYYY-MM-DD-<topic>.md`.
 
 Target: 10-20 lines. If it's longer, you're writing a spec, not a decision.
 
@@ -103,6 +88,7 @@ Send the decision record to the counterpart reviewer:
 - Include the decision record + relevant context (KB entries, codebase state)
 - In Claude-hosted runs, use Codex
 - In Codex-hosted runs, use Claude
+- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
 - The counterpart responds with concerns rated: nit / suggestion / blocker
 - Blockers: address before proceeding
 - Suggestions: present to user, incorporate if agreed

@@ -39,6 +39,10 @@ If resuming a debug session:
 2. Read recent commits in the affected area
 3. Report: "Last session investigated X. Hypothesis was Y. Status: [confirmed/disproved/untested]."
 
+## Reference Files
+
+- See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
+
 ## Iron Law
 
 ```
@@ -87,24 +91,7 @@ STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED
 
 Write findings to KB if the root cause was non-obvious.
 
-## Escalation (3-Strike Rule)
-
-If 3 hypotheses fail:
-- STOP.
-- Do not attempt hypothesis #4 without a fundamentally different approach.
-- Report: what was tried, what was ruled out, what remains unclear.
-- Ask: continue with different approach, or escalate to user?
-
-If each fix reveals a new problem in a different place — that's not a bug, it's an architectural problem. Say so.
-
-## Anti-Rationalization
-
-| Thought | Do this instead |
-|---|---|
-| "Quick fix for now" | There is no "for now." Fix the root cause. |
-| "I think I see it, let me just fix..." | Investigate first. Seeing symptoms != understanding cause. |
-| "One more try" (after 2 failures) | That's #3. Stop and reassess. |
-| "It's probably X" | Probably isn't evidence. Verify. |
+If you hit the 3-strike boundary or start rationalizing a shortcut, read `references/root-cause-patterns.md` before proceeding.
 
 ## KB Integration
 

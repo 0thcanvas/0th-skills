@@ -19,6 +19,10 @@ The PR is your inspection point — the one moment you see the full picture of w
 
 After /build completes. Or when you have changes on a branch ready to land.
 
+## Template Files
+
+- See `templates/pr-body.md` for the default PR structure so the review context stays consistent.
+
 ## Process
 
 ### 1. Verify
@@ -47,23 +51,12 @@ Self-review:
 
 ### 3. Create the PR
 
+Read `templates/pr-body.md`, fill in its placeholders, and use that filled result as the PR body.
+Do not invent a second PR-body shape in this skill. The template file is the source of truth.
+
 ```bash
 git push -u origin <branch>
-
-gh pr create --title "<title>" --body "$(cat <<'EOF'
-## Summary
-- <what changed and why, 2-3 bullets>
-
-## Decision
-<link to decision record if one exists>
-
-## Test Evidence
-- <test suite output summary: X passing, 0 failing>
-
-## Review Notes
-- <anything the reviewer should pay attention to>
-EOF
-)"
+gh pr create --title "<title>" --body "<filled contents of templates/pr-body.md>"
 ```
 
 PR title: short, imperative ("Add spaced repetition engine", not "Added some stuff for SR").
@@ -73,7 +66,7 @@ PR title: short, imperative ("Add spaced repetition engine", not "Added some stu
 Send the branch diff to the counterpart reviewer:
 - In Claude-hosted runs, use Codex
 - In Codex-hosted runs, use Claude
-- On Codex-hosted runs, explicitly invoke the `ask-claude-review` bridge helper so the Claude review loop is deliberate rather than inferred
+- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
 - The counterpart responds with:
 - **Blockers:** must fix before merge
 - **Suggestions:** worth considering, user decides

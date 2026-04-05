@@ -39,6 +39,15 @@ If resuming an ongoing research thread:
 3. Read recent decisions or plans that depend on this research
 4. Report: "Last session answered X. Open questions: Y. Next: Z."
 
+## Reference Files
+
+- See `references/source-routing.md` for query-shaping examples and source-bucket heuristics.
+
+## Template Files
+
+- See `templates/output-shape.md` for the default decision-ready inline output shape.
+- See `templates/raw-findings-note.md` when the research is durable enough to persist into the KB.
+
 ## Process
 
 ### 1. Define the Real Question
@@ -113,10 +122,7 @@ Do not stop at the first page of results.
 - Search the source directly when possible, especially GitHub and arXiv
 - Use site-restricted searches when generic search quality is weak
 
-Examples:
-- `site:github.com decorative text OCR inpainting font classification`
-- `site:arxiv.org scene text removal decorative text`
-- `site:docs.vendor.com feature-name limitations`
+See `references/source-routing.md` for concrete query patterns.
 
 ### 7. Compare Evidence
 
@@ -135,29 +141,7 @@ If sources conflict, say so explicitly. Do not smooth over disagreement.
 
 ### 8. Produce a Decision-Ready Output
 
-Default output shape:
-
-```markdown
-QUESTION:
-<what we researched>
-
-SUMMARY:
-<2-4 sentence answer>
-
-FINDINGS:
-- <finding>
-- <finding>
-
-SOURCES:
-- <source + why it matters>
-- <source + why it matters>
-
-GAPS:
-- <what remains uncertain>
-
-NEXT:
-- <recommended next action>
-```
+Use the default output shape in `templates/output-shape.md`.
 
 If the findings are durable, write them to the KB in the relevant domain's `raw/` directory and update the domain index.
 
@@ -169,6 +153,7 @@ If the findings are durable, write them to the KB in the relevant domain's `raw/
 - Do not recommend tools without checking maintenance signals and recency
 - Do not cite papers you have not actually inspected
 - Do not pull raw page content into this conversation when the host-native research subagent can do the search/fetch cycle for you
+- If you find yourself query-looping without improving the vocabulary or source quality, pause and re-read `references/source-routing.md`
 
 ## Handoff
 

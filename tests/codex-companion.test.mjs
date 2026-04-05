@@ -129,3 +129,33 @@ test("when resume-last is requested, it continues the most recent Codex review t
   const logEntry = JSON.parse(fs.readFileSync(logPath, "utf8").trim());
   assert.deepEqual(logEntry.args.slice(0, 4), ["exec", "resume", "--json", "thread-9"]);
 });
+
+test("when no state dir is provided, Codex review state respects XDG state storage", () => {
+  const tempDir = makeTempDir();
+  const binDir = path.join(tempDir, "bin");
+  const xdgStateDir = path.join(tempDir, "xdg-state");
+  const logPath = path.join(tempDir, "codex.log");
+
+  fs.mkdirSync(binDir);
+  fs.mkdirSync(xdgStateDir);
+  writeStubCodex(binDir);
+
+  const env = {
+    ...process.env,
+    XDG_STATE_HOME: xdgStateDir,
+    OTH_SKILLS_STATE_DIR: "",
+    CODEX_BIN: path.join(binDir, "codex"),
+    CODEX_STUB_LOG: logPath
+  };
+
+  const result = spawnSync("node", [scriptPath, "task", "--key", "decision-review", "review this"], {
+    encoding: "utf8",
+    env
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(
+    fs.existsSync(path.join(xdgStateDir, "0th-skills", "reviews", "decision-review.codex.json")),
+    true
+  );
+});

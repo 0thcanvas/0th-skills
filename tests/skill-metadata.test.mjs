@@ -8,6 +8,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const skillsRoot = path.join(repoRoot, "skills");
+const thinkTemplatePath = path.join(skillsRoot, "think", "templates", "decision-record.md");
+const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates", "output-shape.md");
+const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
+const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
 
 const skillNames = ["build", "debug", "plan", "research", "ship", "think"];
 
@@ -46,6 +50,48 @@ test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
       source,
       /allow_implicit_invocation:\s*true/,
       `${skillName} should remain implicitly invocable`
+    );
+  }
+});
+
+test("skill reference links resolve to real files", () => {
+  const linkPattern = /(references|templates)\/([A-Za-z0-9._/-]+\.md)/g;
+
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    for (const match of source.matchAll(linkPattern)) {
+      const targetPath = path.join(skillsRoot, skillName, match[1], match[2]);
+      assert.equal(
+        fs.existsSync(targetPath),
+        true,
+        `${skillName} should resolve ${match[0]} to a real file`
+      );
+    }
+  }
+});
+
+test("workflow templates exist for think, research, and ship", () => {
+  assert.equal(fs.existsSync(thinkTemplatePath), true, "think decision template should exist");
+  assert.equal(
+    fs.existsSync(researchOutputTemplatePath),
+    true,
+    "research output template should exist"
+  );
+  assert.equal(fs.existsSync(researchTemplatePath), true, "research KB template should exist");
+  assert.equal(fs.existsSync(shipTemplatePath), true, "ship PR template should exist");
+});
+
+test("Codex-hosted counterpart-review skills explicitly name the Claude bridge helper", () => {
+  for (const skillName of ["think", "plan", "ship"]) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /do not skip Claude review just because no native Codex subagent exists[\s\S]*ask-claude-review/,
+      `${skillName} should explicitly name ask-claude-review for Codex-hosted review`
     );
   }
 });

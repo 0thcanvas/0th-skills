@@ -1,0 +1,67 @@
+[
+  {
+    "prompt": "How should we design auth for admin invite links before we start coding?",
+    "expected_skill": "think",
+    "why": "Design uncertainty and multiple valid approaches."
+  },
+  {
+    "prompt": "Break the invite flow into vertical slices with acceptance criteria.",
+    "expected_skill": "plan",
+    "why": "The user is asking for slicing and ordering."
+  },
+  {
+    "prompt": "Add a /health endpoint with tests.",
+    "expected_skill": "build",
+    "why": "Concrete implementation request with a known outcome."
+  },
+  {
+    "prompt": "The invite endpoint started returning 500 after yesterday's refactor. Find the cause.",
+    "expected_skill": "debug",
+    "why": "The user wants root-cause investigation."
+  },
+  {
+    "prompt": "Compare open-source OCR tools for extracting fields from receipts and cite primary sources.",
+    "expected_skill": "research",
+    "why": "The answer depends on external, current information."
+  },
+  {
+    "prompt": "Open the PR for this branch, get counterpart review, and let me inspect the file list.",
+    "expected_skill": "ship",
+    "why": "The work is ready to land through a PR."
+  },
+  {
+    "prompt": "Should we use a worker service or inline processing for local Whisper transcription?",
+    "expected_skill": "think",
+    "why": "This is an architectural choice with deployment implications."
+  },
+  {
+    "prompt": "The local Whisper pipeline works, but we still have no production serving path. What architecture should we choose before building more?",
+    "expected_skill": "think",
+    "why": "The unresolved service boundary makes this a decision problem, not a build step."
+  },
+  {
+    "prompt": "Plan the rollout for moving local inference into a dedicated service boundary.",
+    "expected_skill": "plan",
+    "why": "This needs structured sequencing across multiple slices."
+  },
+  {
+    "prompt": "Implement a worker-backed transcription queue from the approved plan.",
+    "expected_skill": "build",
+    "why": "The decision is already made; now it needs implementation."
+  },
+  {
+    "prompt": "Why does the worker succeed locally but fail once deployed?",
+    "expected_skill": "debug",
+    "why": "The symptom needs investigation before fixes."
+  },
+  {
+    "prompt": "Research managed GPU inference options we could use instead of shipping Whisper locally.",
+    "expected_skill": "research",
+    "why": "This is external product/infra evaluation."
+  },
+  {
+    "prompt": "Push this branch, create the PR, and summarize the review blockers.",
+    "expected_skill": "ship",
+    "why": "This is explicit landing workflow."
+  }
+]

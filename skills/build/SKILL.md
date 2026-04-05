@@ -44,6 +44,10 @@ If resuming ongoing work:
 3. Run the test suite to confirm baseline
 4. Report: "On branch <name>. N of M slices complete. Tests: X passing. Next: [slice]."
 
+## Reference Files
+
+- See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
+
 ## Process
 
 ### 1. Read Context
@@ -86,6 +90,7 @@ Rules:
 - Prefer names and assertions that read like living documentation of what the user or caller experiences.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
+- When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
 - On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
 - On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
 
@@ -125,15 +130,7 @@ Concerns: [if any]
 
 Then hand off to /ship.
 
-## Anti-Rationalization
-
-| Thought | Do this instead |
-|---|---|
-| "Too simple to test" | Simple code breaks. Write the test. |
-| "I'll test after" | Test first or it doesn't count. |
-| "Just this once" | No exceptions without user permission. |
-| "Let me refactor this nearby code" | Don't. Stay on the slice. |
-| "Tests pass, I'm confident" | Run the command. Paste the output. Then say it. |
+If you're drifting into shortcut logic, read `references/slice-checklist.md` before continuing.
 
 ## Iron Laws
 
