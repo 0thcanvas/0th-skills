@@ -33,12 +33,24 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Cross-model review is script-driven.** The counterpart review helpers invoke the other CLI directly instead of relying on shared subagent manifests.
 - **Cross-model review helpers are named by target.** `ask-codex-review` means "ask Codex to review", not "Codex-native manifest".
 - **Cross-model review details live in `README.md`.** Use that as the authoritative reference for bridge-helper behavior and state handling.
+- **KB behavior is editor-agnostic.** If a project uses a knowledge base, follow its configured root and the markdown-first protocol in `PROTOCOL.md`; do not assume Obsidian.
 
 ## Design Philosophy
 
 Prefer deep modules (small interface, significant implementation) over shallow ones.
 Prefer vertical slices (end-to-end through all layers) over horizontal (one layer at a time).
 Prefer behavioral contracts over file-path references in specs and plans.
+
+## Knowledge Base
+
+Some projects keep a markdown knowledge base alongside code and docs. When a project mentions a KB:
+
+- Resolve the KB root in this order: `KB_ROOT`, then project instructions, then a one-time human prompt
+- Read the KB root `index.md` at session start
+- Read the repo's or project's KB instructions before writing
+- Follow the editor-agnostic KB protocol in `PROTOCOL.md`
+- Do not assume the human is using Obsidian, even if their KB can be viewed there
+- If you had to ask for the KB location, recommend persisting it via `KB_ROOT` or project instructions
 
 ## Skill Routing
 

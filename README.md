@@ -13,6 +13,17 @@ Lightweight development workflow for solo builders using Claude Code and Codex.
 
 `think / plan / build / debug / ship` remain the core workflow. `research` is a supporting capability the core skills can invoke when the answer lives outside the repo.
 
+## Knowledge Base
+
+Projects using 0th skills may also maintain a markdown knowledge base. The skills repo now includes an editor-agnostic KB protocol in [PROTOCOL.md](PROTOCOL.md).
+
+The protocol assumes:
+
+- `KB_ROOT` is the canonical KB path contract
+- agents resolve the KB root from `KB_ROOT`, then project instructions, then a one-time user prompt
+- the KB is plain markdown on disk
+- agents should not hardcode an Obsidian vault path or depend on Obsidian-only behavior
+
 ### Direct invocation
 
 When a skill is invoked directly, `$ARGUMENTS` means "the raw argument string passed to that
@@ -86,6 +97,12 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
 
 ## Release notes
+
+### 0.1.7
+
+- Added a repo-local knowledge base protocol in `PROTOCOL.md` so KB-aware skills can follow a markdown-first workflow without assuming Obsidian
+- Documented KB behavior in `CLAUDE.md` and `README.md`
+- Made `KB_ROOT` the canonical KB path contract, with a one-time prompt only when no KB root is configured
 
 ### 0.1.6
 

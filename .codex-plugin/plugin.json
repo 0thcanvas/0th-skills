@@ -1,6 +1,6 @@
 {
   "name": "0th-skills",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Lightweight development workflow for solo builders with host-native skills, subagents, and cross-model review.",
   "author": {
     "name": "0th Canvas",
