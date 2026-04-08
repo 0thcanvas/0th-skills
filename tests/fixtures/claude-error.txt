@@ -1,0 +1,1 @@
+Error: Claude API key not found. Set ANTHROPIC_API_KEY or run `claude login`.

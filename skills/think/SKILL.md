@@ -84,11 +84,8 @@ Target: 10-20 lines. If it's longer, you're writing a spec, not a decision.
 
 ### 5. Cross-Model Review
 
-Send the decision record to the counterpart reviewer:
+Send the decision record to the counterpart reviewer using `ask-counterpart-review`.
 - Include the decision record + relevant context (KB entries, codebase state)
-- In Claude-hosted runs, use Codex
-- In Codex-hosted runs, use Claude
-- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
 - The counterpart responds with concerns rated: nit / suggestion / blocker
 - Blockers: address before proceeding
 - Suggestions: present to user, incorporate if agreed

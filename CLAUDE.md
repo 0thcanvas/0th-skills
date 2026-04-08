@@ -18,7 +18,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **5-15 line decision records, not 300-line specs.** The human reviews code, not documents.
 - **Branch per feature, PR to land.** Always. The PR is the inspection point.
 - **TDD for testable work, before/after for everything else.** No code without verification.
-- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Claude-hosted runs use Codex review. Codex-hosted runs use Claude review.
+- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Counterpart is determined by `~/.0th/reviewer-config.json`. Default: Claude→Codex, Codex→Claude.
 - **Scale to uncertainty.** Low uncertainty = /build. Medium = /think then /build. High = /think with divergent design exploration.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.
@@ -30,8 +30,8 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Codex runtime policy is part of the product.** If a change affects subagent orchestration or safety assumptions, update `.codex/config.toml` too rather than relying on user defaults.
 - **Use the host-native research agent.** Claude-hosted research uses `0th:web-researcher`; Codex-hosted research uses `0th_researcher`.
 - **Do not duplicate Claude built-ins without a strong reason.** For read-only code mapping on Claude, prefer the built-in `Explore` agent instead of creating a custom 0th mirror.
-- **Cross-model review is script-driven.** The counterpart review helpers invoke the other CLI directly instead of relying on shared subagent manifests.
-- **Cross-model review helpers are named by target.** `ask-codex-review` means "ask Codex to review", not "Codex-native manifest".
+- **Cross-model review is script-driven.** A single `counterpart-companion.mjs` auto-detects the host and loads the appropriate driver.
+- **Cross-model review uses a generic helper.** `ask-counterpart-review` replaces the old `ask-codex-review` and `ask-claude-review` (deprecated shims, removed next release).
 - **Cross-model review details live in `README.md`.** Use that as the authoritative reference for bridge-helper behavior and state handling.
 - **KB behavior is editor-agnostic.** If a project uses a knowledge base, follow its configured root and the markdown-first protocol in `PROTOCOL.md`; do not assume Obsidian.
 

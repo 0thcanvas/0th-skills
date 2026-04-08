@@ -83,15 +83,15 @@ test("workflow templates exist for think, research, and ship", () => {
   assert.equal(fs.existsSync(shipTemplatePath), true, "ship PR template should exist");
 });
 
-test("Codex-hosted counterpart-review skills explicitly name the Claude bridge helper", () => {
+test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
   for (const skillName of ["think", "plan", "ship"]) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
     assert.match(
       source,
-      /do not skip Claude review just because no native Codex subagent exists[\s\S]*ask-claude-review/,
-      `${skillName} should explicitly name ask-claude-review for Codex-hosted review`
+      /ask-counterpart-review/,
+      `${skillName} should reference ask-counterpart-review`
     );
   }
 });
