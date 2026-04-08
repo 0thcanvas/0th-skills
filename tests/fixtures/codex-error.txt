@@ -1,0 +1,1 @@
+Error: Codex CLI requires authentication. Run `codex auth` first.

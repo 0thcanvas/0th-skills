@@ -1,0 +1,4 @@
+[
+  {"type":"assistant","session_id":"sess_xyz789","message":{"content":[{"type":"text","text":"BLOCKERS:\n- none\n\nSUGGESTIONS:\n- Add input validation\n\nNITS:\n- Rename variable\n\nOVERALL: Solid work."}]}},
+  {"type":"result","session_id":"sess_xyz789","result":"BLOCKERS:\n- none\n\nSUGGESTIONS:\n- Add input validation\n\nNITS:\n- Rename variable\n\nOVERALL: Solid work."}
+]

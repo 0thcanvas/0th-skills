@@ -101,10 +101,7 @@ Target: 2-4 lines per slice. The plan is a checklist, not a tutorial. If a slice
 
 ### 5. Cross-Model Review
 
-Send to the counterpart reviewer with the decision record + plan:
-- In Claude-hosted runs, use Codex
-- In Codex-hosted runs, use Claude
-- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
+Send to the counterpart reviewer using `ask-counterpart-review` with the decision record + plan:
 - Missing slices? Wrong order? Scope creep beyond the decision?
 - Same severity protocol: nit / suggestion / blocker
 

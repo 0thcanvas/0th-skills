@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"thread_abc123"}
+{"type":"item.started","item":{"type":"text"}}
+{"type":"item.completed","item":{"type":"text","text":"BLOCKERS:\n- none\n\nSUGGESTIONS:\n- Consider adding retries\n\nNITS:\n- Typo on line 42\n\nOVERALL: Clean implementation."}}

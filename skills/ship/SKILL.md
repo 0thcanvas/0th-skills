@@ -63,16 +63,15 @@ PR title: short, imperative ("Add spaced repetition engine", not "Added some stu
 
 ### 4. Counterpart Reviews the Diff
 
-Send the branch diff to the counterpart reviewer:
-- In Claude-hosted runs, use Codex
-- In Codex-hosted runs, use Claude
-- On Codex-hosted runs, do not skip Claude review just because no native Codex subagent exists. Explicitly invoke the `ask-claude-review` bridge helper.
+Send the branch diff to the counterpart reviewer using `ask-counterpart-review`.
+The companion script auto-detects the host and routes to the configured counterpart.
 - The counterpart responds with:
 - **Blockers:** must fix before merge
 - **Suggestions:** worth considering, user decides
 - **Nits:** style/minor, accept or skip
 
 If blockers exist: fix on the branch, push, re-run counterpart review.
+If the counterpart review fails, report the error and let the user decide whether to proceed.
 
 ### 5. User Inspects
 

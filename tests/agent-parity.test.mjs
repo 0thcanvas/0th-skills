@@ -41,7 +41,7 @@ const expectedMirrors = {
   }
 };
 
-const expectedClaudeOnly = ["ask-claude-review", "ask-codex-review", "web-researcher"];
+const expectedClaudeOnly = ["ask-counterpart-review", "ask-claude-review", "ask-codex-review", "web-researcher"];
 const expectedCodexOnly = ["explorer", "researcher"];
 
 function read(filePath) {

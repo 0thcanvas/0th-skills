@@ -45,17 +45,17 @@ question `best TS TOML parser`.
 - For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the custom `0th_explorer`
 - Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses a native `researcher` agent for focused source-cited research cycles
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
-- Cross-model review remains script-driven through `scripts/claude-companion.mjs` and `scripts/codex-companion.mjs`
-- The Claude-side review helpers are named by target for clarity: `ask-codex-review.md` and `ask-claude-review.md`
+- Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
+- The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
-- On Codex-hosted runs, explicit requests for Claude review should use the `ask-claude-review` bridge helper or `scripts/claude-companion.mjs` directly rather than treating Claude as unavailable
+- On Codex-hosted runs, explicit requests for Claude review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
 
 ### Agent types
 
 - **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
-- **Bridge review helpers** are `ask-codex-review` and `ask-claude-review`: they are not skills and not native Codex agents; they are prompt wrappers around the companion scripts
-- **Companion scripts** are the actual cross-model bridge runtime: `scripts/claude-companion.mjs` and `scripts/codex-companion.mjs`
+- **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
+- **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
 
 ### Host differences
 
@@ -65,7 +65,7 @@ question `best TS TOML parser`.
 | Agent file format | Markdown with YAML frontmatter under `agents/` | TOML under `.codex/agents/` |
 | Current mirrored 0th agents | `implementer`, `reviewer`, `test-runner` | `implementer`, `reviewer`, `test-runner` |
 | Read-only exploration | Built-in `Explore` agent | Custom `0th_explorer` |
-| Claude-only agents | `web-researcher`, `ask-codex-review`, `ask-claude-review` | n/a |
+| Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
 | Codex-only agents | n/a | `explorer`, `researcher` |
 | Native policy pinning | Per-agent `model` in frontmatter | Per-agent `model`, `model_reasoning_effort`, `sandbox_mode`, plus `.codex/config.toml` |
 
@@ -98,6 +98,12 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ## Release notes
 
+### 0.1.8
+
+- Replaced the separate Claude and Codex companion scripts with a single `scripts/counterpart-companion.mjs` runtime plus dedicated `claude` and `codex` drivers
+- Added the generic `ask-counterpart-review` agent while keeping `ask-claude-review` and `ask-codex-review` as deprecated compatibility shims
+- Reduced counterpart review support to the shipped Claude/Codex pairing and removed unsupported reviewer paths from the runtime, docs, and tests
+
 ### 0.1.7
 
 - Added a repo-local knowledge base protocol in `PROTOCOL.md` so KB-aware skills can follow a markdown-first workflow without assuming Obsidian
@@ -124,32 +130,34 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ## Counterpart Review
 
-Cross-model review is symmetric:
-
-- Claude hosts the build and asks Codex to review
-- Codex hosts the build and asks Claude to review
-
-For Codex-hosted review loops, use `scripts/claude-companion.mjs`. It shells out to the local `claude` CLI, stores Claude `session_id` values in the companion state directory, and automatically resumes the same review thread when you reuse the same review key.
-
-For Claude-hosted review loops, use `scripts/codex-companion.mjs`. It shells out to the local `codex` CLI, stores Codex `thread_id` values in the companion state directory, and automatically resumes the same review thread when you reuse the same review key.
-
-By default, both companion scripts now store durable review state outside the plugin repo:
-
-- `$OTH_SKILLS_STATE_DIR` if set
-- otherwise `$XDG_STATE_HOME/0th-skills/reviews` if `XDG_STATE_HOME` is set
-- otherwise `~/.0th/reviews`
-
-Use `--state-dir` when you want a one-off override for testing.
-
-Example:
+Cross-model review uses a single companion script with pluggable drivers:
 
 ```bash
-node scripts/claude-companion.mjs task \
-  --key ship-my-branch \
-  "Review this diff. Respond with BLOCKER, SUGGESTION, and NIT sections."
+node scripts/counterpart-companion.mjs <task|review> --key <review-key> "<prompt>"
 ```
 
-The next call with the same `--key` resumes the prior Claude conversation instead of starting over.
+The script auto-detects the host and loads the counterpart from `~/.0th/reviewer-config.json`:
+
+```json
+{
+  "version": 1,
+  "counterparts": {
+    "claude": "codex",
+    "codex": "claude"
+  }
+}
+```
+
+Override per-call with `--driver <name>` or per-session with `COUNTERPART_REVIEWER=<name>`.
+
+Available drivers: `codex`, `claude`. To add a new driver, create `scripts/drivers/<name>.mjs` implementing the driver contract (see spec) and add it to the allowlist in `counterpart-companion.mjs`.
+
+Review state is stored at:
+- `$OTH_SKILLS_STATE_DIR` if set
+- `$XDG_STATE_HOME/0th-skills/reviews` if `XDG_STATE_HOME` is set
+- `~/.0th/reviews` otherwise
+
+Use `--state-dir` for a one-off override.
 
 ## Verification
 
