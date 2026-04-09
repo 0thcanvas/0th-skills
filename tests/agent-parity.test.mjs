@@ -39,6 +39,15 @@ const expectedMirrors = {
       "Never return raw test output"
     ]
   },
+  verifier: {
+    codexFile: "0th-verifier.toml",
+    claudeFile: "verifier.md",
+    requiredFragments: [
+      "Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY",
+      "Classify failure type",
+      "Max 3 verification rounds"
+    ]
+  },
   synthesizer: {
     codexFile: "0th-synthesizer.toml",
     claudeFile: "synthesizer.md",

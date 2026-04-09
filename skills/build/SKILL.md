@@ -47,6 +47,7 @@ If resuming ongoing work:
 ## Reference Files
 
 - See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
+- See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
 
 ## Process
 
@@ -108,23 +109,50 @@ If a slice fails after 3 attempts:
 - Report what was tried and what failed.
 - Ask the user: continue with a different approach, or escalate?
 
-### 5. Completion
+### 5. Verification
 
-After all slices pass:
+After all slices pass, run the verification phase before handing off to /ship.
 
 ```bash
-# Run full test suite
+# Run full test suite first
 <test command>
 
 # Confirm clean
 git status
 ```
 
+Dispatch the verifier agent with:
+- Feature summary: what was built, which slices, acceptance criteria
+- Feature type(s): infer from build context — which verification methods apply
+- Current branch and test output
+
+On Claude-hosted runs, dispatch `0th:verifier`. On Codex-hosted runs, dispatch `0th_verifier` explicitly.
+
+The verifier exercises the feature as a real user (browser for UI, terminal for CLI, curl for API) and reports one of four outcomes:
+
+| Outcome | Meaning | Action |
+|---------|---------|--------|
+| **PASS** | All applicable checks ran and passed | Proceed to /ship |
+| **FAIL_UNRESOLVED** | Issues remain after 3 rounds | Stop. Report to user. |
+| **BLOCKED** | Applicable checks could not run | Stop. Report to user. |
+| **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
+
+**Only PASS allows handoff to /ship.** Any other outcome requires user intervention.
+
+If verification finds and fixes issues, the verifier commits fixes atomically (separate from slice commits) and produces a verification report with evidence.
+
+See `references/verification-checklist.md` for the compact per-method loops.
+
+### 6. Completion
+
+After verification passes:
+
 Report:
 ```
 STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED
 Slices: N/N complete
 Tests: X passing, 0 failing
+Verification: PASS (N issues found and fixed)
 Concerns: [if any]
 ```
 
@@ -138,6 +166,7 @@ If you're drifting into shortcut logic, read `references/slice-checklist.md` bef
 - **No claims without verification evidence** — run the command, read the output, then assert
 - **Always on a branch** — never commit directly to main
 - **Atomic commits per slice** — each commit is a self-contained change
+- **No "done" without verification** — the verifier must PASS before /ship
 
 ## KB Integration
 
