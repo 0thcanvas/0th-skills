@@ -12,6 +12,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 | `/debug` | Root cause then fix | Something is broken |
 | `/ship` | PR and land | Code is ready |
 | `/research` | Source-aware external research | Product, API, OSS, and paper research outside the repo |
+| `/deep-research` | Research loop for hard problems | Impossible-seeming features, cross-domain research, feasibility analysis |
 
 ## Principles
 
@@ -61,3 +62,4 @@ When the user's request matches a skill, invoke it. Key mappings:
 - Bug, broken, error, "why is this", investigate → /debug
 - Ship, PR, merge, land, deploy → /ship
 - Research, compare tools, look up papers, evaluate APIs, "search the web" → /research
+- Deep research, "is this possible", feasibility study, reverse-engineer feature, cross-domain → /deep-research

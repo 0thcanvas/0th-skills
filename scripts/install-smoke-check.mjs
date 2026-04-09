@@ -8,12 +8,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const defaultRepoRoot = path.resolve(__dirname, "..");
 
-const expectedSkills = ["build", "debug", "plan", "research", "ship", "think"];
+const expectedSkills = ["build", "debug", "deep-research", "plan", "research", "ship", "think"];
 const expectedCodexAgents = [
+  "0th-deep-researcher.toml",
   "0th-explorer.toml",
+  "0th-experimenter.toml",
   "0th-implementer.toml",
   "0th-researcher.toml",
   "0th-reviewer.toml",
+  "0th-synthesizer.toml",
   "0th-test-runner.toml"
 ];
 

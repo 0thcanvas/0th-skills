@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const fixturePath = path.join(__dirname, "fixtures", "skill-routing.fixture.json");
-const expectedSkills = ["build", "debug", "plan", "research", "ship", "think"];
+const expectedSkills = ["build", "debug", "deep-research", "plan", "research", "ship", "think"];
 
 function readFixture() {
   return JSON.parse(fs.readFileSync(fixturePath, "utf8"));

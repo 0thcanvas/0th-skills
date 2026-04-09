@@ -1,0 +1,6 @@
+interface:
+  display_name: "Deep Research"
+  short_description: "Run a multi-phase feasibility, decision, or survey research loop."
+  default_prompt: "$deep-research feasibility <question>"
+policy:
+  allow_implicit_invocation: true

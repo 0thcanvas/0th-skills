@@ -13,7 +13,7 @@ const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates"
 const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
 const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
 
-const skillNames = ["build", "debug", "plan", "research", "ship", "think"];
+const skillNames = ["build", "debug", "deep-research", "plan", "research", "ship", "think"];
 
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
