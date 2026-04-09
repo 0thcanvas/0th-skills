@@ -38,6 +38,15 @@ const expectedMirrors = {
       "FAIL: X of Y tests failed.",
       "Never return raw test output"
     ]
+  },
+  verifier: {
+    codexFile: "0th-verifier.toml",
+    claudeFile: "verifier.md",
+    requiredFragments: [
+      "Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY",
+      "Classify failure type",
+      "Max 3 verification rounds"
+    ]
   }
 };
 
