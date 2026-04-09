@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "0th",
-      "description": "5 core workflow skills plus research. Includes think, plan, build, debug, ship, and 4 subagents for context isolation.",
+      "description": "5 core workflow skills plus research and deep-research. Includes think, plan, build, debug, ship, and host-native subagents for research, synthesis, and experiments.",
       "source": "./",
       "category": "development"
     }

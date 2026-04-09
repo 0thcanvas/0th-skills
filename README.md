@@ -10,8 +10,9 @@ Lightweight development workflow for solo builders using Claude Code and Codex.
 - `debug` — investigate root cause before fixing
 - `ship` — review and land through a PR
 - `research` — run source-aware research across docs, GitHub, papers, and the broader web
+- `deep-research` — multi-phase research loop for hard or impossible-seeming problems: feasibility, decision, and survey modes; uses a `KB_ROOT`-backed research workspace as persistent external memory; orchestrates host-native research plus synthesis and experiment agents through 8 phases
 
-`think / plan / build / debug / ship` remain the core workflow. `research` is a supporting capability the core skills can invoke when the answer lives outside the repo.
+`think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo.
 
 ## Knowledge Base
 
@@ -41,7 +42,7 @@ question `best TS TOML parser`.
 - Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
 - Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
-- Today, the mirrored 0th-managed agents are `implementer`, `reviewer`, `test-runner`, and `verifier`
+- Today, the mirrored 0th-managed agents are `implementer`, `reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, and `experimenter`
 - For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the custom `0th_explorer`
 - Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses a native `researcher` agent for focused source-cited research cycles
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
@@ -52,7 +53,7 @@ question `best TS TOML parser`.
 
 ### Agent types
 
-- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`
+- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
 - **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
 - **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
@@ -63,7 +64,7 @@ question `best TS TOML parser`.
 |---|---|---|
 | Delegation model | Can auto-delegate from agent `description` | Spawns subagents only when explicitly asked |
 | Agent file format | Markdown with YAML frontmatter under `agents/` | TOML under `.codex/agents/` |
-| Current mirrored 0th agents | `implementer`, `reviewer`, `test-runner`, `verifier` | `implementer`, `reviewer`, `test-runner`, `verifier` |
+| Current mirrored 0th agents | `implementer`, `reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, `experimenter` | `implementer`, `reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, `experimenter` |
 | Read-only exploration | Built-in `Explore` agent | Custom `0th_explorer` |
 | Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
 | Codex-only agents | n/a | `explorer`, `researcher` |
@@ -73,8 +74,8 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ### Naming conventions
 
-- Claude-side manifests use a colon-namespaced kebab name: `0th:implementer`, `0th:reviewer`, `0th:test-runner`, `0th:web-researcher`
-- Codex-side manifests use underscored names without a namespace separator: `0th_implementer`, `0th_reviewer`, `0th_test_runner`, `0th_explorer`, `0th_researcher` — this matches Codex's TOML identifier rules (no colons, no hyphens)
+- Claude-side manifests use a colon-namespaced kebab name: `0th:implementer`, `0th:reviewer`, `0th:test-runner`, `0th:web-researcher`, `0th:verifier`, `0th:synthesizer`, `0th:deep-researcher`, `0th:experimenter`
+- Codex-side manifests use underscored names without a namespace separator: `0th_implementer`, `0th_reviewer`, `0th_test_runner`, `0th_explorer`, `0th_researcher`, `0th_verifier`, `0th_synthesizer`, `0th_deep_researcher`, `0th_experimenter` — this matches Codex's TOML identifier rules (no colons, no hyphens)
 - `0th:verifier` (Claude) / `0th_verifier` (Codex) — exercises completed features as a real user before /ship
 - When adding a new subagent, create both manifests and keep the behavior sections in sync when the agent is truly shared. If a subagent is intentionally host-specific, note the asymmetry here
 - `tests/agent-parity.test.mjs` is the guardrail for the current mirror set and asymmetry list
@@ -89,7 +90,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the six skills under `skills/`
+- Confirm the plugin exposes the seven skills under `skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Claude Code
@@ -98,6 +99,12 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
 
 ## Release notes
+
+### 0.1.9
+
+- Added the `deep-research` skill with feasibility, decision, and survey loops backed by `KB_ROOT`
+- Added mirrored Codex manifests for `synthesizer`, `deep-researcher`, and `experimenter`
+- Added deep-research templates, references, routing coverage, and packaging metadata
 
 ### 0.1.8
 

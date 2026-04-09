@@ -1,7 +1,7 @@
 {
   "name": "0th-skills",
-  "version": "0.1.8",
-  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, and cross-model review.",
+  "version": "0.1.9",
+  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, deep research, and cross-model review.",
   "author": {
     "name": "0th Canvas",
     "url": "https://github.com/0thcanvas"
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "0th",
-    "shortDescription": "A lightweight build workflow for solo builders",
-    "longDescription": "Use 0th to turn ideas into decisions, break work into slices, build with TDD, debug from root cause, research external systems with source routing, and ship changes through PRs. Includes host-native Codex subagents, cross-model review bridges, and metadata tuned for both Codex and Claude Code.",
+    "shortDescription": "A lightweight build and research workflow for solo builders",
+    "longDescription": "Use 0th to turn ideas into decisions, break work into slices, build with TDD, debug from root cause, run source-aware research, and drive deeper feasibility loops before shipping. Includes host-native Codex subagents, cross-model review bridges, and metadata tuned for both Codex and Claude Code.",
     "developerName": "0th Canvas",
     "category": "Coding",
     "capabilities": [
@@ -35,7 +35,8 @@
       "Use the think skill to turn this idea into a short decision record.",
       "Use the build skill to implement this change with TDD on a feature branch.",
       "Use the debug skill to investigate the root cause before fixing this failure.",
-      "Use the research skill when the answer depends on external docs, open-source tools, or papers."
+      "Use the research skill when the answer depends on external docs, open-source tools, or papers.",
+      "Use the deep-research skill when the question needs a feasibility study, decision loop, or research-backed architecture."
     ],
     "brandColor": "#1B1814",
     "screenshots": []

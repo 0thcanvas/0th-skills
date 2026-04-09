@@ -47,6 +47,33 @@ const expectedMirrors = {
       "Classify failure type",
       "Max 3 verification rounds"
     ]
+  },
+  synthesizer: {
+    codexFile: "0th-synthesizer.toml",
+    claudeFile: "synthesizer.md",
+    requiredFragments: [
+      "WORLD MODEL:",
+      "Every node must trace back",
+      "Never downgrade a verified consensus"
+    ]
+  },
+  "deep-researcher": {
+    codexFile: "0th-deep-researcher.toml",
+    claudeFile: "deep-researcher.md",
+    requiredFragments: [
+      "PROVENANCE: <primary | secondary | tertiary>",
+      "Extract specific numbers, not vibes.",
+      "One deep-dive per dispatch"
+    ]
+  },
+  experimenter: {
+    codexFile: "0th-experimenter.toml",
+    claudeFile: "experimenter.md",
+    requiredFragments: [
+      "FAIL_TECHNIQUE | FAIL_INTEGRATION | FAIL_ASSUMPTION | FAIL_ENVIRONMENT",
+      "Every experiment must have a reproducible `run.sh`",
+      "Test the hypothesis only."
+    ]
   }
 };
 

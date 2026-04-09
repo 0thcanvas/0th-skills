@@ -25,6 +25,11 @@
     "why": "The answer depends on external, current information."
   },
   {
+    "prompt": "Is it actually feasible to reconstruct editable invitation layouts from flat images, and what architecture would prove or disprove it?",
+    "expected_skill": "deep-research",
+    "why": "This is a multi-phase feasibility question that needs decomposition, external research, and validation."
+  },
+  {
     "prompt": "Open the PR for this branch, get counterpart review, and let me inspect the file list.",
     "expected_skill": "ship",
     "why": "The work is ready to land through a PR."
