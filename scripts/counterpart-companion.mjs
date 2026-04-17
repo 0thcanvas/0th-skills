@@ -365,6 +365,14 @@ async function main() {
   const driverName = resolveDriverName(options);
   const driver = await loadDriver(driverName);
 
+  // Set a clean process title so task-list UIs (e.g. Codex Companion,
+  // Claude Code task panels) show a readable label instead of the raw
+  // argv — which would otherwise leak "--key <value>" and the full
+  // prompt text into the visible title. Format: "0th-counterpart:
+  // <driver> <command> [<key>]".
+  const keyLabel = options.key ? ` [${options.key}]` : "";
+  process.title = `0th-counterpart: ${driverName} ${options.command}${keyLabel}`;
+
   // Read prompt
   const prompt = readPrompt(options.promptArgs);
 
