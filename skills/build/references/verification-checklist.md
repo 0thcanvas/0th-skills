@@ -4,7 +4,7 @@ Use this file when you need the compact per-method verification loops, not as th
 
 ## UI Features
 
-1. Preflight: confirm dev server is ready, capture startup errors if any.
+1. Preflight: confirm dev server is ready, capture startup errors if any. If the session browser is down, `browser-kit session open`; if the `bb-browser` MCP is not registered for the current host, `browser-kit mcp install --host <host>`.
 2. Navigate via browser automation, record the exact URL tested.
 3. Visual: screenshot, check layout/spacing/alignment, resize to mobile/tablet.
 4. Functional: fill forms, click buttons, navigate flows, verify success/error/loading states.

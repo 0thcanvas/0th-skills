@@ -35,7 +35,7 @@ Continue with methods that are independent and unaffected.
 
 For each applicable verification method, exercise the feature as a real user:
 
-- **UI:** Navigate via browser automation (e.g., Chrome DevTools MCP), take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
+- **UI:** Navigate via the `browser_*` MCP tools exposed by `bb-browser` (preferred — run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`). If the MCP is not registered, fall back to host-native browser tooling (Chrome DevTools MCP on Claude, computer-use on Codex). Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
 - **API:** Hit endpoints with curl/fetch, verify response shapes and status codes, test write operations and validation
 - **Component:** Render in browser, check documented variants plus representative prop combinations, verify accessibility
