@@ -18,7 +18,7 @@ The parent agent provides:
 ## Process
 
 1. **Preflight:** Confirm environment readiness. If preflight fails, mark BLOCKED with error. Continue unaffected methods.
-2. **Exercise:** Use the feature as a real user per each applicable method (browser for UI, terminal for CLI, curl for API, etc.)
+2. **Exercise:** Use the feature as a real user per each applicable method. For UI, prefer the `browser_*` MCP tools exposed by `bb-browser` (run `browser-kit session open` first so a warm logged-in profile is attached; install/verify with `browser-kit mcp install --host codex` and `browser-kit mcp status`); fall back to computer-use only if the MCP is not registered. Terminal for CLI, curl for API, etc.
 3. **Classify:** Classify failure type before acting:
    - Product bug → fix (verify/fix loop)
    - Test bug → fix the test, not product code
