@@ -45,7 +45,11 @@ const expectedMirrors = {
     requiredFragments: [
       "Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY",
       "Classify failure type",
-      "Max 3 verification rounds"
+      "Max 3 verification rounds",
+      "`browser_*` MCP tools exposed by `bb-browser`",
+      "run `browser-kit session open` first so a warm logged-in profile is attached",
+      "`browser-kit mcp install",
+      "`browser-kit mcp status`"
     ]
   },
   synthesizer: {
