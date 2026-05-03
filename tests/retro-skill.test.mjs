@@ -44,6 +44,15 @@ test("/retro skill prompt links to the decision record so future readers can fin
   );
 });
 
+test("/retro decision record exists at the linked path so the SKILL.md reference resolves", () => {
+  const decisionAbsPath = path.join(repoRoot, decisionRelPath);
+  assert.equal(
+    fs.existsSync(decisionAbsPath),
+    true,
+    `decision record should exist at ${decisionRelPath} (referenced by skills/retro/SKILL.md)`
+  );
+});
+
 test("/retro skill prompt names every required schema heading", () => {
   const source = read(skillPath);
   for (const heading of [
