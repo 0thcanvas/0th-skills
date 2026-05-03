@@ -12,7 +12,7 @@ Lightweight development workflow for solo builders using Claude Code and Codex.
 - `research` — run source-aware research across docs, GitHub, papers, and the broader web
 - `deep-research` — multi-phase research loop for hard or impossible-seeming problems: feasibility, decision, and survey modes; uses a `KB_ROOT`-backed research workspace as persistent external memory; orchestrates host-native research plus synthesis and experiment agents through 8 phases
 - `improve-architecture` — find deepening opportunities in a codebase using Module/Interface/Depth/Seam vocabulary plus the deletion test; run periodically, not per-feature
-- `/retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log; classify each, surface patterns when ≥ 3 entries cross a bucket, propose actions
+- `retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log; classify each, surface patterns when ≥ 3 entries cross a bucket, propose actions
 - `zoom-out` — user-triggered micro-skill: ask the agent to step up a layer of abstraction and map an unfamiliar code area (not implicitly invoked)
 
 `think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo. `improve-architecture` is a periodic structural-quality skill; `zoom-out` is a user-driven utility.
@@ -141,7 +141,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed `skills/FEEDBACK.md` is kept in this release for the migration-overlap window; it will be removed in v0.2.4 once users have had a chance to migrate
 - Added `scripts/feedback-migrator.mjs` — shared idempotent comparator invoked from both `/retro` (Step 0) and the "process the skill feedback" flow. Rule: any non-empty line whose trimmed content is not present in `FEEDBACK.example.md` = non-template; missing destination is treated as empty; only the not-yet-copied lines are appended; re-runs converge to a no-op
 - Plumbing: `/retro` registered for both hosts via `skills/retro/agents/openai.yaml`; `skills/CLAUDE.md` skill table and routing, `README.md` skill list, `scripts/install-smoke-check.mjs` `expectedSkills`, and the metadata + routing parity tests all updated
-- Decision record: [`docs/decisions/2026-05-03-skill-incident-log.md`](https://github.com/0thcanvas/0thcanvas/blob/main/docs/decisions/2026-05-03-skill-incident-log.md) (six rounds of cross-model review with Codex/gpt-5.5; both sides converged)
+- Decision record: [`docs/decisions/2026-05-03-skill-incident-log.md`](https://github.com/0thcanvas/0th-skills/blob/main/docs/decisions/2026-05-03-skill-incident-log.md) (six rounds of cross-model review with Codex/gpt-5.5; both sides converged)
 
 ### 0.2.2
 

@@ -48,15 +48,27 @@ function loadIncidents(directoryPath) {
   if (!fs.existsSync(directoryPath)) return [];
 
   const incidents = [];
-  const entries = fs.readdirSync(directoryPath);
+  // Sort filenames so directory iteration order doesn't leak into output ordering.
+  const entries = fs.readdirSync(directoryPath).sort();
   for (const filename of entries) {
     if (!filename.endsWith(".md")) continue;
     const filePath = path.join(directoryPath, filename);
     const stat = fs.statSync(filePath);
     if (!stat.isFile()) continue;
 
-    const source = fs.readFileSync(filePath, "utf8");
-    const fields = parseFrontmatter(source);
+    // Read only enough bytes to capture the frontmatter block. The aggregator
+    // never needs the body and should not load potentially-sensitive evidence
+    // sections into process memory or downstream tooling.
+    const fd = fs.openSync(filePath, "r");
+    let head = "";
+    try {
+      const buf = Buffer.alloc(8 * 1024);
+      const bytes = fs.readSync(fd, buf, 0, buf.length, 0);
+      head = buf.subarray(0, bytes).toString("utf8");
+    } finally {
+      fs.closeSync(fd);
+    }
+    const fields = parseFrontmatter(head);
     if (!fields) continue;
     if (!fields.date || !fields.classification) continue;
 
@@ -71,7 +83,14 @@ function loadIncidents(directoryPath) {
   return incidents;
 }
 
+// The schema requires "ISO 8601 timestamp with timezone" — match either a `Z`
+// suffix or an explicit ±HH:MM offset. Date.parse will silently accept
+// timezone-less strings using the local runtime zone, which would make
+// recent-cluster windowing non-deterministic across machines.
+const TIMEZONE_AWARE = /(Z|[+-]\d{2}:\d{2})$/;
+
 function isRecent(incident, currentRunAtMs) {
+  if (!TIMEZONE_AWARE.test(incident.date)) return false;
   const incidentMs = Date.parse(incident.date);
   if (Number.isNaN(incidentMs)) return false;
   const delta = currentRunAtMs - incidentMs;
@@ -127,7 +146,10 @@ export function aggregate({ directoryPath, currentRunAt, justWrittenPath = null 
     if (!classBuckets.has(classKey)) classBuckets.set(classKey, []);
     classBuckets.get(classKey).push(incident);
 
+    const seenTags = new Set();
     for (const tag of incident.tags) {
+      if (seenTags.has(tag)) continue;
+      seenTags.add(tag);
       if (!tagBuckets.has(tag)) tagBuckets.set(tag, []);
       tagBuckets.get(tag).push(incident);
     }
@@ -148,6 +170,12 @@ export function aggregate({ directoryPath, currentRunAt, justWrittenPath = null 
       patterns.push(buildBucket("tag", key, entries, justWrittenPath, currentRunAtMs));
     }
   }
+
+  // Sort patterns deterministically so identical inputs produce identical output.
+  patterns.sort((a, b) => {
+    if (a.bucketType !== b.bucketType) return a.bucketType.localeCompare(b.bucketType);
+    return a.bucketKey.localeCompare(b.bucketKey);
+  });
 
   return { patterns };
 }

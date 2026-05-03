@@ -60,7 +60,7 @@ export function migrate({ feedbackPath, examplePath, destinationPath, dryRun = f
 }
 
 function parseCliArgs(argv) {
-  const args = { feedback: null, example: null, dest: null, dryRun: false };
+  const args = { feedback: null, example: null, dest: null, dryRun: false, showLines: false };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -68,6 +68,7 @@ function parseCliArgs(argv) {
     else if (flag === "--example") args.example = value;
     else if (flag === "--dest") args.dest = value;
     else if (flag === "--dry-run") args.dryRun = true;
+    else if (flag === "--show-lines") args.showLines = true;
   }
   return args;
 }
@@ -91,5 +92,17 @@ if (isMainModule) {
     destinationPath: args.dest,
     dryRun: args.dryRun,
   });
-  console.log(JSON.stringify(result, null, 2));
+  // By default, the CLI emits counts only — feedback content (which the user wrote
+  // in their own repo) should not leak through stdout into transcripts or
+  // counterpart-review prompts. `--show-lines` is the explicit opt-in for debugging.
+  const output = {
+    needed: result.needed,
+    missingCount: result.missingLines.length,
+    appendedCount: result.appendedLines ? result.appendedLines.length : null,
+  };
+  if (args.showLines) {
+    output.missingLines = result.missingLines;
+    output.appendedLines = result.appendedLines;
+  }
+  console.log(JSON.stringify(output, null, 2));
 }

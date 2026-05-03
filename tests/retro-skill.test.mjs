@@ -104,6 +104,20 @@ test("/retro skill prompt names the redaction rule for correction evidence", () 
   );
 });
 
+test("/retro skill allows secret-manager references while forbidding resolved values", () => {
+  const source = read(skillPath);
+  assert.match(
+    source,
+    /`op:\/\/` references are allowed; the resolved values behind them are not/,
+    "prompt should preserve the decision-record contract: op:// references are safe to cite, resolved secret values are not"
+  );
+  assert.doesNotMatch(
+    source,
+    /no resolved secrets, tokens, `op:\/\/` values/,
+    "prompt must not classify op:// references themselves as secret values"
+  );
+});
+
 test("/retro skill has a Codex openai.yaml metadata file with explicit UI copy", () => {
   const source = read(codexMetaPath);
   assert.match(source, /interface:/, "should define interface metadata");

@@ -28,7 +28,7 @@ node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" 
   --dry-run
 ```
 
-If `needed: true`, surface the missing lines to the user and ask whether to migrate (re-run without `--dry-run` to apply). If `needed: false`, skip silently. The migration is idempotent — re-runs converge to a no-op once the destination contains every non-template line.
+If `needed: true` (with `missingCount: <N>`), tell the user "you have N un-migrated feedback line(s); shall I migrate them now?" Do NOT echo the line contents to the user via this script's output — the CLI default reports counts only so feedback content doesn't leak through transcripts. If the user wants to inspect the lines first, read `skills/FEEDBACK.md` directly with the same redaction discipline that applies to incident `correction evidence`. To apply, re-run the script without `--dry-run`. If `needed: false`, skip silently. The migration is idempotent — re-runs converge to a no-op once the destination contains every non-template line.
 
 The same script is also invoked from the "process the skill feedback" flow (see `skills/FEEDBACK.md`) so both entry points share one comparator.
 
@@ -98,6 +98,19 @@ ${KB_ROOT}/learning/skill-incidents/<YYYY-MM-DD>-<short-slug>.md
 ```
 
 If the date+slug filename already exists, append a numeric suffix: `-2`, `-3`, etc. Use atomic writes (temp-file-then-rename if you can) so partial files never appear.
+
+### Pre-write checklist (verify before writing)
+
+Before writing each incident file, verify each item explicitly. If any item fails, fix the entry first — don't write malformed incidents:
+
+- [ ] `date` is an ISO 8601 timestamp with an explicit timezone (e.g. `2026-05-03T14:30-05:00` or `...Z`); the aggregator's recent-cluster check rejects timezone-less dates.
+- [ ] `skill` is exactly one of: a slash-skill name, `none`, or `general-agent`. Never `multiple` (the schema requires a single primary skill).
+- [ ] If `classification: unknown`, exactly one of `candidate_new_category:` or `insufficient_evidence:` is present in frontmatter. No free-form prose under `unknown`.
+- [ ] `tags` contains no duplicate values within one incident (the aggregator dedupes per-incident, but a clean entry is the contract).
+- [ ] No schema-block comments (the `# slash-skill name | none | general-agent` examples shown later in this prompt) appear in the generated file.
+- [ ] All evidence sections have run through redaction (Step 2): no resolved secrets, tokens, secret-manager-resolved values, customer PII, or sensitive prompt bodies. `op://` references are allowed; the resolved values behind them are not.
+
+### Schema
 
 Each file's frontmatter:
 

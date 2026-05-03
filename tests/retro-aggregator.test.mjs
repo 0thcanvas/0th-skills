@@ -226,6 +226,21 @@ test("frontmatter date (not filename) is used for the recent-cluster window", ()
   );
 });
 
+test("duplicate tag values within a single incident do not inflate the bucket count", () => {
+  const dir = makeIncidentDir();
+  // One incident with the same tag value listed three times — must count as 1, not 3
+  writeIncident(dir, "duplicate-tags.md", {
+    date: "2026-05-01T10:00:00-05:00",
+    skill: "/think",
+    classification: "verification-skipped",
+    tags: ["scope-creep", "scope-creep", "scope-creep"],
+  });
+
+  const result = aggregate({ directoryPath: dir, currentRunAt: "2026-05-03T12:00:00-05:00" });
+  const tagPatterns = result.patterns.filter((p) => p.bucketType === "tag");
+  assert.equal(tagPatterns.length, 0, "one incident with repeated tags must NOT cross the threshold");
+});
+
 test("missing directory returns empty patterns (no throw)", () => {
   const result = aggregate({
     directoryPath: "/nonexistent/path/that/cannot/exist",

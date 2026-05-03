@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { fileURLToPath } from "node:url";
 import { migrate, computeNonTemplateLines } from "../scripts/feedback-migrator.mjs";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const TEMPLATE = `# Skill Feedback
 
@@ -159,6 +162,100 @@ test("comparator: empty lines are never flagged as non-template (noise filter)",
 
   const missing = computeNonTemplateLines({ feedbackPath, examplePath });
   assert.deepEqual(missing, ["- entry"]);
+});
+
+test("legacy v0.2.2 FEEDBACK.md content is recognized as template, not user feedback", () => {
+  // Simulates a user upgrading from v0.2.2 with the unchanged original template.
+  // The example must treat the OLD template lines as template too, otherwise the
+  // migrator would report them as non-template and try to copy the old prose to KB.
+  const ws = makeWorkspace();
+  // Use the actual v0.2.2 FEEDBACK.md content (the version currently committed before
+  // this PR's slice 4 edits would have rewritten it).
+  const v022 = `# Skill Feedback
+
+When a skill feels wrong during use, drop a one-liner here. Don't stop working — just note it and move on.
+
+Format: \`- /skill: what felt wrong (YYYY-MM-DD)\`
+
+Process: when you're ready, say "process the skill feedback" in any session. The agent reads this file, proposes changes to the skill files, you approve.
+
+---
+`;
+  // Use the SHIPPED FEEDBACK.example.md as the template baseline (not the test's TEMPLATE constant)
+  const realExamplePath = path.resolve(__dirname, "..", "FEEDBACK.example.md");
+  fs.copyFileSync(realExamplePath, ws.examplePath);
+  fs.writeFileSync(ws.feedbackPath, v022);
+
+  const result = migrate({
+    feedbackPath: ws.feedbackPath,
+    examplePath: ws.examplePath,
+    destinationPath: ws.destinationPath,
+    dryRun: true,
+  });
+
+  assert.equal(
+    result.needed,
+    false,
+    "v0.2.2 template content should be recognized as template; it must NOT be classified as user feedback to migrate"
+  );
+  assert.deepEqual(result.missingLines, []);
+});
+
+test("CLI default output suppresses missingLines and appendedLines for privacy", async () => {
+  // Library callers can still get the lines via the function return; the CLI
+  // default must report counts only so feedback content doesn't leak through
+  // stdout into transcripts or counterpart-review prompts.
+  const ws = makeWorkspace();
+  fs.writeFileSync(
+    ws.feedbackPath,
+    TEMPLATE +
+      "- /think: privacy-sensitive feedback line (2026-04-01)\n"
+  );
+
+  const { spawnSync } = await import("node:child_process");
+  const scriptPath = path.resolve(__dirname, "..", "scripts", "feedback-migrator.mjs");
+  const result = spawnSync(
+    "node",
+    [scriptPath, "--feedback", ws.feedbackPath, "--example", ws.examplePath, "--dest", ws.destinationPath, "--dry-run"],
+    { encoding: "utf8" }
+  );
+
+  assert.equal(result.status, 0);
+  const parsed = JSON.parse(result.stdout);
+  assert.equal(parsed.needed, true);
+  assert.equal(typeof parsed.missingCount, "number", "default CLI output should report missingCount");
+  assert.equal(parsed.missingCount, 1);
+  assert.ok(
+    !("missingLines" in parsed) || parsed.missingLines === undefined,
+    "default CLI output must NOT include missingLines so feedback content doesn't leak via stdout"
+  );
+  assert.ok(
+    !result.stdout.includes("privacy-sensitive feedback line"),
+    "default CLI stdout must not echo any feedback line"
+  );
+});
+
+test("CLI --show-lines flag opts into emitting line content for debugging", async () => {
+  const ws = makeWorkspace();
+  fs.writeFileSync(ws.feedbackPath, TEMPLATE + "- /think: visible (2026-04-01)\n");
+
+  const { spawnSync } = await import("node:child_process");
+  const scriptPath = path.resolve(__dirname, "..", "scripts", "feedback-migrator.mjs");
+  const result = spawnSync(
+    "node",
+    [
+      scriptPath,
+      "--feedback", ws.feedbackPath,
+      "--example", ws.examplePath,
+      "--dest", ws.destinationPath,
+      "--dry-run",
+      "--show-lines",
+    ],
+    { encoding: "utf8" }
+  );
+
+  const parsed = JSON.parse(result.stdout);
+  assert.deepEqual(parsed.missingLines, ["- /think: visible (2026-04-01)"]);
 });
 
 test("missing FEEDBACK.md returns no-op (nothing to migrate)", () => {

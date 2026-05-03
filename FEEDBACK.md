@@ -14,7 +14,7 @@ node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" 
   --dry-run
 ```
 
-If the check reports `needed: true`, ask the user whether to migrate (re-run without `--dry-run` to apply). After migration, read entries from `${KB_ROOT}/learning/feedback.md` and propose changes to skill files; the user approves.
+If the check reports `needed: true` (with `missingCount: <N>`), ask the user whether to migrate (re-run without `--dry-run` to apply). The CLI default emits counts only — feedback content is not echoed via stdout, so users wanting to inspect first should read this file directly. After migration, read entries from `${KB_ROOT}/learning/feedback.md` and propose changes to skill files; the user approves.
 
 This file (`skills/FEEDBACK.md`) is kept in the repo for one release as the migration source; it is removed in v0.2.4 once users have had a chance to migrate.
 
