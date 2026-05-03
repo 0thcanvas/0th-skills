@@ -14,6 +14,24 @@ This skill implements the contract in [`docs/decisions/2026-05-03-skill-incident
 
 If the user invoked this skill directly, treat `$ARGUMENTS` as a hint about which corrections to focus on. If `$ARGUMENTS` is empty, scan the entire current conversation for corrections worth logging.
 
+## Step 0 — Check for FEEDBACK.md migration (one-time per upgrade)
+
+Before authoring any new incident, check whether the user has un-migrated content in their committed `skills/FEEDBACK.md`. The decision moves user feedback from `skills/FEEDBACK.md` to `${KB_ROOT}/learning/feedback.md`; this step is the migration entry point that runs when /retro is invoked.
+
+Run the migration script in dry-run mode first:
+
+```bash
+node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" \
+  --feedback "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.md" \
+  --example  "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.example.md" \
+  --dest     "${KB_ROOT}/learning/feedback.md" \
+  --dry-run
+```
+
+If `needed: true`, surface the missing lines to the user and ask whether to migrate (re-run without `--dry-run` to apply). If `needed: false`, skip silently. The migration is idempotent — re-runs converge to a no-op once the destination contains every non-template line.
+
+The same script is also invoked from the "process the skill feedback" flow (see `skills/FEEDBACK.md`) so both entry points share one comparator.
+
 ## When to Use
 
 - End of a session that contained one or more user corrections, agent misfires, or tool/skill issues

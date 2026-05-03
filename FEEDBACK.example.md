@@ -4,6 +4,18 @@ When a skill feels wrong during use, drop a one-liner here. Don't stop working â
 
 Format: `- /skill: what felt wrong (YYYY-MM-DD)`
 
-Process: when you're ready, say "process the skill feedback" in any session. The agent reads this file, proposes changes to the skill files, you approve.
+Process: when you're ready, say "process the skill feedback" in any session. Before reading entries, the agent runs the migration check: any non-template content in this file gets copied into `${KB_ROOT}/learning/feedback.md` (the new long-term location) using the shared comparator. The migration is idempotent â€” re-runs are no-ops once everything is migrated. Run the check via:
+
+```bash
+node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" \
+  --feedback "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.md" \
+  --example  "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.example.md" \
+  --dest     "${KB_ROOT}/learning/feedback.md" \
+  --dry-run
+```
+
+If the check reports `needed: true`, ask the user whether to migrate (re-run without `--dry-run` to apply). After migration, read entries from `${KB_ROOT}/learning/feedback.md` and propose changes to skill files; the user approves.
+
+This file (`skills/FEEDBACK.md`) is kept in the repo for one release as the migration source; it is removed in v0.2.4 once users have had a chance to migrate.
 
 ---
