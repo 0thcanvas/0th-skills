@@ -133,6 +133,16 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ## Release notes
 
+### 0.2.2
+
+- Added the self-testing loop, slice 1: a workspace-shared `references/stack-minimums.md` matrix (electron-desktop, chrome-mv3-extension, web-app, cli, service, bb-browser-escape-hatch) plus the `stack_minimums_exercised` JSON evidence contract written to `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`
+- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, exercises each via the Playwright → bb-browser → computer-use chain, and refuses to honor brief language attempting to lower the floor
+- Wired `/build` to construct verifier briefs that name matched stack ids (no escape language) and `/ship` to invoke the new `scripts/ship-gate.mjs` before `gh pr create` — fail-closed on missing/malformed/empty/wrong-stack reports or non-PASS outcome. First non-LLM enforcement layer in 0th's flow
+- Switched the verifier to Playwright by default for feature-specific UI checks; `bb-browser` is now the documented escape hatch for logged-in / real-session / shared-tab cases only
+- Added a teardown contract to verifier and implementer subagents — "whatever you spawn, you stop" — covering dev servers, bb-browser tabs (`browser_close_all` only closes the current MCP session's tabs), containers/ports, temp dirs, and reconciling test data per the existing hygiene rule
+- gitignored `verification-report/` so verifier artifacts stay out of PR diffs
+- Extended `tests/agent-parity.test.mjs` to require the new Step 0 fragments and the teardown fragments in both hosts; added 16 new unit tests in `tests/ship-gate.test.mjs` covering stack detection and report validation
+
 ### 0.2.1
 
 - Fixed Claude-side agent dispatch: every `agents/*.md` had `name: 0th:<agent>` in its frontmatter, but the Claude plugin loader prepends the plugin namespace (`0th:`) automatically, producing `0th:0th:<agent>` and breaking every skill dispatch. Stripped the redundant prefix from all 11 agent files; skill files and README dispatch references already used the correct `0th:<agent>` form. Codex side (`name = "0th_<agent>"`) was unaffected.
