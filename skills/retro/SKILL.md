@@ -109,15 +109,24 @@ Body sections (in this exact order):
 
 The inline schema-block comments above are documentation for this prompt only — they MUST NOT appear in generated incident files.
 
-After writing the new entry, **walk** `${KB_ROOT}/learning/skill-incidents/` and grouped-count *all* entries (including the just-written one) by:
+After writing the new entry, invoke the deterministic aggregator script to compute pattern surfacing:
 
-- `(classification × skill)` — primary `skill` only; `related_skills` does not fan out
+```bash
+node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/retro-aggregator.mjs" \
+  --dir "${KB_ROOT}/learning/skill-incidents" \
+  --now "$(date -Iseconds)" \
+  --just-written "<path-to-the-entry-you-just-wrote>"
+```
+
+The aggregator walks the directory and grouped-counts *all* entries (including the just-written one) by:
+
+- `(classification × skill)` — primary `skill` only; `related_skills` does NOT fan out into bucket counts
 - `(classification)` alone
 - one bucket per distinct value in `tags`
 
-If any bucket reaches **≥ 3 lifetime entries**, surface the pattern with links to the **prior** entries (exclude the just-written entry from the link list — the report is retrospective). When multiple buckets cross at once, surface all of them; let the user pick where to act.
+It returns a JSON object `{ patterns: [...] }` where each pattern that crossed **≥ 3 lifetime entries** carries `bucketType`, `bucketKey`, `count`, `priorEntries` (the just-written entry excluded — the report is retrospective), and `recentCluster` (true when ≥ 3 entries satisfy `0 ≤ current_run_at − date ≤ 30 days`, using the **frontmatter `date`**, not the filename, inclusive, timezone-aware). When multiple buckets cross at once, all are surfaced; the user picks where to act.
 
-For each surfaced pattern, annotate whether it is a **recent cluster**: ≥ 3 of the matched entries satisfy `0 ≤ current_run_at − date ≤ 30 days`, where `date` is read from the incident's frontmatter (not the filename), inclusive on both bounds, with timezone-aware timestamps. "Recent cluster" means an active pattern; absence means slow accumulation.
+Why a script: walking the directory, parsing YAML frontmatter, computing date deltas, and counting buckets reliably is a deterministic computation. Reading the script's JSON output keeps the agent's job to interpretation, not arithmetic.
 
 Propose a concrete action per surfaced pattern, grounded in common patterns across the matched entries' verbatim evidence (not pattern-matched prose). Present a chooser:
 
