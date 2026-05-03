@@ -55,6 +55,7 @@ If resuming ongoing work:
 
 - Read the decision record / plan / instruction
 - Read relevant KB entries for this domain
+- Read `CONTEXT.md` at the project root if it exists — use its vocabulary for variable names, file names, and test descriptions
 - Understand the current codebase state
 - On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious
 
@@ -89,6 +90,7 @@ Rules:
 - Test behavior through public interfaces, not implementation details.
 - Write tests as behavior descriptions, not implementation checks.
 - Prefer names and assertions that read like living documentation of what the user or caller experiences.
+- Test names are guarantees written as user behaviors: "when a user does X, they see Y". `describe` blocks group by capability, not by file or method. UI/E2E tests use Playwright. Every test file opens with a `@spec` JSDoc comment stating the contract under test.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
 - When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
@@ -160,12 +162,23 @@ Then hand off to /ship.
 
 If you're drifting into shortcut logic, read `references/slice-checklist.md` before continuing.
 
+## Surgical Changes
+
+Every changed line must trace to the slice spec. While building:
+
+- Don't reformat, restyle, or add type hints to adjacent code that isn't part of your change.
+- Don't refactor things that aren't broken or part of the slice.
+- Match existing style even if you'd write it differently.
+- If you spot unrelated dead code, a bug outside scope, or a refactor opportunity, note it in your handoff — don't fix it. (Worth its own `/improve-architecture` pass later.)
+- Remove imports/symbols that *your* changes orphaned. Don't sweep pre-existing dead code.
+
 ## Iron Laws
 
 - **No code without a failing test first** (for test-amenable work)
 - **No claims without verification evidence** — run the command, read the output, then assert
 - **Always on a branch** — never commit directly to main
 - **Atomic commits per slice** — each commit is a self-contained change
+- **Surgical changes only** — every changed line traces to the slice spec
 - **No "done" without verification** — the verifier must PASS before /ship
 
 ## KB Integration

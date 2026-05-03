@@ -50,6 +50,7 @@ If this is a new session on ongoing work:
 ### 1. Understand Context
 
 - Read relevant KB entries and project docs
+- Read `CONTEXT.md` at the project root if it exists — adopt its vocabulary for the rest of the session
 - Explore the codebase where the work will happen
 - Check recent commits in the affected area
 - On Codex-hosted runs, explicitly use `0th_explorer` when code ownership or execution paths are not already obvious from the initial read
@@ -64,6 +65,8 @@ Focus on: purpose, constraints, what success looks like.
 
 Prefer multiple choice when possible. One question per message.
 
+**Vocabulary discipline.** When the user's term conflicts with `CONTEXT.md`, surface it: "Your glossary defines X as A, but you seem to mean B — which is it?" When a fuzzy term is sharpened during the conversation, update `CONTEXT.md` inline in that turn — lazy-create the file if it doesn't exist. Don't batch vocabulary updates to the end.
+
 ### 3. Explore Approaches
 
 Propose 2-3 approaches with tradeoffs. Lead with your recommendation and why.
@@ -73,6 +76,8 @@ For hard design questions (multiple valid architectures, non-obvious tradeoffs):
 - Present each design sequentially
 - Compare in prose, recommend one
 
+When evidence for a recommendation is thin, dispatch /research before deciding rather than reasoning from pattern-matching.
+
 ### 4. Decide
 
 Once aligned, write the decision record. Always write it — even if you think you'll build in this session.
@@ -81,6 +86,14 @@ Once aligned, write the decision record. Always write it — even if you think y
 `docs/decisions/YYYY-MM-DD-<topic>.md`.
 
 Target: 10-20 lines. If it's longer, you're writing a spec, not a decision.
+
+**Durability tag.** Mark the record `Durable: yes` (in frontmatter or as the first body line) when *all three* are true:
+
+1. **Hard to reverse** — changing direction later costs meaningful work.
+2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
+3. **Result of a real trade-off** — there were genuine alternatives, you picked one for stated reasons.
+
+Otherwise, leave the tag off — still write the record, but future architecture reviews can re-litigate freely. Durable records should not be re-proposed without an explicit revisit (`/improve-architecture` checks this tag before suggesting changes in the area).
 
 ### 5. Cross-Model Review
 

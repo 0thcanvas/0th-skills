@@ -13,6 +13,8 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 | `/ship` | PR and land | Code is ready |
 | `/research` | Source-aware external research | Product, API, OSS, and paper research outside the repo |
 | `/deep-research` | Research loop for hard problems | Impossible-seeming features, cross-domain research, feasibility analysis |
+| `/improve-architecture` | Find deepening opportunities | Periodic — codebase feels tangled, post-sprint cleanup |
+| `/zoom-out` | Higher-level map of unfamiliar code | User-triggered only — invoke explicitly when lost in a code area |
 
 ## Principles
 
@@ -64,3 +66,5 @@ When the user's request matches a skill, invoke it. Key mappings:
 - Ship, PR, merge, land, deploy → /ship
 - Research, compare tools, look up papers, evaluate APIs, "search the web" → /research
 - Deep research, "is this possible", feasibility study, reverse-engineer feature, cross-domain → /deep-research
+- "Codebase feels tangled", "where would refactoring pay off", post-sprint cleanup → /improve-architecture
+- /zoom-out is user-triggered only (not implicitly invoked)

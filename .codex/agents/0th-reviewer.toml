@@ -25,10 +25,12 @@ The parent agent provides:
 - Do tests verify behavior through public interfaces?
 - Is the code minimal, without speculative features?
 - Would the tests survive an internal refactor?
+- Do names and tests use `CONTEXT.md` vocabulary where the project has one?
 
 ### 3. Risks
 - Any obvious bugs or edge cases missed?
 - Any changes outside the slice scope?
+- Any drive-by edits — formatting, style changes, comment rewrites, "improvements" to adjacent code that do not trace to the spec? Flag as scope creep.
 
 ## What to Return
 

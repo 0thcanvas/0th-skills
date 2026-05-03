@@ -44,15 +44,41 @@ If resuming a debug session:
 - See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
 - For MV3 Chrome-extension bugs (service worker state, storage, console), use `@0th/browser-kit` + `@0th/browser-kit/ext-debug` (via a `browser-kit session open --ext …` session) rather than ad-hoc CDP — see the browser-kit README for setup.
 
-## Iron Law
+## Iron Laws
 
 ```
+NO HYPOTHESES WITHOUT A FEEDBACK LOOP
 NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 ```
 
-If you haven't completed Phase 1, you cannot propose fixes.
+Phase 0 (loop) before Phase 1 (investigate). Phase 1 before any proposed fix.
 
 ## Process
+
+### Phase 0: Build a feedback loop
+
+**The loop is the skill.** Everything else is mechanical. With a fast, deterministic, agent-runnable pass/fail signal, bisection and hypothesis-testing become consumption of that signal. Without one, no amount of code-reading saves you.
+
+Spend disproportionate effort here. Be aggressive. Refuse to give up.
+
+Try in roughly this order:
+
+1. **Failing test** at the seam closest to the bug (unit / integration / e2e).
+2. **curl / HTTP script** against a running dev server.
+3. **CLI invocation** with a fixture input, diff stdout against a known-good snapshot.
+4. **Headless browser script** (Playwright) — drive the UI, assert on DOM / console / network.
+5. **Replay a captured trace** — save real payload / event log to disk, replay through the code path in isolation.
+6. **Throwaway harness** — minimal subset of the system, mocked deps, single function call exercising the bug path.
+7. **Property / fuzz loop** — for "sometimes wrong output" bugs, run 1000 random inputs and look for the failure mode.
+8. **Bisection harness** — automate `boot at state X, check, repeat` so you can `git bisect run` it.
+9. **Differential loop** — run the same input through old vs new (or two configs), diff outputs.
+10. **HITL bash script** — last resort, drive a human through `scripts/hitl-loop.template.sh` so the loop is still structured.
+
+**Iterate on the loop itself.** Once you have one, ask: faster (cache setup, skip unrelated init, narrow scope)? sharper (assert the specific symptom, not "didn't crash")? more deterministic (pin time, seed RNG, isolate filesystem, freeze network)? A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
+
+**Non-deterministic bugs.** The goal is a higher reproduction rate, not a clean repro. Loop the trigger 100×, parallelise, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not — keep raising the rate until it is.
+
+**If you genuinely can't build a loop**, stop and say so explicitly. List what you tried. Ask the user for: environment access, a captured artifact (HAR, log dump, screen recording with timestamps), or permission for temporary instrumentation. Do not proceed to hypothesise without a loop.
 
 ### Phase 1: Investigate
 
