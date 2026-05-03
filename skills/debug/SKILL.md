@@ -87,7 +87,8 @@ Try in roughly this order:
 3. **Check recent changes.** `git log --oneline -20 -- <affected files>`. What changed?
 4. **Trace the data flow.** Where does the bad value originate? Keep tracing backward until you find the source.
 5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
-6. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
+6. **Read `CONTEXT.md`** at the project root if it exists — use its vocabulary to align your hypothesis and report with the project's domain terms.
+7. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
 
 Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
 

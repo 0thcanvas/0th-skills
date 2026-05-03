@@ -77,11 +77,11 @@ Do NOT propose interfaces yet. Ask: "Which would you like to explore?"
 
 Drop into `/think`-style grilling on the picked candidate. Walk the design tree: constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
 
-If a new term emerges, update `CONTEXT.md` inline. If the user rejects the candidate with a load-bearing reason, capture it as a decision record in `docs/decisions/` (mark `Durable: yes` if all three durability criteria apply) so the same suggestion isn't re-proposed.
+If a new term emerges, track it in working memory — do not write to disk during grilling. Persisting to `CONTEXT.md` happens at hand-off (Step 5) alongside the decision record. If the user rejects the candidate with a load-bearing reason, capture it as a decision record at hand-off (mark `Durable: yes` if all three durability criteria apply) so the same suggestion isn't re-proposed.
 
 ### 5. Hand off
 
-Once a candidate has shape, write a short decision record and hand off to `/build`.
+Once a candidate has shape, write the decision record and (if vocabulary was resolved or sharpened during the grill) update `CONTEXT.md` at the project root in the same step. Then hand off to `/build`. `/think` and `/improve-architecture` are the only skills that write to `CONTEXT.md`, and both write only at decision-capture time.
 
 ## Iron Law
 
