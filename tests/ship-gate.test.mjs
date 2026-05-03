@@ -172,7 +172,7 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   assert.match(out, /gate PASSED.*electron-desktop/);
 });
 
-test("detectStacks: monorepo with electron and manifest matches both rows", () => {
+test("detectStacks: flat multi-match (electron + manifest at root) matches both rows", () => {
   const repo = makeTempRepo();
   fs.writeFileSync(
     path.join(repo, "manifest.json"),

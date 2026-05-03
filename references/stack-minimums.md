@@ -6,9 +6,11 @@ Per-stack minimum exit criteria for verification. Read by `/build` (when constru
 
 A verifier cannot return PASS by skipping the only check that exercises the seam where bugs in this stack live. `/build` may not write briefs that opt out of any applicable row. The verifier may not return PASS without exercising every applicable row. `/ship`'s gate script independently re-derives expected rows from this file's stack identifiers, parses the verifier's `stack_minimums_exercised` array, and refuses PR creation if any expected stack is missing.
 
-## Detection is multi-match
+## Detection is multi-match (root signals only, in v1)
 
-A repo can match multiple rows — a monorepo, a hybrid project (Electron + web renderer + companion CLI), an extension with a CLI bundle. Every matched row is required.
+A repo can match multiple rows when distinct *root-level* signals are present: e.g., `package.json` with `electron` dep AND `manifest.json` with `manifest_version: 3` matches both `electron-desktop` and `chrome-mv3-extension`. Every matched row is required.
+
+**v1 limitation:** The gate script only inspects root-level files; nested workspaces (subdir packages with their own `package.json`, an extension with a separate `cli/` workspace) are not detected. Per-row signals also exclude themselves under conflict — `cli` requires "no UI deps," so a parent UI repo with a child CLI workspace will only match the UI row even though both should be exercised. When you have a true monorepo or hybrid with nested workspaces, name the additional rows manually in the verifier brief; the gate will still enforce them via `stack_minimums_exercised`. Revisit subdirectory walking for v2 when 0th has a real monorepo in production.
 
 ## Tool chain
 
