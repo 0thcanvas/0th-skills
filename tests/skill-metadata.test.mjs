@@ -92,6 +92,19 @@ test("workflow templates exist for think, research, and ship", () => {
   assert.equal(fs.existsSync(shipTemplatePath), true, "ship PR template should exist");
 });
 
+test("verification-report/ is gitignored so verifier artifacts don't leak into PRs", () => {
+  // The verifier writes ${VERIFICATION_REPORT_DIR:-verification-report}/report.json per
+  // the self-testing-loop architecture (docs/decisions/2026-05-03-…). The default path
+  // must be gitignored so the artifact doesn't pollute every PR diff.
+  const gitignorePath = path.join(repoRoot, ".gitignore");
+  const source = read(gitignorePath);
+  assert.match(
+    source,
+    /^verification-report\/?$/m,
+    ".gitignore should ignore the default verification-report/ path"
+  );
+});
+
 test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
   for (const skillName of ["think", "plan", "ship"]) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
