@@ -57,7 +57,7 @@ This is an example, not a hard dependency on 1Password. If a project uses anothe
 Rules:
 - Do not run commands that reveal secret values: `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`) around secrets.
 - Do not place secrets in argv, SQL strings passed on the command line, browser/CDP payloads, screenshots, logs, HARs, or counterpart-review prompts.
-- Verify presence without disclosure. Use `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"`. Do not `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`.
+- Verify presence without disclosure. Use `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"`. Run only with shell tracing off — `set -x` / `bash -x` would expand the test and leak the value. Do not `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`.
 - If no safe secret runner is configured, stop and ask the human to provide one or to run the secret-dependent command themselves. Do not fall back to printing or pasting the secret.
 - Treat any secret that may have appeared in chat, tool output, shell history, command argv, browser/network traces, or logs as compromised and recommend rotation.
 

@@ -27,7 +27,9 @@ const expectedMirrors = {
     requiredFragments: [
       "VERDICT: APPROVE | CONCERNS | REJECT",
       "Scope: CONTAINED | CREEP",
-      "beyond the slice scope"
+      "beyond the slice scope",
+      "Any unsafe secret handling?",
+      "Treat resolved secret values or revealing secret commands as BLOCKERs"
     ]
   },
   "test-runner": {
@@ -49,7 +51,9 @@ const expectedMirrors = {
       "`browser_*` MCP tools exposed by `bb-browser`",
       "run `browser-kit session open` first so a warm logged-in profile is attached",
       "`browser-kit mcp install",
-      "`browser-kit mcp status`"
+      "`browser-kit mcp status`",
+      "When a `.env.local` is present",
+      "or commands that place secrets in argv"
     ]
   },
   synthesizer: {

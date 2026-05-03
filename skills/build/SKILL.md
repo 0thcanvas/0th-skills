@@ -55,9 +55,9 @@ When a build needs credentials, keep resolved values outside the agent. Prefer c
 - 1Password: `op run --env-file .env.1password -- <command>`
 - Doppler: `doppler run -- <command>`
 - Vault/cloud/platform secrets: use the project-documented runtime injection path
-- No manager: a human may create an ignored `.env.local`; the agent may use the app's loader but must not print or inspect the file
+- No manager: a human may create an ignored `.env.local`; the agent may use the app's loader but must not `cat`, `head`, `grep`, or otherwise print its contents
 
-Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`). Verify presence with `[ -n "${SERVICE_API_KEY:-}" ] && echo set || echo missing` — never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`. If no safe runner exists, stop and ask the human to configure one or run the secret-dependent command.
+Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`). Verify presence with `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"` (only with shell tracing off — `set -x` would leak the value). Never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`. If no safe runner exists, stop and ask the human to configure one or run the secret-dependent command.
 
 ## Process
 
