@@ -7,12 +7,25 @@ Lightweight development workflow for solo builders using Claude Code and Codex.
 - `think` — turn an idea into a short decision record
 - `plan` — break a decision into vertical slices
 - `build` — implement with TDD on a feature branch
-- `debug` — investigate root cause before fixing
+- `debug` — investigate root cause before fixing (includes a 10-way feedback-loop ladder)
 - `ship` — review and land through a PR
 - `research` — run source-aware research across docs, GitHub, papers, and the broader web
 - `deep-research` — multi-phase research loop for hard or impossible-seeming problems: feasibility, decision, and survey modes; uses a `KB_ROOT`-backed research workspace as persistent external memory; orchestrates host-native research plus synthesis and experiment agents through 8 phases
+- `improve-architecture` — find deepening opportunities in a codebase using Module/Interface/Depth/Seam vocabulary plus the deletion test; run periodically, not per-feature
+- `zoom-out` — user-triggered micro-skill: ask the agent to step up a layer of abstraction and map an unfamiliar code area (not implicitly invoked)
 
-`think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo.
+`think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo. `improve-architecture` is a periodic structural-quality skill; `zoom-out` is a user-driven utility.
+
+## Project Vocabulary (`CONTEXT.md`)
+
+When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tight glossary of canonical terms, *avoid* aliases, key relationships, and flagged ambiguities. The implementer and reviewer subagents re-derive vocabulary every time they spawn — `CONTEXT.md` collapses that overhead and keeps naming consistent across files, tests, and decision records.
+
+- **Domain only.** Concepts unique to this project. General programming terms (timeouts, retries, error types) don't belong even if used heavily.
+- **Lazy creation.** Writes happen only at decision-capture time. `/think` writes in Step 4 (Decide) and `/improve-architecture` writes in Step 5 (Hand off), both alongside the decision record. Never mid-grill — design conversations don't silently mutate the repo.
+- **Format.** Bold term, one-line definition, `_Avoid_:` line listing rejected aliases. Group with `## Language`, `## Relationships`, `## Flagged ambiguities`.
+- **Multi-context repos.** Place `CONTEXT-MAP.md` at the root linking to per-context `CONTEXT.md` files inside each module. Most projects need only the single root file.
+
+`/think`, `/build`, `/debug`, `/improve-architecture`, `/zoom-out`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
 
 ## Knowledge Base
 
@@ -53,7 +66,7 @@ question `best TS TOML parser`.
 
 ### Agent types
 
-- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`
+- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `zoom-out`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
 - **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
 - **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
@@ -90,7 +103,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the seven skills under `skills/`
+- Confirm the plugin exposes the nine skills under `skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Claude Code
@@ -99,6 +112,17 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
 
 ## Release notes
+
+### 0.2.0
+
+- Added the `improve-architecture` skill — find deepening opportunities using Module/Interface/Depth/Seam vocabulary and the deletion test; first-class core skill with full Codex parity (`agents/openai.yaml`, fixture entry, smoke-check coverage)
+- Added the `zoom-out` micro-skill — user-triggered map of an unfamiliar code area (intentionally `disable-model-invocation: true`, excluded from core-skill test enforcement)
+- Added the per-project `CONTEXT.md` vocabulary convention; wired reads into `/think`, `/build`, `/debug`, `/improve-architecture`, `/zoom-out`, and the implementer/reviewer subagents on both Claude and Codex sides; writes happen only at decision-capture time — `/think` Step 4 (Decide) and `/improve-architecture` Step 5 (Hand off), both alongside the decision record
+- Added Phase 0 (Build a feedback loop) to `/debug` with a 10-way ranked ladder (failing test → curl → CLI → headless browser → trace replay → throwaway harness → fuzz → bisection → differential → HITL) plus iterate-on-the-loop guidance; new Iron Law: no hypotheses without a feedback loop
+- Added a Surgical Changes rail to `/build` and the implementer agents on both hosts — every changed line traces to the slice spec; reviewer flags drive-by edits as scope creep
+- Added a `Durable: yes` durability tag to decision records in `/think` Step 4 (criteria: hard to reverse, surprising without context, real trade-off) so `/improve-architecture` doesn't re-litigate settled choices
+- Added `/think` guidance to dispatch `/research` when evidence for a recommendation is thin, rather than reasoning from pattern-matching
+- Surfaces PRs #4 (companion process-title fix) and #5 (bb-browser as preferred verifier on both hosts)
 
 ### 0.1.9
 

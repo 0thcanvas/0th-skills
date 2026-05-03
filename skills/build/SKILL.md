@@ -55,6 +55,7 @@ If resuming ongoing work:
 
 - Read the decision record / plan / instruction
 - Read relevant KB entries for this domain
+- Read `CONTEXT.md` at the project root if it exists — use its vocabulary for variable names, file names, and test descriptions
 - Understand the current codebase state
 - On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious
 
@@ -160,12 +161,23 @@ Then hand off to /ship.
 
 If you're drifting into shortcut logic, read `references/slice-checklist.md` before continuing.
 
+## Surgical Changes
+
+Every changed line must trace to the slice spec. While building:
+
+- Don't reformat, restyle, or add type hints to adjacent code that isn't part of your change.
+- Don't refactor things that aren't broken or part of the slice.
+- Match existing style even if you'd write it differently.
+- If you spot unrelated dead code, a bug outside scope, or a refactor opportunity, note it in your handoff — don't fix it. (Worth its own `/improve-architecture` pass later.)
+- Remove imports/symbols that *your* changes orphaned. Don't sweep pre-existing dead code.
+
 ## Iron Laws
 
 - **No code without a failing test first** (for test-amenable work)
 - **No claims without verification evidence** — run the command, read the output, then assert
 - **Always on a branch** — never commit directly to main
 - **Atomic commits per slice** — each commit is a self-contained change
+- **Surgical changes only** — every changed line traces to the slice spec
 - **No "done" without verification** — the verifier must PASS before /ship
 
 ## KB Integration

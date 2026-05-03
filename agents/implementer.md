@@ -18,6 +18,8 @@ The parent agent provides:
 
 You do NOT have the parent's conversation history. Everything you need is in the prompt.
 
+If `CONTEXT.md` exists at the project root, read it first. Use its vocabulary for variable names, file names, and test descriptions. If a term you need isn't there, name it consistently with the surrounding code rather than inventing a new word.
+
 ## Process
 
 ### For Test-Amenable Work
@@ -46,6 +48,7 @@ COMMIT: One atomic commit
 - Test behavior through public interfaces, not implementation details
 - Write tests as behavior descriptions, not implementation checks
 - Minimal code to pass — no speculative features
+- **Surgical changes only.** Every changed line traces to the slice spec. Don't reformat, restyle, or add type hints to adjacent code. Don't refactor unrelated code. Match existing style. If you spot dead code, an unrelated bug, or a refactor opportunity, note it in your handoff — don't fix it.
 - One slice only — do not touch code outside your scope
 - Run tests after every change
 - If you discover a bug unrelated to your slice, note it but don't fix it
