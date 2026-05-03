@@ -17,7 +17,7 @@ const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md"
 // matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
 // design — it's a user-triggered micro-skill — and conflicts with the
 // `allow_implicit_invocation: true` invariant this test enforces for core skills.
-const skillNames = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "ship", "think"];
+const skillNames = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "retro", "ship", "think"];
 
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");

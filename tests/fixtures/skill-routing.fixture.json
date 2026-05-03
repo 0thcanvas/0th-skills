@@ -73,5 +73,10 @@
     "prompt": "The codebase feels tangled after the last few sprints — find places where shallow modules could be deepened.",
     "expected_skill": "improve-architecture",
     "why": "The user wants architectural friction surfaced, not a specific feature implemented."
+  },
+  {
+    "prompt": "I corrected the agent three times this session — log a retro for these incidents and tell me if a pattern is emerging.",
+    "expected_skill": "retro",
+    "why": "The user wants user corrections, agent misfires, or skill issues captured into the incident log with classification and pattern surfacing."
   }
 ]

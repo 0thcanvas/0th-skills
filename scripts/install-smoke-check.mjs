@@ -15,6 +15,7 @@ const expectedSkills = [
   "improve-architecture",
   "plan",
   "research",
+  "retro",
   "ship",
   "think",
   "zoom-out"
