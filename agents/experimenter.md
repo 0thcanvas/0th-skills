@@ -1,5 +1,5 @@
 ---
-name: 0th:experimenter
+name: experimenter
 description: |
   Run proof-of-concept experiments to validate research hypotheses.
   Dispatched by /deep-research Phase 6 to test the highest-risk assumptions

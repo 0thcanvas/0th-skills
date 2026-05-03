@@ -1,5 +1,5 @@
 ---
-name: 0th:reviewer
+name: reviewer
 description: |
   Review code changes against acceptance criteria. Dispatched by /build after each slice
   to verify the implementation matches the spec. Checks for scope creep, missing criteria,
@@ -33,6 +33,7 @@ The parent agent provides:
 - Any obvious bugs or edge cases missed?
 - Any changes outside the slice's scope?
 - Any drive-by edits — formatting, style changes, comment rewrites, "improvements" to adjacent code that don't trace to the spec? Flag as scope creep.
+- Any unsafe secret handling? Flag resolved secret values in code/tests/docs, `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
 
 ## What to Return
 
@@ -56,4 +57,5 @@ Rules:
 - Be specific — name the file, the function, the line
 - Distinguish "doesn't meet spec" from "could be better"
 - Don't suggest refactors or improvements beyond the slice scope
+- Treat resolved secret values or revealing secret commands as BLOCKERs
 - If everything looks good, just say APPROVE with a one-line summary

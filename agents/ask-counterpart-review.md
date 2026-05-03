@@ -1,5 +1,5 @@
 ---
-name: 0th:ask-counterpart-review
+name: ask-counterpart-review
 description: |
   Send an artifact to the counterpart model for cross-model review.
   Used by /think (decision records), /plan (slice lists), and /ship (diffs).
@@ -17,6 +17,14 @@ The parent agent provides:
 - **Review type:** decision / plan / code
 
 ## Process
+
+### 0. Redact Secret-Bearing Context
+
+Before constructing the review prompt, remove resolved secret values from the artifact and context.
+It is fine to include secret names, env var names, or secret-manager references such as `SERVICE_API_KEY` or `op://vault/item/field`.
+Do not include API keys, tokens, cookies, Authorization headers, passwords, HAR bodies, browser/CDP payloads, `.env` contents with real values, or command lines that contain secrets.
+
+If redaction would remove information needed for review, summarize the shape instead: "Authorization header present", "JWT-shaped session token omitted", or "secret value passed through env var".
 
 ### 1. Construct the Review Prompt
 
@@ -114,6 +122,12 @@ If the companion script exits non-zero:
 1. Report the error message from stderr to the parent
 2. Do NOT fabricate a review or return "no issues found"
 3. State clearly: "Counterpart review failed: <error>. Proceeding without cross-model review."
+
+### Same-Model Fallback (opt-in only)
+
+If the counterpart is unavailable (quota, network, auth) and the user explicitly authorizes a fallback, dispatch a same-model subagent (`0th:reviewer` for code/diffs, `general-purpose` for decisions/plans) with the same XML-structured prompt. Label the returned review as `SAME-MODEL FALLBACK REVIEW (counterpart unavailable)` so it cannot be confused with cross-model output, and note that BLOCKERs are still meaningful but APPROVE is a weaker signal — the reviewer shares the parent's training and blind spots.
+
+Default to no fallback. Same-model self-review has confirmation bias; silent fallback would erode the cross-model contract.
 
 Rules:
 - Return the counterpart's review as-is — don't editorialize or filter

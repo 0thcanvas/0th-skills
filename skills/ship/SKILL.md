@@ -48,6 +48,8 @@ Self-review:
 - Are there files that shouldn't have changed?
 - Is the scope contained to what was intended?
 - Any secrets, credentials, debug code left in?
+- Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
+- If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
 
 ### 3. Create the PR
 
@@ -65,13 +67,14 @@ PR title: short, imperative ("Add spaced repetition engine", not "Added some stu
 
 Send the branch diff to the counterpart reviewer using `ask-counterpart-review`.
 The companion script auto-detects the host and routes to the configured counterpart.
+Redact any secret-bearing context before sending it. Counterpart review gets names, references, and findings; never resolved values.
 - The counterpart responds with:
 - **Blockers:** must fix before merge
 - **Suggestions:** worth considering, user decides
 - **Nits:** style/minor, accept or skip
 
 If blockers exist: fix on the branch, push, re-run counterpart review.
-If the counterpart review fails, report the error and let the user decide whether to proceed.
+If the counterpart review fails, report the error and let the user decide: proceed without review, retry later, or explicitly authorize a same-model fallback (see `ask-counterpart-review`'s Error Handling section for the labeled-fallback shape).
 
 ### 5. User Inspects
 

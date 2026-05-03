@@ -1,5 +1,5 @@
 ---
-name: 0th:synthesizer
+name: synthesizer
 description: |
   Build or update a markdown-native knowledge graph (world model) from raw research findings.
   Dispatched by /deep-research Phase 2 to extract nodes, edges, and consensus from raw notes.

@@ -38,6 +38,26 @@ The protocol assumes:
 - the KB is plain markdown on disk
 - agents should not hardcode an Obsidian vault path or depend on Obsidian-only behavior
 
+## Secret Handling
+
+0th skills use a provider-neutral secret contract: agents handle secret names and references, not resolved values. Application code should read secrets from environment variables or runtime bindings, and secret managers should inject values only into the target process.
+
+Recommended local shape:
+
+```env
+SERVICE_API_KEY=op://vault-name/item-name/field-name
+```
+
+```bash
+op run --env-file .env.1password -- <command>
+```
+
+1Password is only the default example. Equivalent non-printing runners are fine, including Doppler `doppler run -- <command>`, Vault Agent, cloud secret-manager runtime bindings, deployment-platform secrets, or a human-created ignored `.env.local` loaded by the app.
+
+Hard rule: no agent should run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`) around secrets, or any fallback that puts secrets into chat, logs, argv, browser automation payloads, HARs, screenshots, or counterpart-review prompts.
+
+To verify a secret is present without revealing its value, use `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"`. Run only with shell tracing off — `set -x` / `bash -x` would expand the test and leak the value. Never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`.
+
 ### Direct invocation
 
 When a skill is invoked directly, `$ARGUMENTS` means "the raw argument string passed to that
@@ -112,6 +132,15 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
 
 ## Release notes
+
+### 0.2.1
+
+- Fixed Claude-side agent dispatch: every `agents/*.md` had `name: 0th:<agent>` in its frontmatter, but the Claude plugin loader prepends the plugin namespace (`0th:`) automatically, producing `0th:0th:<agent>` and breaking every skill dispatch. Stripped the redundant prefix from all 11 agent files; skill files and README dispatch references already used the correct `0th:<agent>` form. Codex side (`name = "0th_<agent>"`) was unaffected.
+- Added a provider-neutral secret-handling contract: agents see secret names and references only, never resolved values; application code reads from env vars or runtime bindings; secret managers (1Password / Doppler / Vault / cloud / `.env.local`) inject values only into the target process
+- Codified forbidden secret commands across all skills (`op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing `set -x` / `bash -x`, argv secrets, browser/CDP payloads); reviewer treats violations as BLOCKERs, verifier marks BLOCKED rather than printing
+- Added a Step-0 redaction pass to `ask-counterpart-review` so cross-model review prompts cannot leak secret-bearing context
+- Added a positive verification primitive (`[ -n "${VAR:-}" ] && echo set || echo missing`) with an explicit xtrace-off caveat — gives agents a safe alternative to `printenv` instead of just a "don't" list
+- Added secret-handling fragments to `tests/agent-parity.test.mjs` so future drift between Claude `.md` and Codex `.toml` mirrors of reviewer/verifier on secret rules is caught automatically
 
 ### 0.2.0
 

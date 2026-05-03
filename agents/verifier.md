@@ -1,5 +1,5 @@
 ---
-name: 0th:verifier
+name: verifier
 description: |
   Verify a completed feature by exercising it as a real user. Dispatched by /build
   after all slices pass. Uses browser automation for UI, terminal for CLI, curl for API.
@@ -99,6 +99,10 @@ Never surface secrets, tokens, or PII in any output:
 - Mask PII (emails, names, IDs from real user data)
 - Summarize API responses by structure, not raw content
 - Screenshots: note what was visible but do not reproduce identifying details
+- Run secret-dependent checks through the project's safe secret runner or runtime injection path. 1Password `op run --env-file ... -- <command>` is one valid pattern; Doppler, Vault, cloud/platform secrets, or an ignored `.env.local` loaded by the app are also valid if they do not print values.
+- When a `.env.local` is present, run the app's loader rather than reading the file directly. Do not `cat`, `head`, `grep`, or otherwise print its contents.
+- Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv.
+- If verification needs a secret and no safe runner is configured, mark that check BLOCKED rather than asking for or printing the secret.
 
 ## Outcome Precedence
 
