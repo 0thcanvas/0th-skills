@@ -10,7 +10,7 @@ const fixturePath = path.join(__dirname, "fixtures", "skill-routing.fixture.json
 // `zoom-out` is intentionally excluded: its `disable-model-invocation: true` is a deliberate
 // design (user-triggered micro-skill) and conflicts with the implicit-routing assumption
 // this fixture covers. See the matching comment in tests/skill-metadata.test.mjs.
-const expectedSkills = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "ship", "think"];
+const expectedSkills = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "retro", "ship", "think"];
 
 function readFixture() {
   return JSON.parse(fs.readFileSync(fixturePath, "utf8"));

@@ -14,6 +14,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 | `/research` | Source-aware external research | Product, API, OSS, and paper research outside the repo |
 | `/deep-research` | Research loop for hard problems | Impossible-seeming features, cross-domain research, feasibility analysis |
 | `/improve-architecture` | Find deepening opportunities | Periodic — codebase feels tangled, post-sprint cleanup |
+| `/retro` | Capture user corrections + agent misfires | End of session, when the agent was corrected ≥ once |
 | `/zoom-out` | Higher-level map of unfamiliar code | User-triggered only — invoke explicitly when lost in a code area |
 
 ## Principles
@@ -89,4 +90,5 @@ When the user's request matches a skill, invoke it. Key mappings:
 - Research, compare tools, look up papers, evaluate APIs, "search the web" → /research
 - Deep research, "is this possible", feasibility study, reverse-engineer feature, cross-domain → /deep-research
 - "Codebase feels tangled", "where would refactoring pay off", post-sprint cleanup → /improve-architecture
+- "Log a retro", "capture this session's misfires", "process the corrections from this session" → /retro
 - /zoom-out is user-triggered only (not implicitly invoked)
