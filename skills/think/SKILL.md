@@ -65,7 +65,7 @@ Focus on: purpose, constraints, what success looks like.
 
 Prefer multiple choice when possible. One question per message.
 
-**Vocabulary discipline.** When the user's term conflicts with `CONTEXT.md`, surface it: "Your glossary defines X as A, but you seem to mean B — which is it?" When a fuzzy term is sharpened during the conversation, update `CONTEXT.md` inline in that turn — lazy-create the file if it doesn't exist. Don't batch vocabulary updates to the end.
+**Vocabulary discipline.** When the user's term conflicts with `CONTEXT.md`, surface it: "Your glossary defines X as A, but you seem to mean B — which is it?" Track resolved or sharpened terms in working memory for now — do not write to disk during grilling. Persisting vocabulary lands in Step 4 alongside the decision record so design conversations don't silently mutate the repo.
 
 ### 3. Explore Approaches
 
@@ -86,6 +86,8 @@ Once aligned, write the decision record. Always write it — even if you think y
 `docs/decisions/YYYY-MM-DD-<topic>.md`.
 
 Target: 10-20 lines. If it's longer, you're writing a spec, not a decision.
+
+**Capture vocabulary.** If the session resolved or sharpened domain terms, update `CONTEXT.md` at the project root alongside the decision-record write — lazy-create the file if it doesn't exist. Decision and vocabulary land together; no mid-grill writes.
 
 **Durability tag.** Mark the record `Durable: yes` (in frontmatter or as the first body line) when *all three* are true:
 

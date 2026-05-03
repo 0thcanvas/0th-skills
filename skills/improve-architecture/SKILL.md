@@ -45,7 +45,7 @@ Use these terms exactly. Consistent language is the point — don't substitute "
 
 ### 1. Read context
 
-Read `CONTEXT.md` (if present) for domain vocabulary. Read decision records in `docs/decisions/`, especially any tagged `Durable: yes` — those are anchors you should not re-litigate without an explicit revisit.
+Read `CONTEXT.md` (if present) for domain vocabulary. If `docs/decisions/` exists, read its contents — especially any record tagged `Durable: yes`, those are anchors not to re-litigate without an explicit revisit. If `docs/decisions/` doesn't exist, treat the area as having no prior decisions; create the directory only when writing a new record.
 
 ### 2. Explore
 

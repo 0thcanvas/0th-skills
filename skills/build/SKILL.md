@@ -90,7 +90,6 @@ Rules:
 - Test behavior through public interfaces, not implementation details.
 - Write tests as behavior descriptions, not implementation checks.
 - Prefer names and assertions that read like living documentation of what the user or caller experiences.
-- Test names are guarantees written as user behaviors: "when a user does X, they see Y". `describe` blocks group by capability, not by file or method. UI/E2E tests use Playwright. Every test file opens with a `@spec` JSDoc comment stating the contract under test.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
 - When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
