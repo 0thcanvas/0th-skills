@@ -18,7 +18,8 @@ const expectedMirrors = {
     requiredFragments: [
       "Run tests after every change",
       "NEEDS_CONTEXT",
-      "STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED"
+      "STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED",
+      "Whatever you spawn, you stop"
     ]
   },
   reviewer: {
@@ -60,7 +61,9 @@ const expectedMirrors = {
       "Playwright → bb-browser → computer-use",
       "This floor cannot be lowered",
       "stack_minimums_exercised",
-      "${VERIFICATION_REPORT_DIR:-verification-report}/report.json"
+      "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
+      "Whatever you spawn, you stop",
+      "browser_close_all"
     ]
   },
   synthesizer: {

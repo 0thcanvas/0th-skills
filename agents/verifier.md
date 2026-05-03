@@ -114,6 +114,16 @@ Never surface secrets, tokens, or PII in any output:
 - Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv.
 - If verification needs a secret and no safe runner is configured, mark that check BLOCKED rather than asking for or printing the secret.
 
+### 8. Teardown
+
+Whatever you spawn, you stop. Before returning an outcome:
+- Kill any dev server, worker, watcher, or background process you started for this verification (track PIDs of anything you launch — do not rely on the parent to clean up).
+- Close browser tabs/sessions you opened via `bb-browser`. `browser_close_all` only closes tabs opened during the current MCP session, so it is safe to call.
+- Stop containers, databases, queues, or ports started for verification; remove temp directories and fixture files you created.
+- Reconcile created test data with the Test Data Hygiene rule above — delete artifacts you can clean up, leave tagged ones for later sweeps.
+
+The workspace should look the same after verification as it did before, minus the bug fixes. If teardown itself fails, surface it in the outcome (do not silently leak a process or tab).
+
 ## Outcome Precedence
 
 When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED stack-minimum row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
