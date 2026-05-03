@@ -18,6 +18,14 @@ The parent agent provides:
 
 ## Process
 
+### 0. Redact Secret-Bearing Context
+
+Before constructing the review prompt, remove resolved secret values from the artifact and context.
+It is fine to include secret names, env var names, or secret-manager references such as `SERVICE_API_KEY` or `op://vault/item/field`.
+Do not include API keys, tokens, cookies, Authorization headers, passwords, HAR bodies, browser/CDP payloads, `.env` contents with real values, or command lines that contain secrets.
+
+If redaction would remove information needed for review, summarize the shape instead: "Authorization header present", "JWT-shaped session token omitted", or "secret value passed through env var".
+
 ### 1. Construct the Review Prompt
 
 Build an XML-block-structured prompt:

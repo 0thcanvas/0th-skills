@@ -49,6 +49,16 @@ If resuming ongoing work:
 - See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
 - See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
 
+## Secret Handling
+
+When a build needs credentials, keep resolved values outside the agent. Prefer code that reads named env vars or runtime bindings, and run commands through the project's safe secret runner. Examples:
+- 1Password: `op run --env-file .env.1password -- <command>`
+- Doppler: `doppler run -- <command>`
+- Vault/cloud/platform secrets: use the project-documented runtime injection path
+- No manager: a human may create an ignored `.env.local`; the agent may use the app's loader but must not print or inspect the file
+
+Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing. Verify only set/missing. If no safe runner exists, stop and ask the human to configure one or run the secret-dependent command.
+
 ## Process
 
 ### 1. Read Context

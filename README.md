@@ -38,6 +38,24 @@ The protocol assumes:
 - the KB is plain markdown on disk
 - agents should not hardcode an Obsidian vault path or depend on Obsidian-only behavior
 
+## Secret Handling
+
+0th skills use a provider-neutral secret contract: agents handle secret names and references, not resolved values. Application code should read secrets from environment variables or runtime bindings, and secret managers should inject values only into the target process.
+
+Recommended local shape:
+
+```env
+SERVICE_API_KEY=op://vault-name/item-name/field-name
+```
+
+```bash
+op run --env-file .env.1password -- <command>
+```
+
+1Password is only the default example. Equivalent non-printing runners are fine, including Doppler `doppler run -- <command>`, Vault Agent, cloud secret-manager runtime bindings, deployment-platform secrets, or a human-created ignored `.env.local` loaded by the app.
+
+Hard rule: no agent should run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing around secrets, or any fallback that puts secrets into chat, logs, argv, browser automation payloads, HARs, screenshots, or counterpart-review prompts.
+
 ### Direct invocation
 
 When a skill is invoked directly, `$ARGUMENTS` means "the raw argument string passed to that
