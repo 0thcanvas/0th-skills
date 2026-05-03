@@ -123,6 +123,12 @@ If the companion script exits non-zero:
 2. Do NOT fabricate a review or return "no issues found"
 3. State clearly: "Counterpart review failed: <error>. Proceeding without cross-model review."
 
+### Same-Model Fallback (opt-in only)
+
+If the counterpart is unavailable (quota, network, auth) and the user explicitly authorizes a fallback, dispatch a same-model subagent (`0th:reviewer` for code/diffs, `general-purpose` for decisions/plans) with the same XML-structured prompt. Label the returned review as `SAME-MODEL FALLBACK REVIEW (counterpart unavailable)` so it cannot be confused with cross-model output, and note that BLOCKERs are still meaningful but APPROVE is a weaker signal — the reviewer shares the parent's training and blind spots.
+
+Default to no fallback. Same-model self-review has confirmation bias; silent fallback would erode the cross-model contract.
+
 Rules:
 - Return the counterpart's review as-is — don't editorialize or filter
 - If the counterpart fails to invoke, return the error — don't fake a review

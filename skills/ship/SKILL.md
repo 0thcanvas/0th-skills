@@ -74,7 +74,7 @@ Redact any secret-bearing context before sending it. Counterpart review gets nam
 - **Nits:** style/minor, accept or skip
 
 If blockers exist: fix on the branch, push, re-run counterpart review.
-If the counterpart review fails, report the error and let the user decide whether to proceed.
+If the counterpart review fails, report the error and let the user decide: proceed without review, retry later, or explicitly authorize a same-model fallback (see `ask-counterpart-review`'s Error Handling section for the labeled-fallback shape).
 
 ### 5. User Inspects
 
