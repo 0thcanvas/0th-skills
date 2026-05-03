@@ -59,14 +59,19 @@ test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
 });
 
 test("skill reference links resolve to real files", () => {
-  const linkPattern = /(references|templates)\/([A-Za-z0-9._/-]+\.md)/g;
+  // Skill-local refs:      `references/X.md` or `templates/X.md`
+  // Workspace-shared refs: `../../references/X.md` (resolved from skills/<name>/SKILL.md → repoRoot)
+  const linkPattern = /(\.\.\/\.\.\/)?(references|templates)\/([A-Za-z0-9._/-]+\.md)/g;
 
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
     for (const match of source.matchAll(linkPattern)) {
-      const targetPath = path.join(skillsRoot, skillName, match[1], match[2]);
+      const isWorkspaceShared = !!match[1];
+      const targetPath = isWorkspaceShared
+        ? path.join(repoRoot, match[2], match[3])
+        : path.join(skillsRoot, skillName, match[2], match[3]);
       assert.equal(
         fs.existsSync(targetPath),
         true,

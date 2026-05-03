@@ -48,6 +48,7 @@ If resuming ongoing work:
 
 - See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
 - See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
+- See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
 
 ## Secret Handling
 
@@ -132,9 +133,12 @@ After all slices pass, run the verification phase before handing off to /ship.
 git status
 ```
 
+**Brief-construction discipline.** Before dispatching the verifier, read the stack-minimums reference (linked above) and walk its Detection signals against the repo. For every matched row, name the row's stack id and Minimum behavior in the brief. Do not write "skip if not feasible," "if X is hard to run, mark blocked," "skip the live UI exercise," or any equivalent escape language for stack-minimum rows — those rows are the floor, and the verifier will run them anyway. Feature-specific checks (which the brief *can* mark optional) must be additive to the stack-minimums, never replacements for them.
+
 Dispatch the verifier agent with:
 - Feature summary: what was built, which slices, acceptance criteria
-- Feature type(s): infer from build context — which verification methods apply
+- Stack-minimums: list of matched stack ids and the Minimum behavior the verifier must exercise per row
+- Feature type(s): infer from build context — which feature-specific verification methods apply, additive to the stack-minimums
 - Current branch and test output
 
 On Claude-hosted runs, dispatch `0th:verifier`. On Codex-hosted runs, dispatch `0th_verifier` explicitly.
