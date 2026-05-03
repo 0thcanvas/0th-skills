@@ -135,6 +135,8 @@ git status
 
 **Brief-construction discipline.** Before dispatching the verifier, read the stack-minimums reference (linked above) and walk its Detection signals against the repo. For every matched row, name the row's stack id and Minimum behavior in the brief. Do not write "skip if not feasible," "if X is hard to run, mark blocked," "skip the live UI exercise," or any equivalent escape language for stack-minimum rows — those rows are the floor, and the verifier will run them anyway. Feature-specific checks (which the brief *can* mark optional) must be additive to the stack-minimums, never replacements for them.
 
+**Persist the brief.** Write the verifier brief to `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` in the project root before dispatching. `/ship`'s gate script reads this file to detect bb-browser-escape-hatch matches independently of the verifier; without it, escape-hatch rows would not be enforced.
+
 Dispatch the verifier agent with:
 - Feature summary: what was built, which slices, acceptance criteria
 - Stack-minimums: list of matched stack ids and the Minimum behavior the verifier must exercise per row

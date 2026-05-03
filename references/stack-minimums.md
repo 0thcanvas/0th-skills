@@ -52,6 +52,10 @@ The verifier's structured report at `${VERIFICATION_REPORT_DIR:-verification-rep
 
 `/ship`'s gate script reads this file, runs detection logic to compute the expected stack set for the repo, and refuses PR creation if any expected stack is absent from `stack_minimums_exercised` or if `outcome` ≠ `PASS`.
 
+The gate also reads `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` (written by `/build` when dispatching the verifier) so it can independently detect bb-browser-escape-hatch matches without trusting the verifier's claim. The env var `SHIP_GATE_BRIEF` overrides the file for ad-hoc runs.
+
+Stack detection runs from the git toplevel (resolved via `git rev-parse --show-toplevel`) so `/ship` works from any subdirectory of the project. If the script is invoked outside a git repo, it falls back to the current working directory.
+
 ## Adding a row
 
 When a new stack appears (Tauri desktop, mobile native, RAG service with vector DB, etc.), add a row here in a `/think` decision and update the gate script's detection logic in lockstep. Don't extend ad-hoc per project.

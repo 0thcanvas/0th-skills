@@ -1,12 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { detectStacks, validateReport } from "../scripts/ship-gate.mjs";
+import { detectStacks, loadBrief, resolveRepoRoot, validateReport } from "../scripts/ship-gate.mjs";
 
 function makeTempRepo() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "ship-gate-test-"));
+}
+
+function makeTempGitRepo() {
+  const dir = makeTempRepo();
+  execFileSync("git", ["init", "--quiet"], { cwd: dir, stdio: "ignore" });
+  return dir;
 }
 
 function writePkg(dir, pkg) {
@@ -64,6 +71,105 @@ test("detectStacks: brief mentioning logged-in yields bb-browser-escape-hatch", 
   const repo = makeTempRepo();
   const stacks = detectStacks(repo, "verify the logged-in dashboard flow");
   assert.ok(stacks.includes("bb-browser-escape-hatch"));
+});
+
+test("resolveRepoRoot: returns git toplevel when invoked from a subdir", () => {
+  const repo = makeTempGitRepo();
+  const sub = path.join(repo, "packages", "deep", "nested");
+  fs.mkdirSync(sub, { recursive: true });
+  // realpathSync to handle macOS /private/var vs /var symlink
+  assert.equal(fs.realpathSync(resolveRepoRoot(sub)), fs.realpathSync(repo));
+});
+
+test("resolveRepoRoot: falls back to cwd when not in a git repo", () => {
+  const dir = makeTempRepo();
+  assert.equal(resolveRepoRoot(dir), dir);
+});
+
+test("loadBrief: returns empty string when no brief file or env var", () => {
+  const repo = makeTempRepo();
+  delete process.env.SHIP_GATE_BRIEF;
+  assert.equal(loadBrief(repo, "verification-report"), "");
+});
+
+test("loadBrief: reads verification-report/brief.txt when present", () => {
+  const repo = makeTempRepo();
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "brief.txt"),
+    "verify the logged-in dashboard flow"
+  );
+  delete process.env.SHIP_GATE_BRIEF;
+  assert.match(loadBrief(repo, "verification-report"), /logged-in dashboard/);
+});
+
+test("loadBrief: SHIP_GATE_BRIEF env var overrides the file", () => {
+  const repo = makeTempRepo();
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "brief.txt"),
+    "from-file"
+  );
+  process.env.SHIP_GATE_BRIEF = "from-env";
+  try {
+    assert.equal(loadBrief(repo, "verification-report"), "from-env");
+  } finally {
+    delete process.env.SHIP_GATE_BRIEF;
+  }
+});
+
+test("detectStacks: brief.txt with logged-in trigger drives bb-browser-escape-hatch (end-to-end via loadBrief)", () => {
+  const repo = makeTempRepo();
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "brief.txt"),
+    "verify shared-tab state on the user's Chrome profile"
+  );
+  delete process.env.SHIP_GATE_BRIEF;
+  const brief = loadBrief(repo, "verification-report");
+  const stacks = detectStacks(repo, brief);
+  assert.ok(
+    stacks.includes("bb-browser-escape-hatch"),
+    `expected bb-browser-escape-hatch in detected stacks, got ${JSON.stringify(stacks)}`
+  );
+});
+
+test("detectStacks (subdir invocation via CLI): script run from a deep subdir of an electron repo still detects electron-desktop", () => {
+  const repo = makeTempGitRepo();
+  writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
+  const sub = path.join(repo, "src", "renderer");
+  fs.mkdirSync(sub, { recursive: true });
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "report.json"),
+    JSON.stringify({
+      outcome: "PASS",
+      stack_minimums_exercised: [
+        {
+          stack: "electron-desktop",
+          criterion: "renderer invoked window.api.x via contextBridge",
+          tool: "playwright-electron",
+          evidence_path: "verification-report/dossier.json",
+          exercised_at: "2026-05-03T12:00:00Z"
+        }
+      ]
+    })
+  );
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out;
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: sub,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+  assert.equal(exitCode, 0, `expected exit 0 from subdir invocation, got ${exitCode}: ${out}`);
+  assert.match(out, /gate PASSED.*electron-desktop/);
 });
 
 test("detectStacks: monorepo with electron and manifest matches both rows", () => {

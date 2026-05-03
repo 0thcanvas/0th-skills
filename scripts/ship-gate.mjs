@@ -10,6 +10,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import process from "node:process";
 
 const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exercised_at"];
@@ -27,6 +28,38 @@ function readJson(filePath) {
     return JSON.parse(readFileSync(filePath, "utf8"));
   } catch {
     return null;
+  }
+}
+
+export function resolveRepoRoot(cwd) {
+  // Resolve to the git toplevel so /ship works from any subdirectory of the
+  // project. If we aren't inside a git repo, fall back to cwd — the gate's
+  // detection still runs and either matches root signals or no-ops cleanly.
+  try {
+    const out = execFileSync("git", ["rev-parse", "--show-toplevel"], {
+      cwd,
+      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8"
+    });
+    return out.trim() || cwd;
+  } catch {
+    return cwd;
+  }
+}
+
+export function loadBrief(repoRoot, reportDir) {
+  // The brief drives bb-browser-escape-hatch detection. /build writes
+  // verification-report/brief.txt when dispatching the verifier so the
+  // gate can re-read it independently. Env var SHIP_GATE_BRIEF overrides
+  // the file (for ad-hoc runs).
+  const envBrief = process.env.SHIP_GATE_BRIEF;
+  if (envBrief) return envBrief;
+  const briefPath = join(repoRoot, reportDir, "brief.txt");
+  if (!existsSync(briefPath)) return "";
+  try {
+    return readFileSync(briefPath, "utf8");
+  } catch {
+    return "";
   }
 }
 
@@ -118,10 +151,10 @@ export function validateReport(report, expectedStacks) {
 }
 
 function main() {
-  const repoPath = process.cwd();
+  const repoPath = resolveRepoRoot(process.cwd());
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const reportPath = join(repoPath, reportDir, "report.json");
-  const brief = process.env.SHIP_GATE_BRIEF ?? "";
+  const brief = loadBrief(repoPath, reportDir);
 
   const expected = detectStacks(repoPath, brief);
 
