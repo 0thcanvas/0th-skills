@@ -50,7 +50,7 @@ Debugging often touches logs, traces, HARs, shell output, env vars, and browser 
 
 - Use the project's safe secret runner when reproducing secret-dependent behavior: `op run --env-file ... -- <command>`, `doppler run -- <command>`, Vault/cloud/platform runtime injection, or a human-created ignored `.env.local` loaded by the app.
 - Never dump full environments, raw request headers, cookies, Authorization values, session storage, local storage, HAR bodies, or browser/CDP payloads into chat or subagent prompts.
-- Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing around secrets.
+- Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`) around secrets.
 - Verify only whether a named secret is present. If the value may have appeared in a trace/log/chat, report the category and recommend rotation without repeating the value.
 
 ## Iron Laws

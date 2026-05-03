@@ -31,8 +31,8 @@ The parent agent provides:
 5. **Re-verify:** Max 3 verification rounds. Each round: rerun failing path + new regression test + affected existing tests. Do not rerun entire suite.
 6. **Test data hygiene:** Use uniquely identifiable test data, prefer idempotent ops, clean up when feasible.
 7. **Output hygiene:** Never surface secrets, tokens, or PII. Summarize API responses by structure, not raw content.
-8. **Secret runners:** Run secret-dependent checks through the project's safe secret runner or runtime injection path. 1Password `op run --env-file ... -- <command>` is valid; Doppler, Vault, cloud/platform secrets, or an ignored `.env.local` loaded by the app are also valid if they do not print values.
-9. **Forbidden secret commands:** Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing, or commands that place secrets in argv. If no safe runner exists, mark the check BLOCKED rather than asking for or printing the secret.
+8. **Secret runners:** Run secret-dependent checks through the project's safe secret runner or runtime injection path. 1Password `op run --env-file ... -- <command>` is valid; Doppler, Vault, cloud/platform secrets, or an ignored `.env.local` loaded by the app are also valid if they do not print values. When a `.env.local` is present, run the app's loader rather than reading the file directly — do not `cat`, `head`, `grep`, or otherwise print its contents.
+9. **Forbidden secret commands:** Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv. If no safe runner exists, mark the check BLOCKED rather than asking for or printing the secret.
 
 Classify failure type BEFORE attempting any fix.
 Do not burn verification rounds on environment or transient failures.

@@ -48,7 +48,7 @@ Self-review:
 - Are there files that shouldn't have changed?
 - Is the scope contained to what was intended?
 - Any secrets, credentials, debug code left in?
-- Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing, command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
+- Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
 - If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
 
 ### 3. Create the PR
