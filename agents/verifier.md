@@ -21,6 +21,16 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 ## Process
 
+### 0. Stack Minimum Detection
+
+Before any feature-specific verification, detect applicable stacks for this repo using `${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/references/stack-minimums.md` (the Detection signals column in the Matrix table). Detection is multi-match: distinct root signals (Electron + manifest, etc.) get every applicable row exercised. Nested-workspace cases (a CLI bundle living inside a parent UI repo) are not yet detected by `/ship`'s gate; treat them as a known v1 limitation and exercise the relevant row manually.
+
+For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → bb-browser → computer-use (last fallback, only on agents with computer-use granted).
+
+**This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
+
+If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. BLOCKED applies when no chain tool exists for the stack, secrets/env are missing, or an external service is unavailable — never when a tool is merely inconvenient.
+
 ### 1. Preflight
 
 Confirm environment readiness before exercising the feature:
@@ -33,9 +43,9 @@ Continue with methods that are independent and unaffected.
 
 ### 2. Exercise the Feature
 
-For each applicable verification method, exercise the feature as a real user:
+Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
 
-- **UI:** Navigate via the `browser_*` MCP tools exposed by `bb-browser` (preferred — run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`). If the MCP is not registered, fall back to host-native browser tooling (Chrome DevTools MCP on Claude, computer-use on Codex). Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
+- **UI:** Use Playwright by default for feature-specific UI checks (additive to the Step 0 stack-minimum exercise, which is already governed by the Playwright → bb-browser → computer-use chain per the matrix). Use the `browser_*` MCP tools exposed by `bb-browser` only when the brief invokes the escape hatch (logged-in flows, real-session-only behavior, shared-tab cases) per the bb-browser-escape-hatch row. To use the escape hatch: run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`. If the MCP isn't registered when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
 - **API:** Hit endpoints with curl/fetch, verify response shapes and status codes, test write operations and validation
 - **Component:** Render in browser, check documented variants plus representative prop combinations, verify accessibility
@@ -104,9 +114,40 @@ Never surface secrets, tokens, or PII in any output:
 - Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv.
 - If verification needs a secret and no safe runner is configured, mark that check BLOCKED rather than asking for or printing the secret.
 
+### 8. Teardown
+
+Whatever you spawn, you stop. Before returning an outcome:
+- Kill any dev server, worker, watcher, or background process you started for this verification (track PIDs of anything you launch — do not rely on the parent to clean up).
+- Close browser tabs/sessions you opened via `bb-browser`. `browser_close_all` only closes tabs opened during the current MCP session, so it is safe to call.
+- Stop containers, databases, queues, or ports started for verification; remove temp directories and fixture files you created.
+- Reconcile created test data with the Test Data Hygiene rule above — delete artifacts you can clean up, leave tagged ones for later sweeps.
+
+The workspace should look the same after verification as it did before, minus the bug fixes. If teardown itself fails, surface it in the outcome (do not silently leak a process or tab).
+
 ## Outcome Precedence
 
-When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS.
+When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED stack-minimum row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
+
+## Structured Report
+
+Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` alongside the human-readable report. `/ship`'s gate script reads this file and refuses PR creation if the contract is unmet.
+
+```json
+{
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "stack_minimums_exercised": [
+    {
+      "stack": "<stack id from stack-minimums.md>",
+      "criterion": "<what was actually exercised>",
+      "tool": "playwright|playwright-electron|bb-browser|computer-use|null",
+      "evidence_path": "<path to dossier, screenshot, or test output>",
+      "exercised_at": "<ISO 8601 timestamp>"
+    }
+  ]
+}
+```
+
+Every Step 0 matched stack must appear in `stack_minimums_exercised`. If a stack was BLOCKED (no usable tool, missing secret, unavailable service), emit it with `tool: null` and an `evidence_path` pointing to a BLOCKED-reason note; `outcome` must then be BLOCKED, not PASS.
 
 ## What to Return
 

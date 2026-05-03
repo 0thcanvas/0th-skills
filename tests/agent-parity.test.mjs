@@ -18,7 +18,8 @@ const expectedMirrors = {
     requiredFragments: [
       "Run tests after every change",
       "NEEDS_CONTEXT",
-      "STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED"
+      "STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED",
+      "Whatever you spawn, you stop"
     ]
   },
   reviewer: {
@@ -53,7 +54,16 @@ const expectedMirrors = {
       "`browser-kit mcp install",
       "`browser-kit mcp status`",
       "When a `.env.local` is present",
-      "or commands that place secrets in argv"
+      "or commands that place secrets in argv",
+      "Stack Minimum Detection",
+      "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/references/stack-minimums.md",
+      "Detection is multi-match",
+      "Playwright → bb-browser → computer-use",
+      "This floor cannot be lowered",
+      "stack_minimums_exercised",
+      "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
+      "Whatever you spawn, you stop",
+      "browser_close_all"
     ]
   },
   synthesizer: {

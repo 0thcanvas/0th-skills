@@ -51,6 +51,7 @@ COMMIT: One atomic commit
 - **Surgical changes only.** Every changed line traces to the slice spec. Don't reformat, restyle, or add type hints to adjacent code. Don't refactor unrelated code. Match existing style. If you spot dead code, an unrelated bug, or a refactor opportunity, note it in your handoff — don't fix it.
 - One slice only — do not touch code outside your scope
 - Run tests after every change
+- If you spawn a process, fixture server, container, or watcher during testing, stop it before reporting status. Whatever you spawn, you stop.
 - If you discover a bug unrelated to your slice, note it but don't fix it
 
 ## Asking Questions

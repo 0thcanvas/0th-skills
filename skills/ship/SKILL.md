@@ -53,7 +53,15 @@ Self-review:
 
 ### 3. Create the PR
 
-Read `templates/pr-body.md`, fill in its placeholders, and use that filled result as the PR body.
+**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. The gate is the only mechanical layer in 0th's flow that converts verifier discipline into a non-LLM gate; running `gh pr create` without it bypasses the architecture.
+
+```bash
+node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/ship-gate.mjs"
+```
+
+If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected stacks were not exercised; re-dispatch the verifier (return to /build's Verification step or invoke /verifier directly with a brief that names the missing rows) to exercise them, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`; the detection logic mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+
+Only after the gate exits zero, read `templates/pr-body.md`, fill in its placeholders, and use that filled result as the PR body.
 Do not invent a second PR-body shape in this skill. The template file is the source of truth.
 
 ```bash

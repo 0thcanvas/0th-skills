@@ -59,14 +59,19 @@ test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
 });
 
 test("skill reference links resolve to real files", () => {
-  const linkPattern = /(references|templates)\/([A-Za-z0-9._/-]+\.md)/g;
+  // Skill-local refs:      `references/X.md` or `templates/X.md`
+  // Workspace-shared refs: `../../references/X.md` (resolved from skills/<name>/SKILL.md → repoRoot)
+  const linkPattern = /(\.\.\/\.\.\/)?(references|templates)\/([A-Za-z0-9._/-]+\.md)/g;
 
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
     for (const match of source.matchAll(linkPattern)) {
-      const targetPath = path.join(skillsRoot, skillName, match[1], match[2]);
+      const isWorkspaceShared = !!match[1];
+      const targetPath = isWorkspaceShared
+        ? path.join(repoRoot, match[2], match[3])
+        : path.join(skillsRoot, skillName, match[2], match[3]);
       assert.equal(
         fs.existsSync(targetPath),
         true,
@@ -85,6 +90,19 @@ test("workflow templates exist for think, research, and ship", () => {
   );
   assert.equal(fs.existsSync(researchTemplatePath), true, "research KB template should exist");
   assert.equal(fs.existsSync(shipTemplatePath), true, "ship PR template should exist");
+});
+
+test("verification-report/ is gitignored so verifier artifacts don't leak into PRs", () => {
+  // The verifier writes ${VERIFICATION_REPORT_DIR:-verification-report}/report.json per
+  // the self-testing-loop architecture (docs/decisions/2026-05-03-…). The default path
+  // must be gitignored so the artifact doesn't pollute every PR diff.
+  const gitignorePath = path.join(repoRoot, ".gitignore");
+  const source = read(gitignorePath);
+  assert.match(
+    source,
+    /^verification-report\/?$/m,
+    ".gitignore should ignore the default verification-report/ path"
+  );
 });
 
 test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
