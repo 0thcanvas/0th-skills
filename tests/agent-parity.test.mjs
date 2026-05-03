@@ -53,7 +53,14 @@ const expectedMirrors = {
       "`browser-kit mcp install",
       "`browser-kit mcp status`",
       "When a `.env.local` is present",
-      "or commands that place secrets in argv"
+      "or commands that place secrets in argv",
+      "Stack Minimum Detection",
+      "skills/references/stack-minimums.md",
+      "Detection is multi-match",
+      "Playwright → bb-browser → computer-use",
+      "This floor cannot be lowered",
+      "stack_minimums_exercised",
+      "${VERIFICATION_REPORT_DIR:-verification-report}/report.json"
     ]
   },
   synthesizer: {

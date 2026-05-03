@@ -21,6 +21,16 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 ## Process
 
+### 0. Stack Minimum Detection
+
+Before any feature-specific verification, detect applicable stacks for this repo using `skills/references/stack-minimums.md` (the Detection signals column in the Matrix table). Detection is multi-match: monorepos and hybrid projects (Electron + web renderer + companion CLI, extension + CLI bundle, etc.) get every applicable row.
+
+For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → bb-browser → computer-use (last fallback, only on agents with computer-use granted).
+
+**This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
+
+If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. BLOCKED applies when no chain tool exists for the stack, secrets/env are missing, or an external service is unavailable — never when a tool is merely inconvenient.
+
 ### 1. Preflight
 
 Confirm environment readiness before exercising the feature:
@@ -33,7 +43,7 @@ Continue with methods that are independent and unaffected.
 
 ### 2. Exercise the Feature
 
-For each applicable verification method, exercise the feature as a real user:
+Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
 
 - **UI:** Navigate via the `browser_*` MCP tools exposed by `bb-browser` (preferred — run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`). If the MCP is not registered, fall back to host-native browser tooling (Chrome DevTools MCP on Claude, computer-use on Codex). Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
@@ -106,7 +116,28 @@ Never surface secrets, tokens, or PII in any output:
 
 ## Outcome Precedence
 
-When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS.
+When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED stack-minimum row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
+
+## Structured Report
+
+Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` alongside the human-readable report. `/ship`'s gate script reads this file and refuses PR creation if the contract is unmet.
+
+```json
+{
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "stack_minimums_exercised": [
+    {
+      "stack": "<stack id from stack-minimums.md>",
+      "criterion": "<what was actually exercised>",
+      "tool": "playwright|playwright-electron|bb-browser|computer-use|null",
+      "evidence_path": "<path to dossier, screenshot, or test output>",
+      "exercised_at": "<ISO 8601 timestamp>"
+    }
+  ]
+}
+```
+
+Every Step 0 matched stack must appear in `stack_minimums_exercised`. If a stack was BLOCKED (no usable tool, missing secret, unavailable service), emit it with `tool: null` and an `evidence_path` pointing to a BLOCKED-reason note; `outcome` must then be BLOCKED, not PASS.
 
 ## What to Return
 
