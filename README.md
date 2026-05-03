@@ -133,6 +133,14 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ## Release notes
 
+### 0.2.1
+
+- Added a provider-neutral secret-handling contract: agents see secret names and references only, never resolved values; application code reads from env vars or runtime bindings; secret managers (1Password / Doppler / Vault / cloud / `.env.local`) inject values only into the target process
+- Codified forbidden secret commands across all skills (`op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing `set -x` / `bash -x`, argv secrets, browser/CDP payloads); reviewer treats violations as BLOCKERs, verifier marks BLOCKED rather than printing
+- Added a Step-0 redaction pass to `ask-counterpart-review` so cross-model review prompts cannot leak secret-bearing context
+- Added a positive verification primitive (`[ -n "${VAR:-}" ] && echo set || echo missing`) with an explicit xtrace-off caveat — gives agents a safe alternative to `printenv` instead of just a "don't" list
+- Added secret-handling fragments to `tests/agent-parity.test.mjs` so future drift between Claude `.md` and Codex `.toml` mirrors of reviewer/verifier on secret rules is caught automatically
+
 ### 0.2.0
 
 - Added the `improve-architecture` skill — find deepening opportunities using Module/Interface/Depth/Seam vocabulary and the deletion test; first-class core skill with full Codex parity (`agents/openai.yaml`, fixture entry, smoke-check coverage)
