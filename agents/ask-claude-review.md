@@ -1,5 +1,5 @@
 ---
-name: 0th:ask-claude-review
+name: ask-claude-review
 description: "Deprecated — delegates to ask-counterpart-review with --driver claude. Remove after next release."
 model: opus
 ---

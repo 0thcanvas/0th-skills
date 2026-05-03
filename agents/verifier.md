@@ -1,5 +1,5 @@
 ---
-name: 0th:verifier
+name: verifier
 description: |
   Verify a completed feature by exercising it as a real user. Dispatched by /build
   after all slices pass. Uses browser automation for UI, terminal for CLI, curl for API.

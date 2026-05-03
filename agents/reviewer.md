@@ -1,5 +1,5 @@
 ---
-name: 0th:reviewer
+name: reviewer
 description: |
   Review code changes against acceptance criteria. Dispatched by /build after each slice
   to verify the implementation matches the spec. Checks for scope creep, missing criteria,

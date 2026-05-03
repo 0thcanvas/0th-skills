@@ -1,5 +1,5 @@
 ---
-name: 0th:ask-counterpart-review
+name: ask-counterpart-review
 description: |
   Send an artifact to the counterpart model for cross-model review.
   Used by /think (decision records), /plan (slice lists), and /ship (diffs).

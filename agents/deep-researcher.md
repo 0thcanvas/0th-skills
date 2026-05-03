@@ -1,5 +1,5 @@
 ---
-name: 0th:deep-researcher
+name: deep-researcher
 description: |
   Deep-dive extraction from a specific technical source (paper, repo, or docs).
   Dispatched by /deep-research Phase 1 Pass 2 and Phase 5 for detailed extraction.

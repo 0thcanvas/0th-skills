@@ -1,5 +1,5 @@
 ---
-name: 0th:web-researcher
+name: web-researcher
 description: |
   Run a single search/fetch cycle against the web and return condensed, source-cited findings.
   Dispatched by /research (and any skill that needs an external fact) to keep raw page content

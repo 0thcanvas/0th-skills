@@ -135,6 +135,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ### 0.2.1
 
+- Fixed Claude-side agent dispatch: every `agents/*.md` had `name: 0th:<agent>` in its frontmatter, but the Claude plugin loader prepends the plugin namespace (`0th:`) automatically, producing `0th:0th:<agent>` and breaking every skill dispatch. Stripped the redundant prefix from all 11 agent files; skill files and README dispatch references already used the correct `0th:<agent>` form. Codex side (`name = "0th_<agent>"`) was unaffected.
 - Added a provider-neutral secret-handling contract: agents see secret names and references only, never resolved values; application code reads from env vars or runtime bindings; secret managers (1Password / Doppler / Vault / cloud / `.env.local`) inject values only into the target process
 - Codified forbidden secret commands across all skills (`op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing `set -x` / `bash -x`, argv secrets, browser/CDP payloads); reviewer treats violations as BLOCKERs, verifier marks BLOCKED rather than printing
 - Added a Step-0 redaction pass to `ask-counterpart-review` so cross-model review prompts cannot leak secret-bearing context

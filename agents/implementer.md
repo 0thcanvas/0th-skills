@@ -1,5 +1,5 @@
 ---
-name: 0th:implementer
+name: implementer
 description: |
   Implement a single slice with TDD in isolation. Dispatched by /build for context-isolated
   implementation. Receives full slice spec and context — never inherits parent session.

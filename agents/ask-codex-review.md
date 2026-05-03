@@ -1,5 +1,5 @@
 ---
-name: 0th:ask-codex-review
+name: ask-codex-review
 description: "Deprecated — delegates to ask-counterpart-review with --driver codex. Remove after next release."
 model: opus
 ---
