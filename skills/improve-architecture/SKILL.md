@@ -81,7 +81,12 @@ If a new term emerges, track it in working memory — do not write to disk durin
 
 ### 5. Hand off
 
-Once a candidate has shape, write the decision record and (if vocabulary was resolved or sharpened during the grill) update `CONTEXT.md` at the project root in the same step. Then hand off to `/build`. `/think` and `/improve-architecture` are the only skills that write to `CONTEXT.md`, and both write only at decision-capture time.
+Step 5 covers two outcomes from Step 4:
+
+- **Accepted** — candidate has shape. Write the decision record, update `CONTEXT.md` at the project root if vocabulary was resolved or sharpened during the grill, then hand off to `/build`.
+- **Rejected** — candidate closed with a load-bearing reason. Write a rejection decision record (mark `Durable: yes` if all three durability criteria apply) so the same suggestion isn't re-proposed, update `CONTEXT.md` if vocabulary was resolved or sharpened, then return to Step 3 to pick another candidate or stop.
+
+`/think` and `/improve-architecture` are the only skills that write to `CONTEXT.md`, and both write only at decision-capture time — never mid-grill.
 
 ## Iron Law
 
