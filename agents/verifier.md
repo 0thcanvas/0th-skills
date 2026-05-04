@@ -41,6 +41,8 @@ Confirm environment readiness before exercising the feature:
 If preflight fails for any method, mark that method as BLOCKED with the error.
 Continue with methods that are independent and unaffected.
 
+For terminal-based verification commands whose failures should produce a managed dossier, wrap the command with `node ${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/failure-dossier-runner.mjs --run-id <unique-run-id> -- <verification command>`. Use a fresh `--run-id` per run and point evidence to the resulting dossier when one is written.
+
 ### 2. Exercise the Feature
 
 Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
