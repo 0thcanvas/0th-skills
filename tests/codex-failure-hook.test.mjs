@@ -113,10 +113,12 @@ test("rejects partial or malformed dossier files", () => {
   assert.equal(result.stderr, "");
 });
 
-test("rejects a dossier whose child command does not match the current tool input", () => {
+test("suppresses stale dossiers when the current runner invocation rejected a reused run id", () => {
   const repo = tempRepo();
   writeDossier(repo, "run-123");
-  const result = runHook(payload(repo, "node scripts/failure-dossier-runner.mjs --run-id run-123 -- node --version"));
+  const input = payload(repo, "node scripts/failure-dossier-runner.mjs --run-id run-123 -- node --test");
+  input.tool_response = "Run id already exists: run-123\n";
+  const result = runHook(input);
 
   assert.equal(result.status, 0);
   assert.equal(result.stdout, "");
@@ -143,6 +145,18 @@ test("surfaces a matching dossier when the child command uses shell quotes", () 
 
   assert.equal(result.status, 0);
   assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /quoted-1/);
+});
+
+test("surfaces a matching dossier even when shell expansion changes child argv text", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "glob-1", { command: ["node", "--test", "tests/a.test.mjs"] });
+  const result = runHook(payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id glob-1 -- node --test tests/*.test.mjs"
+  ));
+
+  assert.equal(result.status, 0);
+  assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /glob-1/);
 });
 
 test("rejects invalid wrapper run ids instead of partially extracting a stale valid prefix", () => {
