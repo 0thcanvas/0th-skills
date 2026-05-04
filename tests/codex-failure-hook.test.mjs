@@ -144,3 +144,41 @@ test("surfaces a matching dossier when the child command uses shell quotes", () 
   assert.equal(result.status, 0);
   assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /quoted-1/);
 });
+
+test("rejects invalid wrapper run ids instead of partially extracting a stale valid prefix", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "run");
+  const result = runHook(payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id run/escape -- node --test"
+  ));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
+test("does not mistake a child command run id for the wrapper run id", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "child-run", { command: ["node", "child.js", "--run-id", "child-run"] });
+  const result = runHook(payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs -- node child.js --run-id child-run"
+  ));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
+test("surfaces a matching dossier when the child command has an empty quoted arg", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "empty-arg-1", { command: ["node", "-e", ""] });
+  const result = runHook(payload(
+    repo,
+    `node scripts/failure-dossier-runner.mjs --run-id empty-arg-1 -- node -e ""`
+  ));
+
+  assert.equal(result.status, 0);
+  assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /empty-arg-1/);
+});
