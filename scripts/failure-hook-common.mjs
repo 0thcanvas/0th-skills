@@ -47,19 +47,23 @@ export function extractRunId(toolInput) {
 }
 
 function extractWrapperRunId(wrapperArgv) {
-  for (let index = 0; index < wrapperArgv.length; index += 1) {
+  const runnerIndex = wrapperArgv.findIndex((token) => token.includes("failure-dossier-runner.mjs"));
+  if (runnerIndex === -1) return null;
+
+  let runId = null;
+  for (let index = runnerIndex + 1; index < wrapperArgv.length; index += 1) {
     const token = wrapperArgv[index];
-    let candidate = null;
     if (token === "--run-id") {
-      candidate = wrapperArgv[index + 1] ?? null;
+      runId = wrapperArgv[index + 1] ?? null;
+      index += 1;
+      continue;
     }
-    if (candidate !== null) {
-      return RUN_ID_PATTERN.test(candidate) && candidate !== "." && candidate !== ".."
-        ? candidate
-        : null;
-    }
+    return null;
   }
-  return null;
+
+  return runId && RUN_ID_PATTERN.test(runId) && runId !== "." && runId !== ".."
+    ? runId
+    : null;
 }
 
 function readJson(filePath) {
