@@ -83,7 +83,7 @@ function isTextBlock(value) {
     typeof value.truncated === "boolean";
 }
 
-export function validateDossier(dossier, runId, payload = null, childCommandText = null) {
+export function validateDossier(dossier, runId, payload = null) {
   if (!dossier || typeof dossier !== "object") return false;
   if (dossier.version !== 1) return false;
   if (dossier.status !== "complete") return false;
@@ -98,14 +98,6 @@ export function validateDossier(dossier, runId, payload = null, childCommandText
     const payloadCwd = path.resolve(payload.cwd ?? process.cwd());
     const dossierCwd = path.resolve(dossier.cwd);
     if (payloadCwd !== dossierCwd) return false;
-  }
-  if (Array.isArray(childCommandText)) {
-    if (dossier.command.length !== childCommandText.length) return false;
-    for (let index = 0; index < dossier.command.length; index += 1) {
-      if (dossier.command[index] !== childCommandText[index]) return false;
-    }
-  } else if (childCommandText && dossier.command.join(" ") !== childCommandText) {
-    return false;
   }
   return true;
 }
@@ -189,12 +181,13 @@ export function outputForPayload(payload, expectedEventName, outputEventName, re
 
   const invocation = extractManagedInvocation(payload.tool_input);
   if (!invocation) return null;
+  if (isDuplicateRunIdRejection(payload.tool_response, invocation.runId)) return null;
 
   const dossierPath = dossierPathFor(payload, invocation.runId, reportDir);
   if (!existsSync(dossierPath)) return null;
 
   const dossier = readJson(dossierPath);
-  if (!validateDossier(dossier, invocation.runId, payload, invocation.childCommandArgv)) return null;
+  if (!validateDossier(dossier, invocation.runId, payload)) return null;
 
   return {
     hookSpecificOutput: {
@@ -202,4 +195,9 @@ export function outputForPayload(payload, expectedEventName, outputEventName, re
       additionalContext: buildContext(payload, dossierPath, dossier)
     }
   };
+}
+
+function isDuplicateRunIdRejection(toolResponse, runId) {
+  if (typeof toolResponse !== "string") return false;
+  return toolResponse.includes(`Run id already exists: ${runId}`);
 }
