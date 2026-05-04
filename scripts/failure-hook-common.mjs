@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const RUN_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
-const RUN_ID_ARG_PATTERN = /(?:^|\s)--run-id(?:=|\s+)([a-zA-Z0-9._-]+)/;
 const COMMAND_SEPARATOR = " -- ";
 
 export function parsePayload(raw) {
@@ -26,13 +25,14 @@ function commandFromToolInput(toolInput) {
 export function extractManagedInvocation(toolInput) {
   const command = commandFromToolInput(toolInput);
   if (!command.includes("failure-dossier-runner.mjs")) return null;
-  const match = command.match(RUN_ID_ARG_PATTERN);
-  if (!match) return null;
-  const runId = match[1];
-  if (!RUN_ID_PATTERN.test(runId) || runId === "." || runId === "..") return null;
-
   const separatorIndex = command.indexOf(COMMAND_SEPARATOR);
   if (separatorIndex === -1) return null;
+
+  const wrapperArgv = tokenizeShellCommand(command.slice(0, separatorIndex));
+  if (!wrapperArgv) return null;
+  const runId = extractWrapperRunId(wrapperArgv);
+  if (!runId) return null;
+
   const childCommandText = command.slice(separatorIndex + COMMAND_SEPARATOR.length).trim();
   if (!childCommandText) return null;
 
@@ -44,6 +44,24 @@ export function extractManagedInvocation(toolInput) {
 
 export function extractRunId(toolInput) {
   return extractManagedInvocation(toolInput)?.runId ?? null;
+}
+
+function extractWrapperRunId(wrapperArgv) {
+  for (let index = 0; index < wrapperArgv.length; index += 1) {
+    const token = wrapperArgv[index];
+    let candidate = null;
+    if (token === "--run-id") {
+      candidate = wrapperArgv[index + 1] ?? null;
+    } else if (token.startsWith("--run-id=")) {
+      candidate = token.slice("--run-id=".length);
+    }
+    if (candidate !== null) {
+      return RUN_ID_PATTERN.test(candidate) && candidate !== "." && candidate !== ".."
+        ? candidate
+        : null;
+    }
+  }
+  return null;
 }
 
 function readJson(filePath) {
@@ -97,16 +115,19 @@ function tokenizeShellCommand(commandText) {
   let current = "";
   let quote = null;
   let escaped = false;
+  let tokenStarted = false;
 
   for (const char of commandText) {
     if (escaped) {
       current += char;
       escaped = false;
+      tokenStarted = true;
       continue;
     }
 
     if (char === "\\") {
       escaped = true;
+      tokenStarted = true;
       continue;
     }
 
@@ -116,27 +137,31 @@ function tokenizeShellCommand(commandText) {
       } else {
         current += char;
       }
+      tokenStarted = true;
       continue;
     }
 
     if (char === "'" || char === "\"") {
       quote = char;
+      tokenStarted = true;
       continue;
     }
 
     if (/\s/.test(char)) {
-      if (current) {
+      if (tokenStarted) {
         tokens.push(current);
         current = "";
+        tokenStarted = false;
       }
       continue;
     }
 
     current += char;
+    tokenStarted = true;
   }
 
   if (escaped || quote) return null;
-  if (current) tokens.push(current);
+  if (tokenStarted) tokens.push(current);
   return tokens.length > 0 ? tokens : null;
 }
 
