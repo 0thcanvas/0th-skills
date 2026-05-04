@@ -22,7 +22,7 @@ function writeDossier(repo, runId, overrides = {}) {
     status: "complete",
     run_id: runId,
     cwd: repo,
-    command: ["node", "scripts/failure-dossier-runner.mjs", "--run-id", runId, "--", "node", "--test"],
+    command: ["node", "--test"],
     exit_code: 1,
     started_at: "2026-05-04T04:00:00.000Z",
     finished_at: "2026-05-04T04:00:01.000Z",
@@ -107,6 +107,26 @@ test("rejects partial or malformed dossier files", () => {
   writeFileSync(path.join(runDir, "dossier.json"), JSON.stringify({ run_id: "partial-1", status: "writing" }));
 
   const result = runHook(payload(repo, "node scripts/failure-dossier-runner.mjs --run-id partial-1 -- node --test"));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
+test("rejects a dossier whose child command does not match the current tool input", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "run-123");
+  const result = runHook(payload(repo, "node scripts/failure-dossier-runner.mjs --run-id run-123 -- node --version"));
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
+test("rejects a dossier whose cwd does not match the current hook cwd", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "run-123", { cwd: "/some/other/cwd" });
+  const result = runHook(payload(repo, "node scripts/failure-dossier-runner.mjs --run-id run-123 -- node --test"));
 
   assert.equal(result.status, 0);
   assert.equal(result.stdout, "");

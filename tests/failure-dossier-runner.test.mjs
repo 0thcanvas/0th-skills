@@ -102,3 +102,25 @@ test("unsafe run ids are rejected before running the command", () => {
   assert.match(result.stderr, /run-id/);
   assert.equal(existsSync(path.join(reportDir, "runs")), false);
 });
+
+test("reusing a run id fails before executing the child command", () => {
+  const reportDir = tempReportDir();
+  const first = runRunner(["--run-id", "reuse-1", "--", "node", "-e", "process.exit(5)"], reportDir);
+  assert.equal(first.status, 5);
+
+  const dossierFile = dossierPath(reportDir, "reuse-1");
+  const originalDossier = readFileSync(dossierFile, "utf8");
+  const second = runRunner([
+    "--run-id",
+    "reuse-1",
+    "--",
+    "node",
+    "-e",
+    "console.log('child should not run')"
+  ], reportDir);
+
+  assert.equal(second.status, 2);
+  assert.equal(second.stdout, "");
+  assert.match(second.stderr, /already exists/);
+  assert.equal(readFileSync(dossierFile, "utf8"), originalDossier);
+});

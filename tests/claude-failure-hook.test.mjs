@@ -23,7 +23,7 @@ function writeDossier(repo, runId) {
     status: "complete",
     run_id: runId,
     cwd: repo,
-    command: ["node", "scripts/failure-dossier-runner.mjs", "--run-id", runId, "--", "node", "--test"],
+    command: ["node", "--test"],
     exit_code: 9,
     started_at: "2026-05-04T04:00:00.000Z",
     finished_at: "2026-05-04T04:00:01.000Z",
