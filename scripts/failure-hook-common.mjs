@@ -29,14 +29,17 @@ export function extractManagedInvocation(toolInput) {
   const match = command.match(RUN_ID_ARG_PATTERN);
   if (!match) return null;
   const runId = match[1];
-  if (!RUN_ID_PATTERN.test(runId)) return null;
+  if (!RUN_ID_PATTERN.test(runId) || runId === "." || runId === "..") return null;
 
   const separatorIndex = command.indexOf(COMMAND_SEPARATOR);
   if (separatorIndex === -1) return null;
   const childCommandText = command.slice(separatorIndex + COMMAND_SEPARATOR.length).trim();
   if (!childCommandText) return null;
 
-  return { runId, childCommandText };
+  const childCommandArgv = tokenizeShellCommand(childCommandText);
+  if (!childCommandArgv) return null;
+
+  return { runId, childCommandText, childCommandArgv };
 }
 
 export function extractRunId(toolInput) {
@@ -78,8 +81,63 @@ export function validateDossier(dossier, runId, payload = null, childCommandText
     const dossierCwd = path.resolve(dossier.cwd);
     if (payloadCwd !== dossierCwd) return false;
   }
-  if (childCommandText && dossier.command.join(" ") !== childCommandText) return false;
+  if (Array.isArray(childCommandText)) {
+    if (dossier.command.length !== childCommandText.length) return false;
+    for (let index = 0; index < dossier.command.length; index += 1) {
+      if (dossier.command[index] !== childCommandText[index]) return false;
+    }
+  } else if (childCommandText && dossier.command.join(" ") !== childCommandText) {
+    return false;
+  }
   return true;
+}
+
+function tokenizeShellCommand(commandText) {
+  const tokens = [];
+  let current = "";
+  let quote = null;
+  let escaped = false;
+
+  for (const char of commandText) {
+    if (escaped) {
+      current += char;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (quote) {
+      if (char === quote) {
+        quote = null;
+      } else {
+        current += char;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+
+    if (/\s/.test(char)) {
+      if (current) {
+        tokens.push(current);
+        current = "";
+      }
+      continue;
+    }
+
+    current += char;
+  }
+
+  if (escaped || quote) return null;
+  if (current) tokens.push(current);
+  return tokens.length > 0 ? tokens : null;
 }
 
 function oneLine(text) {
@@ -111,7 +169,7 @@ export function outputForPayload(payload, expectedEventName, outputEventName, re
   if (!existsSync(dossierPath)) return null;
 
   const dossier = readJson(dossierPath);
-  if (!validateDossier(dossier, invocation.runId, payload, invocation.childCommandText)) return null;
+  if (!validateDossier(dossier, invocation.runId, payload, invocation.childCommandArgv)) return null;
 
   return {
     hookSpecificOutput: {

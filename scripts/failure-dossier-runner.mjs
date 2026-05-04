@@ -34,7 +34,7 @@ function parseArgs(argv) {
   }
 
   if (!runId) fail("--run-id is required", 2);
-  if (!RUN_ID_PATTERN.test(runId)) {
+  if (!RUN_ID_PATTERN.test(runId) || runId === "." || runId === "..") {
     fail("--run-id may contain only letters, numbers, dots, underscores, and hyphens", 2);
   }
   if (command.length === 0) fail("Command is required after --", 2);
