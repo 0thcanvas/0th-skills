@@ -52,8 +52,6 @@ function extractWrapperRunId(wrapperArgv) {
     let candidate = null;
     if (token === "--run-id") {
       candidate = wrapperArgv[index + 1] ?? null;
-    } else if (token.startsWith("--run-id=")) {
-      candidate = token.slice("--run-id=".length);
     }
     if (candidate !== null) {
       return RUN_ID_PATTERN.test(candidate) && candidate !== "." && candidate !== ".."

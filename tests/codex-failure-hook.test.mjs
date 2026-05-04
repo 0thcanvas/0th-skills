@@ -172,6 +172,21 @@ test("rejects invalid wrapper run ids instead of partially extracting a stale va
   assert.equal(result.stderr, "");
 });
 
+test("does not accept equals-form run ids that the runner rejects", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "stale");
+  const input = payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id=stale -- node --test"
+  );
+  input.tool_response = "Unknown option: --run-id=stale\n";
+  const result = runHook(input);
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
 test("does not mistake a child command run id for the wrapper run id", () => {
   const repo = tempRepo();
   writeDossier(repo, "child-run", { command: ["node", "child.js", "--run-id", "child-run"] });
