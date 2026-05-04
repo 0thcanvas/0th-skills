@@ -16,8 +16,8 @@ function main() {
   const payload = parsePayload(readStdin());
   const output = outputForPayload(
     payload,
-    "PostToolUse",
-    "PostToolUse",
+    "PostToolUseFailure",
+    "PostToolUseFailure",
     process.env.VERIFICATION_REPORT_DIR ?? "verification-report"
   );
   if (!output) return;
