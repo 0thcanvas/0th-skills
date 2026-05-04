@@ -63,7 +63,6 @@ function truncate(text, limit) {
 function writeDossier({ runId, command, cwd, startedAt, finishedAt, exitCode, stdout, stderr }) {
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const runDir = path.resolve(cwd, reportDir, "runs", runId);
-  mkdirSync(runDir, { recursive: true });
 
   const dossierPath = path.join(runDir, "dossier.json");
   const tmpPath = path.join(runDir, `dossier.${process.pid}.tmp`);
@@ -106,6 +105,18 @@ function normalizeExitStatus(result) {
 function main() {
   const { runId, command } = parseArgs(process.argv.slice(2));
   const cwd = process.cwd();
+  const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
+  const runDir = path.resolve(cwd, reportDir, "runs", runId);
+  mkdirSync(path.dirname(runDir), { recursive: true });
+  try {
+    mkdirSync(runDir, { recursive: false });
+  } catch (err) {
+    if (err.code === "EEXIST") {
+      fail(`Run id already exists: ${runId}`, 2);
+    }
+    fail(`Failed to create run directory for ${runId}: ${err.message}`, 1);
+  }
+
   const startedAt = new Date().toISOString();
   const result = spawnSync(command[0], command.slice(1), {
     cwd,

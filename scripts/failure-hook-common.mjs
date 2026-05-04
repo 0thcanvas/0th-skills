@@ -3,6 +3,7 @@ import path from "node:path";
 
 const RUN_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
 const RUN_ID_ARG_PATTERN = /(?:^|\s)--run-id(?:=|\s+)([a-zA-Z0-9._-]+)/;
+const COMMAND_SEPARATOR = " -- ";
 
 export function parsePayload(raw) {
   if (!raw.trim()) return null;
@@ -22,13 +23,24 @@ function commandFromToolInput(toolInput) {
   return "";
 }
 
-export function extractRunId(toolInput) {
+export function extractManagedInvocation(toolInput) {
   const command = commandFromToolInput(toolInput);
   if (!command.includes("failure-dossier-runner.mjs")) return null;
   const match = command.match(RUN_ID_ARG_PATTERN);
   if (!match) return null;
   const runId = match[1];
-  return RUN_ID_PATTERN.test(runId) ? runId : null;
+  if (!RUN_ID_PATTERN.test(runId)) return null;
+
+  const separatorIndex = command.indexOf(COMMAND_SEPARATOR);
+  if (separatorIndex === -1) return null;
+  const childCommandText = command.slice(separatorIndex + COMMAND_SEPARATOR.length).trim();
+  if (!childCommandText) return null;
+
+  return { runId, childCommandText };
+}
+
+export function extractRunId(toolInput) {
+  return extractManagedInvocation(toolInput)?.runId ?? null;
 }
 
 function readJson(filePath) {
@@ -50,7 +62,7 @@ function isTextBlock(value) {
     typeof value.truncated === "boolean";
 }
 
-export function validateDossier(dossier, runId) {
+export function validateDossier(dossier, runId, payload = null, childCommandText = null) {
   if (!dossier || typeof dossier !== "object") return false;
   if (dossier.version !== 1) return false;
   if (dossier.status !== "complete") return false;
@@ -61,6 +73,12 @@ export function validateDossier(dossier, runId) {
   if (typeof dossier.started_at !== "string") return false;
   if (typeof dossier.finished_at !== "string") return false;
   if (!isTextBlock(dossier.stdout) || !isTextBlock(dossier.stderr)) return false;
+  if (payload) {
+    const payloadCwd = path.resolve(payload.cwd ?? process.cwd());
+    const dossierCwd = path.resolve(dossier.cwd);
+    if (payloadCwd !== dossierCwd) return false;
+  }
+  if (childCommandText && dossier.command.join(" ") !== childCommandText) return false;
   return true;
 }
 
@@ -86,14 +104,14 @@ export function buildContext(payload, dossierPath, dossier) {
 export function outputForPayload(payload, expectedEventName, outputEventName, reportDir = "verification-report") {
   if (!payload || payload.hook_event_name !== expectedEventName) return null;
 
-  const runId = extractRunId(payload.tool_input);
-  if (!runId) return null;
+  const invocation = extractManagedInvocation(payload.tool_input);
+  if (!invocation) return null;
 
-  const dossierPath = dossierPathFor(payload, runId, reportDir);
+  const dossierPath = dossierPathFor(payload, invocation.runId, reportDir);
   if (!existsSync(dossierPath)) return null;
 
   const dossier = readJson(dossierPath);
-  if (!validateDossier(dossier, runId)) return null;
+  if (!validateDossier(dossier, invocation.runId, payload, invocation.childCommandText)) return null;
 
   return {
     hookSpecificOutput: {
