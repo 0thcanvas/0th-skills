@@ -39,7 +39,9 @@ const expectedMirrors = {
     requiredFragments: [
       "PASS: X files, Y tests. 0 failures.",
       "FAIL: X of Y tests failed.",
-      "Never return raw test output"
+      "Never return raw test output",
+      "failure-dossier-runner.mjs",
+      "--run-id"
     ]
   },
   verifier: {
@@ -63,7 +65,9 @@ const expectedMirrors = {
       "stack_minimums_exercised",
       "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
       "Whatever you spawn, you stop",
-      "browser_close_all"
+      "browser_close_all",
+      "failure-dossier-runner.mjs",
+      "--run-id"
     ]
   },
   synthesizer: {
