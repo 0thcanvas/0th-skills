@@ -149,6 +149,11 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### Unreleased
+
+- Continued the self-testing loop after slice 1 with managed failure dossiers: `scripts/failure-dossier-runner.mjs` writes atomic per-run dossiers, Codex and Claude hook adapters surface matching dossiers into the next agent turn, and managed verification prompts now name the runner instead of relying on Bash `tool_response` parsing
+- Hardened `/ship`'s verifier gate for the hook blind spot: structured verifier reports now include `pre_dispatch_tool_failures_reviewed`, and `scripts/ship-gate.mjs` fails closed when expected stack evidence omits it
+
 ### 0.2.3
 
 - Added `/retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log under `${KB_ROOT}/learning/skill-incidents/<YYYY-MM-DD>-<slug>.md`. The skill enforces a four-stage authoring workflow (extract evidence → redact → classify → aggregate) with a flat 7-bucket classification taxonomy (`user-ambiguity | skill-issue | context-rot | tool-failure | model-limitation | verification-skipped | unknown`); `unknown` requires either `candidate_new_category:` or `insufficient_evidence:` to prevent junk-drawer drift. Manual capture only — no auto-hook

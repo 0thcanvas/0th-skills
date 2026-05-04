@@ -137,6 +137,7 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` along
 ```json
 {
   "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "pre_dispatch_tool_failures_reviewed": true,
   "stack_minimums_exercised": [
     {
       "stack": "<stack id from stack-minimums.md>",
@@ -148,6 +149,8 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` along
   ]
 }
 ```
+
+`pre_dispatch_tool_failures_reviewed` means you explicitly considered failures hooks cannot see, such as tool calls rejected before dispatch. Set it to `true` only after checking whether the verification transcript or report includes any such failures and reflecting them in the human-readable outcome.
 
 Every Step 0 matched stack must appear in `stack_minimums_exercised`. If a stack was BLOCKED (no usable tool, missing secret, unavailable service), emit it with `tool: null` and an `evidence_path` pointing to a BLOCKED-reason note; `outcome` must then be BLOCKED, not PASS.
 

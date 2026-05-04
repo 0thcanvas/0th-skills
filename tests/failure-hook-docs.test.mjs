@@ -15,3 +15,9 @@ test("README documents user-scope failure dossier hook installation for both hos
   assert.match(readme, /user-scope/);
   assert.match(readme, /does not auto-install/i);
 });
+
+test("README release notes mention self-testing failure dossier hardening", () => {
+  assert.match(readme, /### Unreleased/);
+  assert.match(readme, /failure dossiers/);
+  assert.match(readme, /pre_dispatch_tool_failures_reviewed/);
+});
