@@ -132,3 +132,15 @@ test("rejects a dossier whose cwd does not match the current hook cwd", () => {
   assert.equal(result.stdout, "");
   assert.equal(result.stderr, "");
 });
+
+test("surfaces a matching dossier when the child command uses shell quotes", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "quoted-1", { command: ["node", "-e", "console.log('quoted child')"] });
+  const result = runHook(payload(
+    repo,
+    `node scripts/failure-dossier-runner.mjs --run-id quoted-1 -- node -e "console.log('quoted child')"`
+  ));
+
+  assert.equal(result.status, 0);
+  assert.match(JSON.parse(result.stdout).hookSpecificOutput.additionalContext, /quoted-1/);
+});

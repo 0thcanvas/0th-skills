@@ -103,6 +103,18 @@ test("unsafe run ids are rejected before running the command", () => {
   assert.equal(existsSync(path.join(reportDir, "runs")), false);
 });
 
+test("dot run ids are rejected before path resolution can escape the run directory", () => {
+  for (const runId of [".", ".."]) {
+    const reportDir = tempReportDir();
+    const result = runRunner(["--run-id", runId, "--", "node", "-e", "process.exit(9)"], reportDir);
+
+    assert.equal(result.status, 2);
+    assert.match(result.stderr, /run-id/);
+    assert.equal(existsSync(path.join(reportDir, "dossier.json")), false);
+    assert.equal(existsSync(path.join(reportDir, "runs", runId, "dossier.json")), false);
+  }
+});
+
 test("reusing a run id fails before executing the child command", () => {
   const reportDir = tempReportDir();
   const first = runRunner(["--run-id", "reuse-1", "--", "node", "-e", "process.exit(5)"], reportDir);
