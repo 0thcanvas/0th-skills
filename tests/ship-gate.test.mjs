@@ -144,6 +144,7 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
     path.join(repo, "verification-report", "report.json"),
     JSON.stringify({
       outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
       stack_minimums_exercised: [
         {
           stack: "electron-desktop",
@@ -215,6 +216,7 @@ test("validateReport: outcome other than PASS fails when stacks expected", () =>
   const result = validateReport(
     {
       outcome: "BLOCKED",
+      pre_dispatch_tool_failures_reviewed: true,
       stack_minimums_exercised: [
         {
           stack: "web-app",
@@ -235,6 +237,7 @@ test("validateReport: malformed exercised entry (missing required key) fails", (
   const result = validateReport(
     {
       outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
       stack_minimums_exercised: [{ stack: "web-app" }]
     },
     ["web-app"]
@@ -243,10 +246,31 @@ test("validateReport: malformed exercised entry (missing required key) fails", (
   assert.match(result.reasons.join("\n"), /missing required key/);
 });
 
+test("validateReport: missing pre_dispatch_tool_failures_reviewed fails when stacks expected", () => {
+  const result = validateReport(
+    {
+      outcome: "PASS",
+      stack_minimums_exercised: [
+        {
+          stack: "web-app",
+          criterion: "loaded route, backend hit, no console errors",
+          tool: "playwright",
+          evidence_path: "verification-report/dossier.json",
+          exercised_at: "2026-05-03T12:00:00Z"
+        }
+      ]
+    },
+    ["web-app"]
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /pre_dispatch_tool_failures_reviewed/);
+});
+
 test("validateReport: all expected stacks exercised plus PASS yields ok", () => {
   const result = validateReport(
     {
       outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
       stack_minimums_exercised: [
         {
           stack: "web-app",

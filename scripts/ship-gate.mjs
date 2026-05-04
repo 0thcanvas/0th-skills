@@ -123,6 +123,10 @@ export function validateReport(report, expectedStacks) {
     return { ok: false, reasons };
   }
 
+  if (report.pre_dispatch_tool_failures_reviewed !== true) {
+    reasons.push("pre_dispatch_tool_failures_reviewed must be true");
+  }
+
   const exercisedStacks = new Set();
   for (const entry of report.stack_minimums_exercised) {
     if (!entry || typeof entry !== "object") {

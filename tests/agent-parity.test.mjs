@@ -63,6 +63,7 @@ const expectedMirrors = {
       "Playwright → bb-browser → computer-use",
       "This floor cannot be lowered",
       "stack_minimums_exercised",
+      "pre_dispatch_tool_failures_reviewed",
       "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
       "Whatever you spawn, you stop",
       "browser_close_all",
