@@ -187,6 +187,36 @@ test("does not accept equals-form run ids that the runner rejects", () => {
   assert.equal(result.stderr, "");
 });
 
+test("does not surface stale dossiers when the wrapper contains an unknown option", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "old");
+  const input = payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id old --bogus -- node --test"
+  );
+  input.tool_response = "Unknown option: --bogus\n";
+  const result = runHook(input);
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, "");
+  assert.equal(result.stderr, "");
+});
+
+test("repeated wrapper run ids use the same last-value rule as the runner", () => {
+  const repo = tempRepo();
+  writeDossier(repo, "old");
+  writeDossier(repo, "new");
+  const result = runHook(payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id old --run-id new -- node --test"
+  ));
+
+  assert.equal(result.status, 0);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  assert.match(context, /run_id=new/);
+  assert.doesNotMatch(context, /run_id=old/);
+});
+
 test("does not mistake a child command run id for the wrapper run id", () => {
   const repo = tempRepo();
   writeDossier(repo, "child-run", { command: ["node", "child.js", "--run-id", "child-run"] });
