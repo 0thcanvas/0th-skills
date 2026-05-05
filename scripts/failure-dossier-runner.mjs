@@ -4,6 +4,7 @@ import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import { redactSensitiveText } from "./secret-redaction.mjs";
 
 const RUN_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
 const DEFAULT_STDIO_LIMIT = 12_000;
@@ -126,8 +127,8 @@ function main() {
   });
   const finishedAt = new Date().toISOString();
 
-  const stdout = result.stdout ?? "";
-  const stderr = result.stderr ?? "";
+  const stdout = redactSensitiveText(result.stdout ?? "");
+  const stderr = redactSensitiveText(result.stderr ?? "");
   if (stdout) process.stdout.write(stdout);
   if (stderr) process.stderr.write(stderr);
 
@@ -142,7 +143,7 @@ function main() {
       finishedAt,
       exitCode,
       stdout,
-      stderr: `${stderr}${spawnError}`
+      stderr: redactSensitiveText(`${stderr}${spawnError}`)
     });
   }
 

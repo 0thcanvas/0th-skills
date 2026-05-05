@@ -94,6 +94,39 @@ test("dossier stdio is truncated without hiding that truncation happened", () =>
   assert.equal(dossier.stderr.truncated, false);
 });
 
+test("failure dossiers redact sensitive-looking command output before persistence", () => {
+  const reportDir = tempReportDir();
+  const jwt = [
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0",
+    "eyJzdWIiOiJ1c2VyLTEyMyIsImlhdCI6MTc3NzIzMTQyOX0",
+    "syntheticSignaturePartForTestOnly"
+  ].join(".");
+  const result = runRunner([
+    "--run-id",
+    "redacted-1",
+    "--",
+    "node",
+    "-e",
+    [
+      `console.log('Authorization: Bearer ${jwt}')`,
+      "console.error('Cookie: sessionid=sess_1234567890abcdef; csrftoken=csrf_1234567890abcdef')",
+      "process.exit(3)"
+    ].join("; ")
+  ], reportDir);
+
+  assert.equal(result.status, 3);
+  assert.doesNotMatch(result.stdout, /syntheticSignaturePartForTestOnly/);
+  assert.doesNotMatch(result.stderr, /sess_1234567890abcdef/);
+
+  const dossier = JSON.parse(readFileSync(dossierPath(reportDir, "redacted-1"), "utf8"));
+  const persisted = `${dossier.stdout.text}\n${dossier.stderr.text}`;
+  assert.match(persisted, /\[REDACTED_AUTHORIZATION\]/);
+  assert.match(persisted, /\[REDACTED_COOKIE\]/);
+  assert.doesNotMatch(persisted, /syntheticSignaturePartForTestOnly/);
+  assert.doesNotMatch(persisted, /sess_1234567890abcdef/);
+  assert.doesNotMatch(persisted, /csrf_1234567890abcdef/);
+});
+
 test("unsafe run ids are rejected before running the command", () => {
   const reportDir = tempReportDir();
   const result = runRunner(["--run-id", "../escape", "--", "node", "-e", "process.exit(9)"], reportDir);
