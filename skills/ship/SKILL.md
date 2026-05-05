@@ -82,7 +82,9 @@ Redact any secret-bearing context before sending it. Counterpart review gets nam
 - **Nits:** style/minor, accept or skip
 
 If blockers exist: fix on the branch, push, re-run counterpart review.
-If the counterpart review fails, report the error and let the user decide: proceed without review, retry later, or explicitly authorize a same-model fallback (see `ask-counterpart-review`'s Error Handling section for the labeled-fallback shape).
+If the counterpart review times out, hangs, or the wrapper is interrupted, do not treat the wrapper status as the review result. First inspect the persisted session log / resume artifact for that counterpart run. If the counterpart answered there, summarize that answer and continue from it. If there is no answer, retry only after reporting that the log was checked.
+If the counterpart review fails because quota is exhausted or the counterpart is unavailable for the session, report that exact condition and proceed with self-review only for this session unless the user asks to wait or retry. Make the final/user-inspection summary say `Counterpart review: skipped — quota exhausted` (or the observed unavailable reason), not `clean`.
+If the counterpart review fails for any other reason, report the error and let the user decide: proceed without review, retry later, or explicitly authorize a same-model fallback (see `ask-counterpart-review`'s Error Handling section for the labeled-fallback shape).
 
 ### 5. User Inspects
 
@@ -92,7 +94,7 @@ Present to user:
 - The counterpart review (blockers/suggestions/nits)
 - Any concerns from the self-review
 
-User decides: merge, request changes, or close.
+User decides: merge, request changes, or close. Merge approval is PR-specific: do not carry approval from an earlier PR, a prior "ship it", or a general shipping instruction into a newly opened PR. After checks and reviews pass, stop at "ready to merge" until the user explicitly approves merging that PR number or otherwise clearly approves that specific PR.
 
 ### 6. Merge
 
