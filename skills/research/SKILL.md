@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Run source-aware research for products, APIs, open-source tools, and papers. Use when the answer lives outside the repo and generic web search is not enough. Routes queries across official docs, GitHub, arXiv, specs, and broader web, then returns decision-ready findings."
+description: "Run source-aware research for products, APIs, open-source tools, papers, and practitioner/video evidence. Use when the answer lives outside the repo and generic web search is not enough. Routes queries across official docs, GitHub, arXiv, specs, video/transcript sources, and broader web, then returns decision-ready findings."
 argument-hint: "[question]"
 ---
 
@@ -18,6 +18,7 @@ If the user invoked this skill directly, treat `$ARGUMENTS` as the research ques
 - Product or API evaluation where current external facts matter
 - Open-source tool discovery or comparison
 - Paper or algorithm landscape review
+- Practitioner/video research where transcripts, demos, talks, or creator advice are evidence sources
 - Competitive or implementation research before /think, /build, or /debug
 - Cases where the repo and KB do not already answer the question
 
@@ -42,6 +43,7 @@ If resuming an ongoing research thread:
 ## Reference Files
 
 - See `references/source-routing.md` for query-shaping examples and source-bucket heuristics.
+- See `references/video-source-research.md` when YouTube, talks, demos, podcasts, or transcripts are a major source bucket.
 
 ## Template Files
 
@@ -77,9 +79,13 @@ Use the best source for each sub-question:
 - **GitHub** for open-source tools, maintenance signals, implementation examples, issue discussions
 - **arXiv / papers** for algorithms, baselines, benchmark results, recent methods
 - **Specs / standards docs** for browser or protocol behavior
-- **Forums / blogs / videos** for practitioner reports, workflow pain, edge cases
+- **video/transcript sources** for practitioner workflows, demos, tool mentions, and operator pain
+- **Forums / blogs** for practitioner reports, workflow pain, edge cases
 
 Primary sources first. Commentary second.
+Treat video sources as claim generators unless the video itself shows primary data
+or a reproducible artifact. Validate important claims through stronger source
+buckets before making recommendations.
 
 ### 4. Dispatch Searches to a Host-Native Research Subagent
 
@@ -135,7 +141,7 @@ For each important claim, ask:
 Prefer:
 1. Official docs, primary repos, papers
 2. Maintainer issues, benchmark pages, examples
-3. Independent blog posts, tutorials, videos
+3. Independent blog posts, tutorials, videos/transcripts
 
 If sources conflict, say so explicitly. Do not smooth over disagreement.
 
