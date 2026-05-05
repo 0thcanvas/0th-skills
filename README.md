@@ -132,7 +132,27 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Use the repo as the Claude plugin directory so Claude can read `CLAUDE.md`, `agents/`, and `skills/`
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
 
+### Failure dossier hooks
+
+Managed verification commands can be wrapped with:
+
+```bash
+node scripts/failure-dossier-runner.mjs --run-id <unique-run-id> -- <test-or-verification-command>
+```
+
+On failure, the runner writes `${VERIFICATION_REPORT_DIR:-verification-report}/runs/<unique-run-id>/dossier.json`. Host hooks surface that dossier into the next agent turn:
+
+- Codex: `node scripts/codex-failure-hook.mjs`
+- Claude Code: `node scripts/claude-failure-hook.mjs`
+
+Hook installation is user-scope because repo-local Codex hooks are not the validated path yet. The repo ships hook scripts and tests, but it does not auto-install or mutate `~/.codex/config.toml`, `~/.claude/settings.json`, or any user config.
+
 ## Release notes
+
+### Unreleased
+
+- Continued the self-testing loop after slice 1 with managed failure dossiers: `scripts/failure-dossier-runner.mjs` writes atomic per-run dossiers, Codex and Claude hook adapters surface matching dossiers into the next agent turn, and managed verification prompts now name the runner instead of relying on Bash `tool_response` parsing
+- Hardened `/ship`'s verifier gate for the hook blind spot: structured verifier reports now include `pre_dispatch_tool_failures_reviewed`, and `scripts/ship-gate.mjs` fails closed when expected stack evidence omits it
 
 ### 0.2.3
 
