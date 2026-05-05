@@ -90,6 +90,34 @@ test("surfaces a matching valid dossier through Codex additionalContext", () => 
   assert.match(context, /stderr sample/);
 });
 
+test("redacts legacy raw dossier output before building Codex additionalContext", () => {
+  const repo = tempRepo();
+  const jwt = [
+    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InRlc3Qta2lkIn0",
+    "eyJzdWIiOiJ1c2VyLTEyMyIsImlhdCI6MTc3NzIzMTQyOX0",
+    "syntheticSignaturePartForTestOnly"
+  ].join(".");
+  writeDossier(repo, "redacted-hook-1", {
+    stdout: { text: "stdout sample", truncated: false, original_length: 13 },
+    stderr: {
+      text: `Authorization: Bearer ${jwt} Cookie: sessionid=sess_1234567890abcdef`,
+      truncated: false,
+      original_length: 120
+    }
+  });
+  const result = runHook(payload(
+    repo,
+    "node scripts/failure-dossier-runner.mjs --run-id redacted-hook-1 -- node --test"
+  ));
+
+  assert.equal(result.status, 0);
+  const context = JSON.parse(result.stdout).hookSpecificOutput.additionalContext;
+  assert.match(context, /\[REDACTED_AUTHORIZATION\]/);
+  assert.match(context, /\[REDACTED_COOKIE\]/);
+  assert.doesNotMatch(context, /syntheticSignaturePartForTestOnly/);
+  assert.doesNotMatch(context, /sess_1234567890abcdef/);
+});
+
 test("rejects a dossier whose run id does not match the current tool input", () => {
   const repo = tempRepo();
   writeDossier(repo, "run-123", { run_id: "other-run" });

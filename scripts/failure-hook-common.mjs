@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { redactSensitiveText } from "./secret-redaction.mjs";
 
 const RUN_ID_PATTERN = /^[a-zA-Z0-9._-]+$/;
 const COMMAND_SEPARATOR = " -- ";
@@ -164,8 +165,8 @@ function oneLine(text) {
 }
 
 export function buildContext(payload, dossierPath, dossier) {
-  const stderr = oneLine(dossier.stderr.text).slice(0, 500);
-  const stdout = oneLine(dossier.stdout.text).slice(0, 500);
+  const stderr = oneLine(redactSensitiveText(dossier.stderr.text)).slice(0, 500);
+  const stdout = oneLine(redactSensitiveText(dossier.stdout.text)).slice(0, 500);
   const summary = stderr || stdout || "no captured output";
   return [
     `0th failure dossier: ${dossierPath}`,
