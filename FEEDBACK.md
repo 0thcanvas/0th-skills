@@ -20,3 +20,4 @@ This file (`skills/FEEDBACK.md`) is kept in the repo for one release as the migr
 
 ---
 
+- /ship: counterpart review auto-detection missed Codex Desktop because CODEX_SANDBOX was absent, then silently defaulted to Codex instead of failing or using Claude (2026-05-05)
