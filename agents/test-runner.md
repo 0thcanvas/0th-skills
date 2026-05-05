@@ -25,7 +25,7 @@ If a specific test file or pattern was requested, run only that subset.
 When the caller needs a managed failure dossier, wrap the test command with:
 
 ```bash
-node ${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/failure-dossier-runner.mjs --run-id <unique-run-id> -- <test command>
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <test command>
 ```
 
 Use a fresh `--run-id` per run. The runner writes a dossier only on failure; still return the condensed pass/fail shape below and never paste raw output.

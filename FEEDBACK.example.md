@@ -7,9 +7,9 @@ Format: `- /skill: what felt wrong (YYYY-MM-DD)`
 Process: when you're ready, say "process the skill feedback" in any session. Before reading entries, the agent runs the migration check: any non-template content in this file gets copied into `${KB_ROOT}/learning/feedback.md` (the new long-term location) using the shared comparator. The migration is idempotent — re-runs are no-ops once everything is migrated. Run the check via:
 
 ```bash
-node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" \
-  --feedback "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.md" \
-  --example  "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.example.md" \
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/feedback-migrator.mjs" \
+  --feedback "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/FEEDBACK.md" \
+  --example  "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/FEEDBACK.example.md" \
   --dest     "${KB_ROOT}/learning/feedback.md" \
   --dry-run
 ```

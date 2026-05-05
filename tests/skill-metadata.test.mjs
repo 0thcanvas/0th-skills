@@ -105,6 +105,37 @@ test("verification-report/ is gitignored so verifier artifacts don't leak into P
   );
 });
 
+test("shipped prompt commands resolve repo scripts through relative or env roots", () => {
+  const scannedExtensions = new Set([".md", ".toml", ".yaml", ".yml"]);
+  const ignoredDirs = new Set([".git", "verification-report"]);
+  const offenders = [];
+
+  function walk(dirPath) {
+    for (const entry of fs.readdirSync(dirPath, { withFileTypes: true })) {
+      if (ignoredDirs.has(entry.name)) continue;
+      const entryPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        walk(entryPath);
+        continue;
+      }
+      if (!scannedExtensions.has(path.extname(entry.name))) continue;
+      const source = read(entryPath);
+      for (const [index, line] of source.split("\n").entries()) {
+        if (!/\bnode\b/.test(line) || !line.includes("/scripts/")) continue;
+        const usesRelativeScript = /\bnode\s+scripts\/[A-Za-z0-9._/-]+\.mjs\b/.test(line);
+        const usesEnvRoot = line.includes("${")
+          && /\}\/scripts\/[A-Za-z0-9._/-]+\.mjs/.test(line);
+        if (!usesRelativeScript && !usesEnvRoot) {
+          offenders.push(`${path.relative(repoRoot, entryPath)}:${index + 1}`);
+        }
+      }
+    }
+  }
+
+  walk(repoRoot);
+  assert.deepEqual(offenders, []);
+});
+
 test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
   for (const skillName of ["think", "plan", "ship"]) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");

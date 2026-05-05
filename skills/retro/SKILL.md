@@ -21,9 +21,9 @@ Before authoring any new incident, check whether the user has un-migrated conten
 Run the migration script in dry-run mode first:
 
 ```bash
-node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/feedback-migrator.mjs" \
-  --feedback "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.md" \
-  --example  "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/FEEDBACK.example.md" \
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/feedback-migrator.mjs" \
+  --feedback "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/FEEDBACK.md" \
+  --example  "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/FEEDBACK.example.md" \
   --dest     "${KB_ROOT}/learning/feedback.md" \
   --dry-run
 ```
@@ -143,7 +143,7 @@ The inline schema-block comments above are documentation for this prompt only â€
 After writing the new entry, invoke the deterministic aggregator script to compute pattern surfacing:
 
 ```bash
-node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/retro-aggregator.mjs" \
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/retro-aggregator.mjs" \
   --dir "${KB_ROOT}/learning/skill-incidents" \
   --now "$(date -Iseconds)" \
   --just-written "<path-to-the-entry-you-just-wrote>"

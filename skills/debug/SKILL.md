@@ -86,7 +86,7 @@ Try in roughly this order:
 
 **Iterate on the loop itself.** Once you have one, ask: faster (cache setup, skip unrelated init, narrow scope)? sharper (assert the specific symptom, not "didn't crash")? more deterministic (pin time, seed RNG, isolate filesystem, freeze network)? A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
 
-When a loop is managed verification and its failure should be surfaced back through 0th hooks, wrap it with `node ${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/failure-dossier-runner.mjs --run-id <unique-run-id> -- <loop command>`; use a fresh `--run-id` per run.
+When a loop is managed verification and its failure should be surfaced back through 0th hooks, wrap it with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <loop command>`; use a fresh `--run-id` per run.
 
 **Non-deterministic bugs.** The goal is a higher reproduction rate, not a clean repro. Loop the trigger 100×, parallelise, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not — keep raising the rate until it is.
 

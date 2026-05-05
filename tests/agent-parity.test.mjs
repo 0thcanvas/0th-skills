@@ -58,7 +58,7 @@ const expectedMirrors = {
       "When a `.env.local` is present",
       "or commands that place secrets in argv",
       "Stack Minimum Detection",
-      "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/references/stack-minimums.md",
+      "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md",
       "Detection is multi-match",
       "Playwright → bb-browser → computer-use",
       "This floor cannot be lowered",

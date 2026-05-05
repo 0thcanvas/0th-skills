@@ -120,11 +120,39 @@ test("detectHost: CODEX_SANDBOX set returns 'codex'", () => {
   }
 });
 
+test("detectHost: Codex Desktop ancestor returns 'codex' without CODEX_SANDBOX", () => {
+  const saved = saveEnv();
+  try {
+    clearHostEnv();
+    const processes = new Map([
+      [30, { ppid: 20, command: "/bin/zsh" }],
+      [20, { ppid: 10, command: "/Applications/Codex.app/Contents/Resources/codex" }],
+      [10, { ppid: 1, command: "/sbin/launchd" }]
+    ]);
+
+    assert.equal(
+      detectHost(process.env, {
+        pid: 30,
+        readProcessInfo: (pid) => processes.get(pid) ?? null
+      }),
+      "codex"
+    );
+  } finally {
+    restoreEnv(saved);
+  }
+});
+
 test("detectHost: no env vars returns null", () => {
   const saved = saveEnv();
   try {
     clearHostEnv();
-    assert.equal(detectHost(), null);
+    assert.equal(
+      detectHost(process.env, {
+        pid: 30,
+        readProcessInfo: () => null
+      }),
+      null
+    );
   } finally {
     restoreEnv(saved);
   }
