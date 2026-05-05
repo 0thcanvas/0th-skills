@@ -82,11 +82,67 @@ export function sanitizeKey(key) {
     .replace(/^-|-$/g, "");
 }
 
-export function detectHost() {
-  if (process.env.CLAUDECODE === "1") return "claude";
-  if (process.env.CLAUDE_CODE_ENTRYPOINT) return "claude";
-  if (process.env.CODEX_SANDBOX) return "codex";
+function classifyHostCommand(command) {
+  const lowerCommand = command.toLowerCase();
+  const basename = path.basename(command).toLowerCase();
+
+  if (lowerCommand.includes("/claude.app/") || basename === "claude") {
+    return "claude";
+  }
+  if (lowerCommand.includes("/codex.app/") || basename === "codex") {
+    return "codex";
+  }
   return null;
+}
+
+function readProcessInfo(pid) {
+  const result = spawnSync("ps", ["-o", "ppid=,comm=", "-p", String(pid)], {
+    encoding: "utf8"
+  });
+
+  if (result.status !== 0 || !result.stdout.trim()) {
+    return null;
+  }
+
+  const match = result.stdout.trim().match(/^(\d+)\s+(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    ppid: Number(match[1]),
+    command: match[2]
+  };
+}
+
+function detectHostFromProcessTree({ pid = process.pid, maxDepth = 8, readProcessInfo: reader = readProcessInfo } = {}) {
+  let currentPid = pid;
+
+  for (let depth = 0; depth < maxDepth && currentPid > 0; depth += 1) {
+    const info = reader(currentPid);
+    if (!info) {
+      return null;
+    }
+
+    const host = classifyHostCommand(info.command);
+    if (host) {
+      return host;
+    }
+
+    if (!info.ppid || info.ppid === currentPid) {
+      return null;
+    }
+    currentPid = info.ppid;
+  }
+
+  return null;
+}
+
+export function detectHost(env = process.env, processOptions = {}) {
+  if (env.CLAUDECODE === "1") return "claude";
+  if (env.CLAUDE_CODE_ENTRYPOINT) return "claude";
+  if (env.CODEX_SANDBOX) return "codex";
+  return detectHostFromProcessTree(processOptions);
 }
 
 export function loadAndValidateConfig(cfgPath = configPath) {

@@ -56,7 +56,7 @@ Self-review:
 **Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. The gate is the only mechanical layer in 0th's flow that converts verifier discipline into a non-LLM gate; running `gh pr create` without it bypasses the architecture.
 
 ```bash
-node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/ship-gate.mjs"
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
 ```
 
 If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected stacks were not exercised; re-dispatch the verifier (return to /build's Verification step or invoke /verifier directly with a brief that names the missing rows) to exercise them, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`; the detection logic mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.

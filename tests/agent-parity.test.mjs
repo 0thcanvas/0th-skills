@@ -39,7 +39,9 @@ const expectedMirrors = {
     requiredFragments: [
       "PASS: X files, Y tests. 0 failures.",
       "FAIL: X of Y tests failed.",
-      "Never return raw test output"
+      "Never return raw test output",
+      "failure-dossier-runner.mjs",
+      "--run-id"
     ]
   },
   verifier: {
@@ -56,14 +58,17 @@ const expectedMirrors = {
       "When a `.env.local` is present",
       "or commands that place secrets in argv",
       "Stack Minimum Detection",
-      "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/references/stack-minimums.md",
+      "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md",
       "Detection is multi-match",
       "Playwright → bb-browser → computer-use",
       "This floor cannot be lowered",
       "stack_minimums_exercised",
+      "pre_dispatch_tool_failures_reviewed",
       "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
       "Whatever you spawn, you stop",
-      "browser_close_all"
+      "browser_close_all",
+      "failure-dossier-runner.mjs",
+      "--run-id"
     ]
   },
   synthesizer: {

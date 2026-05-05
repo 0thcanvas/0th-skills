@@ -15,7 +15,7 @@ const driver = {
       args.push("--resume", priorSession.session_id);
     }
 
-    args.push(prompt);
+    args.push("--", prompt);
     return args;
   },
 

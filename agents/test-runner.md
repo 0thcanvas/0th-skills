@@ -20,6 +20,16 @@ Check project root for:
 
 If a specific test file or pattern was requested, run only that subset.
 
+## Failure Dossiers
+
+When the caller needs a managed failure dossier, wrap the test command with:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <test command>
+```
+
+Use a fresh `--run-id` per run. The runner writes a dossier only on failure; still return the condensed pass/fail shape below and never paste raw output.
+
 ## What to Return
 
 **All passing:**

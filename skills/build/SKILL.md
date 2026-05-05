@@ -103,6 +103,7 @@ Rules:
 - Prefer names and assertions that read like living documentation of what the user or caller experiences.
 - Minimal code to pass — no speculative features.
 - Run tests after every change. Paste output.
+- For managed verification commands whose failures should produce a dossier, wrap the command with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <test command>`; use a fresh `--run-id` per run.
 - When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
 - On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
 - On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
