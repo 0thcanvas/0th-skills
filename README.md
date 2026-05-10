@@ -155,14 +155,22 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### Unreleased
 
+- Nothing yet.
+
+### 0.2.4
+
 - Continued the self-testing loop after slice 1 with managed failure dossiers: `scripts/failure-dossier-runner.mjs` writes atomic per-run dossiers, Codex and Claude hook adapters surface matching dossiers into the next agent turn, and managed verification prompts now name the runner instead of relying on Bash `tool_response` parsing
 - Hardened `/ship`'s verifier gate for the hook blind spot: structured verifier reports now include `pre_dispatch_tool_failures_reviewed`, and `scripts/ship-gate.mjs` fails closed when expected stack evidence omits it
+- Added Codex-specific compact wrappers under `codex-skills/`, plus `scripts/build-codex-wrappers.mjs`, drift checks, and trigger/invoke budget guards so Codex avoids Claude-only frontmatter without inlining the full shared workflows
+- Added Codex manifest trust links, `docs/privacy.md`, `docs/terms.md`, and a repo `LICENSE` matching the MIT manifest claim
+- Updated Claude/Codex plugin metadata and docs for the current ten-skill surface, including `/retro`, architecture cleanup, and generated Codex wrappers
+- Kept `FEEDBACK.md` for the migration-overlap window; removal is now a later follow-up, not part of this release
 
 ### 0.2.3
 
 - Added `/retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log under `${KB_ROOT}/learning/skill-incidents/<YYYY-MM-DD>-<slug>.md`. The skill enforces a four-stage authoring workflow (extract evidence → redact → classify → aggregate) with a flat 7-bucket classification taxonomy (`user-ambiguity | skill-issue | context-rot | tool-failure | model-limitation | verification-skipped | unknown`); `unknown` requires either `candidate_new_category:` or `insufficient_evidence:` to prevent junk-drawer drift. Manual capture only — no auto-hook
 - Added `scripts/retro-aggregator.mjs` — deterministic directory walk that grouped-counts incidents by `(classification × skill)`, `(classification)`, and `(tags)` per-distinct-value; surfaces buckets at ≥ 3 lifetime, annotates whether ≥ 3 entries fall within the last 30 days as a "recent cluster" (using each entry's frontmatter `date`, not the filename, with timezone-aware timestamps; `0 ≤ current_run_at − date ≤ 30 days`, inclusive); excludes the just-written entry from prior-entry links so reports stay retrospective. `related_skills` is informational only and does NOT fan out into bucket counts (regression test enforces this)
-- Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed `skills/FEEDBACK.md` is kept in this release for the migration-overlap window; it will be removed in v0.2.4 once users have had a chance to migrate
+- Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed `skills/FEEDBACK.md` is kept in this release for the migration-overlap window; removal is a later follow-up once users have had a chance to migrate
 - Added `scripts/feedback-migrator.mjs` — shared idempotent comparator invoked from both `/retro` (Step 0) and the "process the skill feedback" flow. Rule: any non-empty line whose trimmed content is not present in `FEEDBACK.example.md` = non-template; missing destination is treated as empty; only the not-yet-copied lines are appended; re-runs converge to a no-op
 - Plumbing: `/retro` registered for both hosts via `skills/retro/agents/openai.yaml`; `skills/CLAUDE.md` skill table and routing, `README.md` skill list, `scripts/install-smoke-check.mjs` `expectedSkills`, and the metadata + routing parity tests all updated
 - Decision record: [`docs/decisions/2026-05-03-skill-incident-log.md`](https://github.com/0thcanvas/0th-skills/blob/main/docs/decisions/2026-05-03-skill-incident-log.md) (six rounds of cross-model review with Codex/gpt-5.5; both sides converged)
