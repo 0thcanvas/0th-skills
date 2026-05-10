@@ -13,6 +13,7 @@ const thinkTemplatePath = path.join(skillsRoot, "think", "templates", "decision-
 const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates", "output-shape.md");
 const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
 const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
+const memoryContractPath = path.join(repoRoot, "references", "memory-contract.md");
 
 // `zoom-out` is intentionally excluded: its `disable-model-invocation: true` (and
 // matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
@@ -178,6 +179,50 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
       source,
       /ask-counterpart-review/,
       `${skillName} should reference ask-counterpart-review`
+    );
+  }
+});
+
+test("shared memory contract defines required types and lifecycle states", () => {
+  const source = read(memoryContractPath);
+
+  for (const fragment of [
+    "decision",
+    "observation",
+    "root_cause",
+    "vocabulary",
+    "incident",
+    "repo_state",
+    "external_research",
+    "active",
+    "needs_review",
+    "superseded",
+    "archived",
+    "ephemeral"
+  ]) {
+    assert.ok(source.includes(fragment), `memory contract should include "${fragment}"`);
+  }
+});
+
+test("core skills require the shared memory write gate", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /\.\.\/\.\.\/references\/memory-contract\.md/,
+      `${skillName} should link to the shared memory contract`
+    );
+    assert.match(
+      source,
+      /Memory Write Gate/,
+      `${skillName} should require the Memory Write Gate`
+    );
+    assert.match(
+      source,
+      /nothing durable/,
+      `${skillName} should include an explicit nothing durable outcome`
     );
   }
 });

@@ -133,6 +133,10 @@ Write findings to KB if the root cause was non-obvious.
 
 If you hit the 3-strike boundary or start rationalizing a shortcut, read `references/root-cause-patterns.md` before proceeding.
 
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`, then write only through the target the contract names.
+
 ## KB Integration
 
 - **Reads:** prior bugs in this area, architectural notes, known pitfalls

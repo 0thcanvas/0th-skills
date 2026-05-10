@@ -148,3 +148,7 @@ Survey mode is single-pass: Phase 0-1-2-3-7s, or USER_STOP.
 - `templates/conclusion.md`
 - `templates/journal-entry.md`
 - `templates/quality-gate.md`
+
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`, then write only through the target the contract names.

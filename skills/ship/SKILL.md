@@ -121,6 +121,10 @@ Tests: X passing, 0 failing
 Counterpart review: [clean / N suggestions / N blockers resolved]
 ```
 
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`, then write only through the target the contract names.
+
 ## KB Integration
 
 - **Reads:** nothing (operates on the diff)

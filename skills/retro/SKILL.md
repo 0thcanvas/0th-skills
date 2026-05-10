@@ -192,6 +192,10 @@ Patterns surfaced (≥ 3):
 - `unknown` requires `candidate_new_category` or `insufficient_evidence`. No exceptions.
 - The `apply` chooser invokes the existing edit/build flow with user approval — `/retro` itself never modifies skill files, behavior rules, or other code.
 
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`, then write only through the target the contract names.
+
 ## KB Integration
 
 - **Reads:** the existing incident log at `${KB_ROOT}/learning/skill-incidents/`, the decision record this skill implements
