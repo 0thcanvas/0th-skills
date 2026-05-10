@@ -170,7 +170,7 @@ test("shipped prompt commands resolve repo scripts through relative or env roots
 });
 
 test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
-  for (const skillName of ["think", "plan", "ship"]) {
+  for (const skillName of ["think", "plan", "build"]) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
@@ -180,4 +180,10 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
       `${skillName} should reference ask-counterpart-review`
     );
   }
+
+  assert.doesNotMatch(
+    read(path.join(skillsRoot, "ship", "SKILL.md")),
+    /Send the branch diff to the counterpart reviewer/,
+    "ship should not initiate first-time counterpart diff review"
+  );
 });

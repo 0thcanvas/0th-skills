@@ -33,6 +33,18 @@ const expectedMirrors = {
       "Treat resolved secret values or revealing secret commands as BLOCKERs"
     ]
   },
+  "experience-reviewer": {
+    codexFile: "0th-experience-reviewer.toml",
+    claudeFile: "experience-reviewer.md",
+    requiredFragments: [
+      "Product Acceptance Loop",
+      "decision record, plan acceptance criteria, explicit user brief, then repo standards",
+      "BLOCKER | POLISH | NIT | OUT_OF_SCOPE | BLOCKED_BY_SPEC",
+      "Max 3 product acceptance rounds",
+      "verification-report/product-acceptance.json",
+      "human-sounding copy"
+    ]
+  },
   "test-runner": {
     codexFile: "0th-test-runner.toml",
     claudeFile: "test-runner.md",

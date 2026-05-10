@@ -155,15 +155,100 @@ The verifier exercises the feature as a real user (browser for UI, terminal for 
 | **BLOCKED** | Applicable checks could not run | Stop. Report to user. |
 | **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
 
-**Only PASS allows handoff to /ship.** Any other outcome requires user intervention.
+**Only PASS allows product acceptance and handoff to /ship.** Any other outcome requires user intervention.
 
 If verification finds and fixes issues, the verifier commits fixes atomically (separate from slice commits) and produces a verification report with evidence.
 
 See `references/verification-checklist.md` for the compact per-method loops.
 
-### 6. Completion
+### 6. Product Acceptance Loop
 
-After verification passes:
+After verifier PASS, run product acceptance before human review or /ship. This is where `/build`
+takes responsibility for "is this genuinely ready?" rather than leaving product polish for the
+human to discover.
+
+First decide whether product acceptance is required:
+- Required for complex, multi-slice, UI, content-heavy, onboarding, learning, user-interaction, or product-surface work.
+- Not required only for mechanical/internal changes with no user-facing behavior, such as narrow test fixes, docs-only cleanup, or private refactors.
+
+Write `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` either way
+(default path: `verification-report/product-acceptance.json`). For
+non-required work, set `required: false`, `outcome: "NOT_REQUIRED"`, and include a concrete
+`required_rationale`. For required work, the report must end with `required: true` and
+`outcome: "PASS"` before /ship.
+
+Judge against this hierarchy: decision record, plan acceptance criteria, explicit user brief, then repo standards.
+If that source material is too vague to judge subjective quality, stop with `BLOCKED_BY_SPEC`
+instead of inventing taste.
+
+For required acceptance, dispatch the experience reviewer:
+- On Claude-hosted runs, dispatch `0th:experience-reviewer`.
+- On Codex-hosted runs, dispatch `0th_experience_reviewer`.
+
+Provide:
+- Decision record, plan, and relevant user brief
+- Feature summary, slices, acceptance criteria, and current branch
+- Verifier report, screenshots, browser notes, terminal output, or other user-flow evidence
+- Known concerns and any intentionally deferred items
+
+For UI/content-heavy work, do not accept a diff-only review. The Product Acceptance Loop must inspect
+screenshots, verifier evidence, live-flow notes, or equivalent user-facing evidence before judging
+layout, copy, pedagogy, or interaction quality.
+
+Finding classes:
+- `BLOCKER`: must fix before human review
+- `POLISH`: in-scope product improvement; fix before human review
+- `NIT`: fix if cheap and low risk
+- `OUT_OF_SCOPE`: record as deferred; do not expand the feature
+- `BLOCKED_BY_SPEC`: stop and ask the user to clarify the decision or plan
+
+Max 3 product acceptance rounds. In each round:
+1. Fix all `BLOCKER` and in-scope `POLISH` findings.
+2. Fix `NIT` findings only when cheap and low risk.
+3. Record `OUT_OF_SCOPE` findings in the report without implementing them.
+4. Rerun the exact affected tests and verifier path after fixes.
+5. Dispatch the experience reviewer again with updated evidence.
+
+After product acceptance passes, run code/diff counterpart review using `ask-counterpart-review`.
+Persist the result or exact unavailable/skipped reason to
+`${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md`. If blockers exist, fix
+them, rerun the relevant tests, rerun product acceptance if product behavior changed, and rerun
+counterpart review. If counterpart review is unavailable, record the exact reason; do not call it
+clean.
+
+The product acceptance report should include:
+
+```json
+{
+  "schema_version": 1,
+  "feature": "<short feature name>",
+  "required": true,
+  "required_rationale": "<why acceptance was required or not required>",
+  "source": {
+    "decision": "docs/decisions/...",
+    "plan": "docs/plans/...",
+    "user_brief": "<short summary or null>"
+  },
+  "judgment_hierarchy": [
+    "decision_record",
+    "plan_acceptance_criteria",
+    "explicit_user_brief",
+    "repo_standards"
+  ],
+  "outcome": "PASS",
+  "rounds": [],
+  "fixed_issues": [],
+  "deferred_items": [],
+  "evidence_paths": [],
+  "reviewed_at": "2026-05-10T00:00:00.000Z"
+}
+```
+
+Allowed outcomes: `PASS`, `NEEDS_ITERATION`, `BLOCKED_BY_SPEC`, `NOT_REQUIRED`.
+
+### 7. Completion
+
+After verification, product acceptance, and counterpart evidence pass:
 
 Report:
 ```
@@ -171,6 +256,8 @@ STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED
 Slices: N/N complete
 Tests: X passing, 0 failing
 Verification: PASS (N issues found and fixed)
+Product acceptance: PASS | NOT_REQUIRED (rounds, issues fixed, deferred items)
+Counterpart review: clean | N blockers fixed | skipped — <exact unavailable reason>
 Concerns: [if any]
 ```
 

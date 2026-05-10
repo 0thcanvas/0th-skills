@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import process from "node:process";
 
 const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exercised_at"];
+const ACCEPTANCE_OUTCOMES = new Set(["PASS", "NEEDS_ITERATION", "BLOCKED_BY_SPEC", "NOT_REQUIRED"]);
 
 const WEB_FRAMEWORK_CONFIGS = [
   "next.config.js", "next.config.mjs", "next.config.ts",
@@ -154,16 +155,88 @@ export function validateReport(report, expectedStacks) {
   return { ok: reasons.length === 0, reasons };
 }
 
+export function validateProductAcceptanceReport(report) {
+  const reasons = [];
+
+  if (!report || typeof report !== "object") {
+    reasons.push("product acceptance report is missing or not an object");
+    return { ok: false, reasons };
+  }
+
+  if (report.schema_version !== 1) {
+    reasons.push("schema_version must be 1");
+  }
+
+  if (typeof report.required !== "boolean") {
+    reasons.push("required must be a boolean");
+  }
+
+  if (typeof report.required_rationale !== "string" || report.required_rationale.trim() === "") {
+    reasons.push("required_rationale must be a non-empty string");
+  }
+
+  if (!ACCEPTANCE_OUTCOMES.has(report.outcome)) {
+    reasons.push(`outcome must be one of ${[...ACCEPTANCE_OUTCOMES].join(", ")}`);
+  }
+
+  if (typeof report.reviewed_at !== "string" || report.reviewed_at.trim() === "") {
+    reasons.push("reviewed_at must be a non-empty ISO timestamp string");
+  }
+
+  if (report.required === true && report.outcome !== "PASS") {
+    reasons.push(`required product acceptance outcome is '${report.outcome}', not 'PASS'`);
+  }
+
+  if (report.required === false && report.outcome !== "NOT_REQUIRED") {
+    reasons.push(`not-required product acceptance outcome is '${report.outcome}', not 'NOT_REQUIRED'`);
+  }
+
+  if (report.required === true) {
+    if (!report.source || typeof report.source !== "object") {
+      reasons.push("source must be an object for required product acceptance");
+    }
+    if (!Array.isArray(report.judgment_hierarchy) || report.judgment_hierarchy.length === 0) {
+      reasons.push("judgment_hierarchy must be a non-empty array for required product acceptance");
+    }
+    if (!Array.isArray(report.evidence_paths)) {
+      reasons.push("evidence_paths must be an array for required product acceptance");
+    }
+  }
+
+  return { ok: reasons.length === 0, reasons };
+}
+
 function main() {
   const repoPath = resolveRepoRoot(process.cwd());
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const reportPath = join(repoPath, reportDir, "report.json");
+  const acceptancePath = join(repoPath, reportDir, "product-acceptance.json");
   const brief = loadBrief(repoPath, reportDir);
 
   const expected = detectStacks(repoPath, brief);
 
+  if (!existsSync(acceptancePath)) {
+    console.error(`ship-gate: missing product acceptance report at ${acceptancePath}`);
+    process.exit(1);
+  }
+
+  const acceptanceReport = readJson(acceptancePath);
+  if (acceptanceReport === null) {
+    console.error(`ship-gate: malformed JSON at ${acceptancePath}`);
+    process.exit(1);
+  }
+
+  const acceptanceResult = validateProductAcceptanceReport(acceptanceReport);
+  if (!acceptanceResult.ok) {
+    console.error("ship-gate: product acceptance gate FAILED.");
+    for (const reason of acceptanceResult.reasons) {
+      console.error(`ship-gate:   - ${reason}`);
+    }
+    process.exit(1);
+  }
+
   if (expected.length === 0) {
-    console.log("ship-gate: no stacks detected for this repo; gate is a no-op");
+    console.log("ship-gate: product acceptance gate PASSED; no stacks detected for this repo");
     process.exit(0);
   }
 

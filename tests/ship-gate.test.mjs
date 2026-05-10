@@ -4,7 +4,13 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { detectStacks, loadBrief, resolveRepoRoot, validateReport } from "../scripts/ship-gate.mjs";
+import {
+  detectStacks,
+  loadBrief,
+  resolveRepoRoot,
+  validateProductAcceptanceReport,
+  validateReport
+} from "../scripts/ship-gate.mjs";
 
 function makeTempRepo() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "ship-gate-test-"));
@@ -18,6 +24,21 @@ function makeTempGitRepo() {
 
 function writePkg(dir, pkg) {
   fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkg, null, 2));
+}
+
+function writeProductAcceptance(dir, payload = {}) {
+  fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "verification-report", "product-acceptance.json"),
+    JSON.stringify({
+      schema_version: 1,
+      required: false,
+      required_rationale: "Mechanical test fixture with no product surface.",
+      outcome: "NOT_REQUIRED",
+      reviewed_at: "2026-05-10T20:00:00.000Z",
+      ...payload
+    })
+  );
 }
 
 test("detectStacks: empty repo yields no stacks", () => {
@@ -140,6 +161,7 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   const sub = path.join(repo, "src", "renderer");
   fs.mkdirSync(sub, { recursive: true });
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  writeProductAcceptance(repo);
   fs.writeFileSync(
     path.join(repo, "verification-report", "report.json"),
     JSON.stringify({
@@ -289,4 +311,45 @@ test("validateReport: all expected stacks exercised plus PASS yields ok", () => 
 test("validateReport: empty expected list passes regardless of report shape", () => {
   const result = validateReport({}, []);
   assert.equal(result.ok, true);
+});
+
+test("validateProductAcceptanceReport: missing report fails", () => {
+  const result = validateProductAcceptanceReport(null);
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /product acceptance report is missing/);
+});
+
+test("validateProductAcceptanceReport: required acceptance must pass", () => {
+  const result = validateProductAcceptanceReport({
+    schema_version: 1,
+    required: true,
+    required_rationale: "UI feature with learner-facing instruction copy.",
+    outcome: "NEEDS_ITERATION",
+    reviewed_at: "2026-05-10T20:00:00.000Z"
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /required product acceptance outcome is 'NEEDS_ITERATION', not 'PASS'/);
+});
+
+test("validateProductAcceptanceReport: not-required acceptance needs rationale", () => {
+  const result = validateProductAcceptanceReport({
+    schema_version: 1,
+    required: false,
+    required_rationale: "",
+    outcome: "NOT_REQUIRED",
+    reviewed_at: "2026-05-10T20:00:00.000Z"
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /required_rationale/);
+});
+
+test("validateProductAcceptanceReport: valid not-required report passes", () => {
+  const result = validateProductAcceptanceReport({
+    schema_version: 1,
+    required: false,
+    required_rationale: "Documentation-only cleanup with no product surface.",
+    outcome: "NOT_REQUIRED",
+    reviewed_at: "2026-05-10T20:00:00.000Z"
+  });
+  assert.equal(result.ok, true, result.reasons.join(", "));
 });

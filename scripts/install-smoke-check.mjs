@@ -10,6 +10,7 @@ const defaultRepoRoot = path.resolve(__dirname, "..");
 
 const expectedCodexAgents = [
   "0th-deep-researcher.toml",
+  "0th-experience-reviewer.toml",
   "0th-explorer.toml",
   "0th-experimenter.toml",
   "0th-implementer.toml",
