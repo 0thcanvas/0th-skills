@@ -6,9 +6,12 @@ Use this file when you need the compact per-method verification loops, not as th
 
 1. Preflight: confirm dev server is ready, capture startup errors if any. If the session browser is down, `browser-kit session open`; if the `bb-browser` MCP is not registered for the current host, `browser-kit mcp install --host <host>`.
 2. Navigate via browser automation, record the exact URL tested.
-3. Visual: screenshot, check layout/spacing/alignment, resize to mobile/tablet.
+3. Visual: before checking, state the Visual invariant that could fail. Use DOM/e2e tests for behavior/routing, screenshot inspection for layout/fit/overlap/responsive presentation, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
 4. Functional: fill forms, click buttons, navigate flows, verify success/error/loading states.
 5. Accessibility: keyboard nav works, focus visible, form labels present, error messages associated.
+
+For visual/frontend claims, separate verified by tests from visually inspected in the final report.
+Include the screenshot path or pixel evidence path when fit, overlap, alignment, or motion matters.
 
 ## CLI Features
 

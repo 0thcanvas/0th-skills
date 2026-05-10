@@ -96,6 +96,12 @@ VERIFY: Confirm the change does what was intended.
 COMMIT: Atomic commit.
 ```
 
+For visual/frontend work, verification starts by naming the visual invariant and what could be
+wrong. If the claim is visual, the evidence must be visual. Use a DOM/e2e test for behavior and
+routing; use screenshot inspection for layout, fit, overlap, and responsive presentation; use a
+pixel assertion or screenshot assertion for overlays, canvas, SVG, animation, and coordinate-system
+alignment.
+
 Rules:
 - One slice at a time. Don't batch.
 - Test behavior through public interfaces, not implementation details.
@@ -135,6 +141,12 @@ git status
 ```
 
 **Brief-construction discipline.** Before dispatching the verifier, read the stack-minimums reference (linked above) and walk its Detection signals against the repo. For every matched row, name the row's stack id and Minimum behavior in the brief. Do not write "skip if not feasible," "if X is hard to run, mark blocked," "skip the live UI exercise," or any equivalent escape language for stack-minimum rows — those rows are the floor, and the verifier will run them anyway. Feature-specific checks (which the brief *can* mark optional) must be additive to the stack-minimums, never replacements for them.
+
+For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene work, include visual
+evidence in the verifier brief. Name the visual invariant that could fail, then specify the
+evidence method: DOM/e2e test for behavior, screenshot inspection for layout/fit/overlap, or pixel
+assertion/screenshot assertion for overlays, canvas, animations, and coordinate alignment. Do not
+let "tests passed" stand in for visual fit.
 
 **Persist the brief.** Write the verifier brief to `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` in the project root before dispatching. `/ship`'s gate script reads this file to detect bb-browser-escape-hatch matches independently of the verifier; without it, escape-hatch rows would not be enforced.
 
@@ -258,6 +270,7 @@ Tests: X passing, 0 failing
 Verification: PASS (N issues found and fixed)
 Product acceptance: PASS | NOT_REQUIRED (rounds, issues fixed, deferred items)
 Counterpart review: clean | N blockers fixed | skipped — <exact unavailable reason>
+Visual invariants: [checked invariant + evidence method/path, if visual work]
 Concerns: [if any]
 ```
 

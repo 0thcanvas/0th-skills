@@ -68,6 +68,7 @@ Rules:
 - Many thin slices over few thick ones
 - Describe behavior and acceptance criteria, NOT implementation steps
 - No file paths — describe contracts and interfaces
+- For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene slices, name the visual invariant that could fail and the required screenshot evidence, pixel assertion, or other visual evidence.
 
 ### 4. Write the Plan
 
@@ -89,10 +90,12 @@ Save to `docs/plans/YYYY-MM-DD-<topic>.md`:
 <What this slice delivers — one sentence>
 - [ ] Acceptance criterion
 - [ ] Acceptance criterion
+- [ ] Visual invariant: [what must visually hold + screenshot evidence/pixel assertion], if applicable
 
 ### 2. <Name>
 <What this slice delivers>
 - [ ] Acceptance criterion
+- [ ] Visual invariant: [what must visually hold + screenshot evidence/pixel assertion], if applicable
 
 ...
 ```

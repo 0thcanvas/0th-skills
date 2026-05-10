@@ -157,6 +157,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 ### Unreleased
 
 - Added the Product Acceptance Loop to `/build`: completed features now produce `verification-report/product-acceptance.json`, run an experience reviewer for complex/UI/content-heavy work, move code/diff counterpart review into build evidence, and leave `/ship` as a lightweight evidence and PR hygiene gate.
+- Added visual invariant guardrails: frontend work must name what could visually fail and verify the claim with screenshot or pixel evidence instead of treating DOM tests as visual proof.
 - Added mirrored Claude/Codex `experience-reviewer` agents plus parity and workflow tests so product, UX, learner-fit, and copy-quality review stay available on both hosts.
 - Extended `scripts/ship-gate.mjs` to fail closed on missing or invalid product acceptance evidence before PR creation.
 
