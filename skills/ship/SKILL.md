@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Review and land code via PR. Always creates a PR — no direct merges to main. Runs tests, sends the diff to the counterpart reviewer, and lets the user inspect the file list and changes. Use when implementation is complete and ready to land."
+description: "Use when implementation is complete and ready for tests, review, push, and PR creation. Always lands through a PR."
 argument-hint: "[branch or PR-ready change]"
 ---
 

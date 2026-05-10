@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Break a decision into vertical slices with acceptance criteria. Use when work spans multiple sessions, involves ordering dependencies, or needs parallel agent dispatch. Optional — skip when work is small enough to build directly."
+description: "Use when a decision needs vertical implementation slices, acceptance criteria, dependency ordering, or multi-session coordination."
 argument-hint: "[decision record path or scope]"
 ---
 

@@ -31,13 +31,12 @@
       "Write"
     ],
     "websiteURL": "https://github.com/0thcanvas/0th-skills",
+    "privacyPolicyURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/privacy.md",
+    "termsOfServiceURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/terms.md",
     "defaultPrompt": [
-      "Use the think skill to turn this idea into a short decision record.",
-      "Use the build skill to implement this change with TDD on a feature branch.",
-      "Use the debug skill to investigate the root cause before fixing this failure.",
-      "Use the research skill when the answer depends on external docs, open-source tools, or papers.",
-      "Use the deep-research skill when the question needs a feasibility study, decision loop, or research-backed architecture.",
-      "Use the improve-architecture skill periodically to surface deepening opportunities — turn shallow modules into deep ones using the deletion test."
+      "Turn an idea into a short decision record.",
+      "Implement this change with TDD on a feature branch.",
+      "Debug this from root cause before fixing it."
     ],
     "brandColor": "#1B1814",
     "screenshots": []

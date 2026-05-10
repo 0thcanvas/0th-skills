@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Run source-aware research for products, APIs, open-source tools, papers, and practitioner/video evidence. Use when the answer lives outside the repo and generic web search is not enough. Routes queries across official docs, GitHub, arXiv, specs, video/transcript sources, and broader web, then returns decision-ready findings."
+description: "Use when the answer lives outside the repo and needs source-aware research across docs, code, papers, specs, or practitioner evidence."
 argument-hint: "[question]"
 ---
 

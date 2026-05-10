@@ -1,6 +1,6 @@
 ---
 name: improve-architecture
-description: "Find deepening opportunities in a codebase — refactors that turn shallow modules into deep ones. Use when the user wants to improve architecture, find refactoring candidates, consolidate coupled modules, or make code more testable and AI-navigable. Run periodically, not per-feature."
+description: "Use when the user wants architectural cleanup: deepening shallow modules, consolidating coupled code, or improving testability."
 argument-hint: "[area to focus on, optional]"
 ---
 

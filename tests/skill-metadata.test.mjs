@@ -41,6 +41,19 @@ test("each skill declares Claude direct-invocation metadata", () => {
   }
 });
 
+test("skill descriptions advertise trigger conditions up front", () => {
+  for (const skillName of [...skillNames, "zoom-out"]) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /^description:\s*"Use when /m,
+      `${skillName} should start its description with a clear Use when trigger`
+    );
+  }
+});
+
 test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
   for (const skillName of skillNames) {
     const metadataPath = path.join(skillsRoot, skillName, "agents", "openai.yaml");
