@@ -226,3 +226,26 @@ test("core skills require the shared memory write gate", () => {
     );
   }
 });
+
+test("core skills require conservative repo preflight", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /session-preflight\.mjs/,
+      `${skillName} should name the shared session preflight script`
+    );
+    assert.match(
+      source,
+      /fast-forward/,
+      `${skillName} should name the safe fast-forward behavior`
+    );
+    assert.match(
+      source,
+      /dirty.*divergent|divergent.*dirty/s,
+      `${skillName} should warn on dirty and divergent states`
+    );
+  }
+});
