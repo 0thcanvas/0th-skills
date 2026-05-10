@@ -27,6 +27,17 @@ function commit(repo, message) {
   sh(repo, ["git", "commit", "-m", message]);
 }
 
+function writeJsonl(filePath, entries) {
+  fs.writeFileSync(filePath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
+}
+
+function readJsonl(filePath) {
+  return fs.readFileSync(filePath, "utf8")
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+}
+
 function initRepoWithRemote() {
   const root = tempDir("0th-preflight-");
   const remote = path.join(root, "remote.git");
@@ -56,11 +67,21 @@ function pushRemoteCommit(remote, message, content) {
 }
 
 test("preflight fast-forwards a clean branch that is behind upstream", () => {
-  const { remote, local } = initRepoWithRemote();
+  const { root, remote, local } = initRepoWithRemote();
+  const memoryFile = path.join(root, "claims.jsonl");
+  writeJsonl(memoryFile, [
+    {
+      id: "memory-file-behavior",
+      claim: "memory.txt stores the initial state.",
+      lifecycle_state: "active",
+      source_paths: ["memory.txt"]
+    }
+  ]);
   const beforeHead = sh(local, ["git", "rev-parse", "HEAD"]);
   pushRemoteCommit(remote, "remote update", "remote\n");
 
-  const result = runPreflight({ cwd: local });
+  const result = runPreflight({ cwd: local, memoryFile });
+  const [claim] = readJsonl(memoryFile);
 
   assert.equal(result.branch, "main");
   assert.equal(result.clean, true);
@@ -72,6 +93,10 @@ test("preflight fast-forwards a clean branch that is behind upstream", () => {
   assert.notEqual(result.after_head, beforeHead);
   assert.match(result.fetched_at, /^\d{4}-\d{2}-\d{2}T/);
   assert.equal(fs.readFileSync(path.join(local, "memory.txt"), "utf8"), "remote\n");
+  assert.deepEqual(result.memory_sync.affected_claim_ids, ["memory-file-behavior"]);
+  assert.equal(claim.lifecycle_state, "needs_review");
+  assert.equal(claim.review.from_revision, beforeHead);
+  assert.equal(claim.review.to_revision, result.after_head);
 });
 
 test("preflight does not pull a dirty branch that is behind upstream", () => {

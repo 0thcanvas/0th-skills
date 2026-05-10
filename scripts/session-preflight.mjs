@@ -2,6 +2,7 @@
 
 import { execFileSync } from "node:child_process";
 import process from "node:process";
+import { runMemorySync } from "./memory-sync.mjs";
 
 function runGit(cwd, args, { allowFailure = false } = {}) {
   try {
@@ -37,7 +38,11 @@ function relationFor({ upstream, ahead, behind }) {
   return "up_to_date";
 }
 
-export function runPreflight({ cwd = process.cwd(), allowPull = true } = {}) {
+export function runPreflight({
+  cwd = process.cwd(),
+  allowPull = true,
+  memoryFile
+} = {}) {
   const repoRoot = runGit(cwd, ["rev-parse", "--show-toplevel"]);
   const branch = runGit(repoRoot, ["branch", "--show-current"]) || "DETACHED";
   const beforeHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
@@ -58,6 +63,7 @@ export function runPreflight({ cwd = process.cwd(), allowPull = true } = {}) {
   const { ahead, behind } = upstream ? readAheadBehind(repoRoot) : { ahead: 0, behind: 0 };
 
   let action = "up_to_date";
+  let memorySync = null;
   if (!upstream) {
     action = "no_upstream";
     warnings.push("current branch has no upstream");
@@ -77,8 +83,16 @@ export function runPreflight({ cwd = process.cwd(), allowPull = true } = {}) {
   }
 
   const afterHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
+  if (action === "fast_forward_pulled") {
+    memorySync = runMemorySync({
+      cwd: repoRoot,
+      from: beforeHead,
+      to: afterHead,
+      ...(memoryFile ? { memoryFile } : {})
+    });
+  }
 
-  return {
+  const result = {
     repo_root: repoRoot,
     branch,
     clean,
@@ -93,12 +107,20 @@ export function runPreflight({ cwd = process.cwd(), allowPull = true } = {}) {
     action,
     warnings
   };
+
+  if (memorySync) {
+    result.memory_sync = memorySync;
+  }
+
+  return result;
 }
 
 function main() {
   const args = process.argv.slice(2);
   const allowPull = !args.includes("--no-pull");
-  const result = runPreflight({ cwd: process.cwd(), allowPull });
+  const memoryFileIndex = args.indexOf("--memory-file");
+  const memoryFile = memoryFileIndex === -1 ? undefined : args[memoryFileIndex + 1];
+  const result = runPreflight({ cwd: process.cwd(), allowPull, memoryFile });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
