@@ -224,6 +224,16 @@ test("core skills require the shared memory write gate", () => {
       /nothing durable/,
       `${skillName} should include an explicit nothing durable outcome`
     );
+    assert.match(
+      source,
+      /memory-write\.mjs/,
+      `${skillName} should require the canonical memory writer for durable claims`
+    );
+    assert.match(
+      source,
+      /do not hand-edit `.0th\/memory\/claims\.jsonl`/,
+      `${skillName} should forbid manual claim-file edits`
+    );
   }
 });
 

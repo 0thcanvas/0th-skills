@@ -52,3 +52,37 @@ For every durable outcome, record:
 - supersedes / superseded_by when replacing older memory
 
 If the outcome is `nothing durable`, write nothing and say so only when the user needs to know.
+
+## Canonical Writer
+
+Durable memory claims must be written through `scripts/memory-write.mjs`; do not hand-edit
+`.0th/memory/claims.jsonl`.
+
+Minimum command shape:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-write.mjs" \
+  --type decision \
+  --claim "Use write-through memory events instead of session-end hooks." \
+  --scope repo \
+  --evidence-path "docs/decisions/2026-05-10-0th-memory-v2.md" \
+  --source-path "references/memory-contract.md" \
+  --confidence high
+```
+
+The writer validates required fields, appends one JSONL claim, rejects duplicate explicit ids,
+and regenerates `.0th/memory/brief.md` unless `--no-brief` is passed.
+
+## Claim Schema
+
+Each claim in `.0th/memory/claims.jsonl` is one JSON object with:
+
+- `id` — unique; generated from date, type, and claim text when omitted.
+- `type` — one of the Memory Types above.
+- `claim` — concise reusable knowledge, not a transcript.
+- `scope` — `repo`, `project`, `domain`, `user`, or `global`.
+- `lifecycle_state` — one of the Lifecycle States above.
+- `created_at` and `last_confirmed_at` — ISO timestamps.
+- `confidence` or `review_caveat`.
+- `evidence_path` or at least one `source_paths` entry.
+- Optional `source_symbols`, `supersedes`, and `superseded_by`.

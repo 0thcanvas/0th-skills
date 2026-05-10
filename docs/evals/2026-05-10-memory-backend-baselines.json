@@ -21,6 +21,7 @@
     "mode": "local_executable",
     "capabilities": [
       "backend_decision",
+      "canonical_writer",
       "event_capture",
       "failure_artifacts",
       "generated_brief",
@@ -35,6 +36,7 @@
     "evidence_paths": [
       "references/memory-contract.md",
       "scripts/session-preflight.mjs",
+      "scripts/memory-write.mjs",
       "scripts/memory-sync.mjs",
       "scripts/memory-brief.mjs",
       "scripts/read-set-reconcile.mjs"

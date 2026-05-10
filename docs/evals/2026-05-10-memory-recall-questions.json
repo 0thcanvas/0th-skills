@@ -110,5 +110,17 @@
     "evidence_paths": [
       "docs/decisions/2026-05-10-memory-backend-eval.md"
     ]
+  },
+  {
+    "id": "q12-canonical-durable-memory-writer",
+    "question": "How should a future agent write a durable Memory v2 claim without hand-editing JSONL?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["canonical_writer", "generated_brief", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-write.mjs",
+      "tests/memory-write.test.mjs",
+      "tests/memory-v2-e2e.test.mjs",
+      "references/memory-contract.md"
+    ]
   }
 ]

@@ -10,10 +10,10 @@ Do not replace it with MemPalace or agentmemory yet.
 
 ## Evidence
 
-- The eval set in `docs/evals/2026-05-10-memory-recall-questions.json` covers 11 real 0th recall tasks across decisions, stale claims, recurring mistakes, repo vocabulary, and changed code behavior.
+- The eval set in `docs/evals/2026-05-10-memory-recall-questions.json` covers 12 real 0th recall tasks across decisions, stale claims, recurring mistakes, repo vocabulary, and changed code behavior.
 - The baseline matrix in `docs/evals/2026-05-10-memory-backend-baselines.json` compares current markdown lookup, the thin local layer, MemPalace-style verbatim retrieval, and agentmemory-style lifecycle/profile behavior.
 - `scripts/memory-eval.mjs` scores each baseline by the capabilities required to answer those tasks. This is a capability eval, not a full retrieval benchmark.
-- The thin local layer is the only candidate that covers repo preflight, memory sync after pulls, generated briefs, read-set reconciliation, and lifecycle state in the current workflow.
+- The thin local layer is the only candidate that covers canonical writes, repo preflight, memory sync after pulls, generated briefs, read-set reconciliation, and lifecycle state in the current workflow.
 
 ## Consequences
 
