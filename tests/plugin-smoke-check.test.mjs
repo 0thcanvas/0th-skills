@@ -25,6 +25,10 @@ function readCodexSkillDescription(skillName) {
   return match[1];
 }
 
+function readCodexSkillSource(skillName) {
+  return fs.readFileSync(path.join(codexSkillsRoot, skillName, "SKILL.md"), "utf8");
+}
+
 test("install smoke-check validates the repo packaging", () => {
   const result = spawnSync("node", [scriptPath, "--repo-root", repoRoot], {
     encoding: "utf8"
@@ -61,6 +65,22 @@ test("Codex trigger metadata stays within the plugin-eval moderate budget", () =
   assert.ok(
     triggerBudget <= 170,
     `Codex trigger metadata should stay compact enough for plugin-eval: ${triggerBudget} tokens`
+  );
+});
+
+test("Codex invocation metadata stays compact", () => {
+  const manifestSource = fs.readFileSync(codexManifestPath, "utf8");
+  const skillNames = fs.readdirSync(codexSkillsRoot)
+    .filter((entry) => fs.statSync(path.join(codexSkillsRoot, entry)).isDirectory())
+    .sort();
+  const invokeBudget = [
+    manifestSource,
+    ...skillNames.map(readCodexSkillSource),
+  ].reduce((total, text) => total + estimateTokenCount(text), 0);
+
+  assert.ok(
+    invokeBudget <= 1200,
+    `Codex invocation metadata should stay compact enough for plugin-eval: ${invokeBudget} tokens`
   );
 });
 

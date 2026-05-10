@@ -119,7 +119,9 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Claude Code plugin metadata lives in `.claude-plugin/`
 - Codex plugin metadata lives in `.codex-plugin/`
 - Shared workflow sources live in `skills/`
-- Codex-facing skill entrypoints live in `codex-skills/` and point back to the shared workflow sources without Claude-only frontmatter such as `argument-hint`
+- Codex-facing skill entrypoints live in `codex-skills/`; generate them with `node scripts/build-codex-wrappers.mjs`
+- Codex wrappers stay compact and point back to the shared workflow sources without Claude-only frontmatter such as `argument-hint`
+- Do not inline full shared workflows into `codex-skills/`; `tests/plugin-smoke-check.test.mjs` guards the active Codex invoke budget
 
 ## Install
 
