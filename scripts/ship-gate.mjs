@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // ship-gate.mjs — invoked by /ship before `gh pr create`.
 //
-// Reads ${VERIFICATION_REPORT_DIR:-verification-report}/report.json,
-// independently re-derives the expected stack set from the repo, and exits
-// non-zero if any expected stack is absent from stack_minimums_exercised,
-// the report is missing/malformed, or outcome is not PASS.
+// Scans tracked files for machine-specific local paths, reads
+// ${VERIFICATION_REPORT_DIR:-verification-report}/report.json, independently
+// re-derives the expected stack set from the repo, and exits non-zero if any
+// expected stack is absent from stack_minimums_exercised, the report is
+// missing/malformed, or outcome is not PASS.
 //
 // Per docs/decisions/2026-05-03-self-testing-loop-architecture.md.
 
@@ -22,6 +23,25 @@ const WEB_FRAMEWORK_CONFIGS = [
 ];
 
 const REAL_SESSION_PATTERN = /real[- ]session|logged[- ]in|shared[- ]tab|user'?s chrome/i;
+
+export const LOCAL_PATH_DENYLIST = [
+  {
+    label: "macOS user home path",
+    pattern: /\/Users\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
+  },
+  {
+    label: "Linux user home path",
+    pattern: /\/home\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
+  },
+  {
+    label: "Windows user profile path",
+    pattern: /[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\[^\s`"')\]<>{}]+/
+  },
+  {
+    label: "0th Canvas checkout fallback",
+    pattern: /(?:\$\{HOME\}|\$HOME|~)\/0thcanvas(?:\/[^\s`"')\]<>{}]+)?/
+  }
+];
 
 function readJson(filePath) {
   try {
@@ -154,11 +174,79 @@ export function validateReport(report, expectedStacks) {
   return { ok: reasons.length === 0, reasons };
 }
 
+export function findLocalPathLeaksInText(filePath, text, denylist = LOCAL_PATH_DENYLIST) {
+  const leaks = [];
+  const lines = text.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    for (const entry of denylist) {
+      const match = line.match(entry.pattern);
+      if (!match) continue;
+      leaks.push({
+        file: filePath,
+        line: index + 1,
+        label: entry.label,
+        match: match[0],
+        snippet: line.trim().slice(0, 180)
+      });
+    }
+  }
+
+  return leaks;
+}
+
+export function scanTrackedFilesForLocalPathLeaks(repoPath) {
+  let output;
+  try {
+    output = execFileSync("git", ["ls-files", "-z"], {
+      cwd: repoPath,
+      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8"
+    });
+  } catch {
+    return [];
+  }
+
+  const leaks = [];
+  const files = output.split("\0").filter(Boolean);
+  for (const file of files) {
+    const filePath = join(repoPath, file);
+    if (!existsSync(filePath)) continue;
+
+    let text;
+    try {
+      text = readFileSync(filePath, "utf8");
+    } catch {
+      continue;
+    }
+    if (text.includes("\0")) continue;
+
+    leaks.push(...findLocalPathLeaksInText(file, text));
+  }
+
+  return leaks;
+}
+
 function main() {
   const repoPath = resolveRepoRoot(process.cwd());
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const reportPath = join(repoPath, reportDir, "report.json");
   const brief = loadBrief(repoPath, reportDir);
+
+  const localPathLeaks = scanTrackedFilesForLocalPathLeaks(repoPath);
+  if (localPathLeaks.length > 0) {
+    console.error("ship-gate: local path check FAILED. Replace machine-specific paths with env/config contracts.");
+    for (const leak of localPathLeaks.slice(0, 20)) {
+      console.error(
+        `ship-gate:   - ${leak.file}:${leak.line} ${leak.label}: ${leak.match}`
+      );
+    }
+    if (localPathLeaks.length > 20) {
+      console.error(`ship-gate:   - ... ${localPathLeaks.length - 20} more`);
+    }
+    process.exit(1);
+  }
 
   const expected = detectStacks(repoPath, brief);
 

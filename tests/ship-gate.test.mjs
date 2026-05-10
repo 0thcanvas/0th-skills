@@ -4,7 +4,14 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { detectStacks, loadBrief, resolveRepoRoot, validateReport } from "../scripts/ship-gate.mjs";
+import {
+  detectStacks,
+  findLocalPathLeaksInText,
+  loadBrief,
+  resolveRepoRoot,
+  scanTrackedFilesForLocalPathLeaks,
+  validateReport
+} from "../scripts/ship-gate.mjs";
 
 function makeTempRepo() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "ship-gate-test-"));
@@ -71,6 +78,57 @@ test("detectStacks: brief mentioning logged-in yields bb-browser-escape-hatch", 
   const repo = makeTempRepo();
   const stacks = detectStacks(repo, "verify the logged-in dashboard flow");
   assert.ok(stacks.includes("bb-browser-escape-hatch"));
+});
+
+test("findLocalPathLeaksInText: flags machine-specific home paths", () => {
+  const macPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  const linuxPath = `/${["home", "alice", "project", "app"].join("/")}`;
+  const windowsPath = ["C:", "Users", "mini", "project"].join("\\");
+  const homeFallback = "$" + "{HOME}" + "/0thcanvas/skills";
+  const source = [
+    `Research note: ${macPath}`,
+    `Cache: ${linuxPath}`,
+    `Workspace: ${windowsPath}`,
+    `Fallback: ${homeFallback}`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("example.md", source);
+
+  assert.equal(leaks.length, 4);
+  assert.deepEqual(
+    leaks.map((leak) => leak.label),
+    [
+      "macOS user home path",
+      "Linux user home path",
+      "Windows user profile path",
+      "0th Canvas checkout fallback"
+    ]
+  );
+});
+
+test("findLocalPathLeaksInText: allows portable path contracts", () => {
+  const source = [
+    'node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT}/scripts/session-preflight.mjs"',
+    "${KB_ROOT}/tech/raw/research.md",
+    "~/.0th/reviews",
+    "$HOME/.0th/reviews",
+    ".0th/memory/claims.jsonl"
+  ].join("\n");
+
+  assert.deepEqual(findLocalPathLeaksInText("example.md", source), []);
+});
+
+test("scanTrackedFilesForLocalPathLeaks: scans tracked files only", () => {
+  const repo = makeTempGitRepo();
+  const trackedPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  fs.writeFileSync(path.join(repo, "tracked.md"), `bad: ${trackedPath}\n`);
+  fs.writeFileSync(path.join(repo, "untracked.md"), `bad: ${trackedPath}\n`);
+  execFileSync("git", ["add", "tracked.md"], { cwd: repo, stdio: "ignore" });
+
+  const leaks = scanTrackedFilesForLocalPathLeaks(repo);
+
+  assert.equal(leaks.length, 1);
+  assert.equal(leaks[0].file, "tracked.md");
 });
 
 test("resolveRepoRoot: returns git toplevel when invoked from a subdir", () => {
@@ -171,6 +229,31 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   }
   assert.equal(exitCode, 0, `expected exit 0 from subdir invocation, got ${exitCode}: ${out}`);
   assert.match(out, /gate PASSED.*electron-desktop/);
+});
+
+test("ship-gate CLI fails on tracked local path leaks even when no stacks are detected", () => {
+  const repo = makeTempGitRepo();
+  const localPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  fs.writeFileSync(path.join(repo, "decision.md"), `Research note: ${localPath}\n`);
+  execFileSync("git", ["add", "decision.md"], { cwd: repo, stdio: "ignore" });
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out = "";
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+
+  assert.equal(exitCode, 1);
+  assert.match(out, /local path check FAILED/);
+  assert.match(out, /decision\.md:1/);
 });
 
 test("detectStacks: flat multi-match (electron + manifest at root) matches both rows", () => {

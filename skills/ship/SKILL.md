@@ -47,6 +47,7 @@ git log main..HEAD --oneline  # commit history
 Self-review:
 - Are there files that shouldn't have changed?
 - Is the scope contained to what was intended?
+- Any hardcoded local workstation paths left in? Flag macOS/Linux/Windows user-profile paths, or HOME-based fallbacks to a local 0th Canvas checkout.
 - Any secrets, credentials, debug code left in?
 - Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
 - If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
@@ -54,6 +55,8 @@ Self-review:
 ### 3. Create the PR
 
 **Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. The gate is the only mechanical layer in 0th's flow that converts verifier discipline into a non-LLM gate; running `gh pr create` without it bypasses the architecture.
+
+The gate also scans tracked files for hardcoded workstation-local paths before the stack check. This runs even when no app/runtime stack is detected, because portability leaks are still release blockers in docs-only or skills-only repos.
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
