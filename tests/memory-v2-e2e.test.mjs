@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { appendMemoryClaim } from "../scripts/memory-write.mjs";
 import { runMemorySync } from "../scripts/memory-sync.mjs";
 import { reconcileReadSet } from "../scripts/read-set-reconcile.mjs";
+import { addOpenLoop, updateOpenLoopStatus } from "../scripts/open-loop.mjs";
 
 function sh(cwd, args) {
   return execFileSync(args[0], args.slice(1), {
@@ -100,4 +101,38 @@ test("Memory v2 accepts write, brief, source-change sync, and read-set confirmat
   assert.equal(claim.lifecycle_state, "active");
   assert.equal(claim.review, undefined);
   assert.equal(claim.last_confirmed_at, "2026-05-10T22:20:00.000Z");
+});
+
+test("Memory v2 tracks unfinished work as open loops instead of durable claims", () => {
+  const repo = tempRepo();
+  const taskFile = path.join(repo, ".0th", "tasks", "open-loops.jsonl");
+  const briefFile = path.join(repo, ".0th", "tasks", "brief.md");
+
+  const addResult = addOpenLoop({
+    cwd: repo,
+    now: new Date("2026-05-10T22:30:00.000Z"),
+    input: {
+      title: "Verify Memory v2 open-loop integration",
+      scope: "repo",
+      priority: "P1",
+      next_action: "Run the focused open-loop tests and full suite.",
+      evidence_path: "tests/memory-v2-e2e.test.mjs",
+      source_paths: ["scripts/open-loop.mjs", "scripts/open-loop-brief.mjs"]
+    }
+  });
+
+  assert.equal(addResult.written, true);
+  assert.match(fs.readFileSync(briefFile, "utf8"), /Verify Memory v2 open-loop integration/);
+
+  const closeResult = updateOpenLoopStatus({
+    cwd: repo,
+    id: addResult.id,
+    status: "done",
+    now: new Date("2026-05-10T22:40:00.000Z")
+  });
+  const [loop] = readJsonl(taskFile);
+
+  assert.equal(closeResult.status, "done");
+  assert.equal(loop.status, "done");
+  assert.equal(loop.closed_at, "2026-05-10T22:40:00.000Z");
 });

@@ -204,6 +204,14 @@ test("shared memory contract defines required types and lifecycle states", () =>
   }
 });
 
+test("shared memory contract separates open loops from durable memory claims", () => {
+  const source = read(memoryContractPath);
+
+  assert.match(source, /Open Loops/);
+  assert.match(source, /\.0th\/tasks\/open-loops\.jsonl/);
+  assert.match(source, /do not store TODOs as memory claims/i);
+});
+
 test("core skills require the shared memory write gate", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
@@ -233,6 +241,47 @@ test("core skills require the shared memory write gate", () => {
       source,
       /do not hand-edit `.0th\/memory\/claims\.jsonl`/,
       `${skillName} should forbid manual claim-file edits`
+    );
+  }
+});
+
+test("core skills read open-loop briefs after memory briefs", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /open-loop-brief\.mjs/,
+      `${skillName} should name the open-loop brief generator`
+    );
+    assert.match(
+      source,
+      /\.0th\/tasks\/brief\.md/,
+      `${skillName} should name the generated open-loop brief path`
+    );
+    assert.match(
+      source,
+      /after the memory brief/i,
+      `${skillName} should order open-loop recall after memory recall`
+    );
+  }
+});
+
+test("core skills update open loops for unfinished work", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /open-loop\.mjs/,
+      `${skillName} should name the open-loop writer`
+    );
+    assert.match(
+      source,
+      /do not store TODOs as memory claims/i,
+      `${skillName} should keep unfinished actions out of memory claims`
     );
   }
 });

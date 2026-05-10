@@ -27,6 +27,7 @@
       "generated_brief",
       "incident_aggregation",
       "lifecycle_state",
+      "open_loop_tracking",
       "read_set_reconciliation",
       "repo_preflight",
       "repo_sync",
@@ -39,9 +40,26 @@
       "scripts/memory-write.mjs",
       "scripts/memory-sync.mjs",
       "scripts/memory-brief.mjs",
-      "scripts/read-set-reconcile.mjs"
+      "scripts/read-set-reconcile.mjs",
+      "scripts/open-loop.mjs",
+      "scripts/open-loop-brief.mjs"
     ],
-    "notes": "This keeps markdown as the authoritative substrate while adding workflow-triggered capture, state, repo freshness, short briefs, and stale-claim reconciliation."
+    "notes": "This keeps markdown as the authoritative substrate while adding workflow-triggered capture, state, repo freshness, short briefs, stale-claim reconciliation, and open-loop action tracking."
+  },
+  {
+    "id": "gbrain_task_manager_pattern",
+    "label": "GBrain-style task manager",
+    "mode": "research_pattern",
+    "capabilities": [
+      "event_capture",
+      "open_loop_tracking",
+      "source_provenance"
+    ],
+    "evidence_paths": [
+      "https://github.com/garrytan/gbrain",
+      "docs/decisions/2026-05-10-0th-memory-v2.md"
+    ],
+    "notes": "This is represented as a research-backed pattern, not a locally executed backend. Its task lifecycle maps well to 0th open loops, but it does not by itself cover repo preflight, stale claim sync, read-set reconciliation, or canonical memory writes."
   },
   {
     "id": "mempalace_verbatim_pattern",
@@ -67,6 +85,7 @@
       "event_capture",
       "generated_brief",
       "lifecycle_state",
+      "open_loop_tracking",
       "profile_summary",
       "source_provenance"
     ],

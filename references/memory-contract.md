@@ -24,6 +24,16 @@ recall layer.
 - `archived` — low-current-value memory retained as evidence.
 - `ephemeral` — useful in the current turn or slice, not promoted to durable memory.
 
+## Open Loops
+
+Open loops are unfinished actions, blockers, and handoff items. They are not durable memory
+claims; do not store TODOs as memory claims.
+
+Track open loops in `.0th/tasks/open-loops.jsonl` through `scripts/open-loop.mjs`, then
+generate `.0th/tasks/brief.md` with `scripts/open-loop-brief.mjs` at session start after the
+memory brief. Use `repo` scope for work tied to one checkout, `project` scope for work spanning
+repos in the same product, and `global` scope only for cross-project operating concerns.
+
 ## Memory Write Gate
 
 Run this gate at meaningful workflow boundaries: after a decision, verified root cause, user

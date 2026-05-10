@@ -45,6 +45,13 @@ test("evaluateMemoryBackends scores baselines by required capabilities", () => {
       required_capabilities: ["repo_sync"],
       evidence_paths: ["scripts/example.mjs"],
     },
+    {
+      id: "q6",
+      question: "What unfinished work remains?",
+      category: "open_loop",
+      required_capabilities: ["open_loop_tracking", "source_provenance"],
+      evidence_paths: ["scripts/open-loop.mjs"],
+    },
   ];
   const baselines = [
     {
@@ -58,8 +65,15 @@ test("evaluateMemoryBackends scores baselines by required capabilities", () => {
       id: "thin_0th_local_layer",
       label: "Thin 0th local layer",
       mode: "local_executable",
-      capabilities: ["source_provenance", "repo_sync", "incident_aggregation", "generated_brief"],
+      capabilities: ["source_provenance", "repo_sync", "incident_aggregation", "generated_brief", "open_loop_tracking"],
       evidence_paths: ["scripts/memory-sync.mjs"],
+    },
+    {
+      id: "gbrain_task_manager_pattern",
+      label: "GBrain-style task manager",
+      mode: "research_pattern",
+      capabilities: ["open_loop_tracking", "source_provenance"],
+      evidence_paths: ["research/gbrain.md"],
     },
     {
       id: "mempalace_verbatim_pattern",
@@ -80,7 +94,7 @@ test("evaluateMemoryBackends scores baselines by required capabilities", () => {
   const report = evaluateMemoryBackends(questions, baselines);
 
   assert.equal(report.recommendation.selected_baseline, "thin_0th_local_layer");
-  assert.equal(report.results.find((result) => result.id === "thin_0th_local_layer").answered, 5);
+  assert.equal(report.results.find((result) => result.id === "thin_0th_local_layer").answered, 6);
   assert.equal(report.results.find((result) => result.id === "current_markdown_lookup").answered, 1);
 });
 
@@ -98,6 +112,7 @@ test("real memory eval set covers required categories and candidate baselines", 
   assert.deepEqual(report.categories, [
     "changed_code_behavior",
     "decision",
+    "open_loop",
     "recurring_mistake",
     "repo_vocabulary",
     "stale_claim",
@@ -107,6 +122,7 @@ test("real memory eval set covers required categories and candidate baselines", 
     [
       "agentmemory_lifecycle_profile_pattern",
       "current_markdown_lookup",
+      "gbrain_task_manager_pattern",
       "mempalace_verbatim_pattern",
       "thin_0th_local_layer",
     ],

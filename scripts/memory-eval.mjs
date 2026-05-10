@@ -47,6 +47,7 @@ function assertQuestionSet(questions) {
     "recurring_mistake",
     "repo_vocabulary",
     "changed_code_behavior",
+    "open_loop",
   ]);
   const categories = new Set();
 
@@ -87,6 +88,7 @@ function assertBaselines(baselines) {
   const requiredIds = new Set([
     "current_markdown_lookup",
     "thin_0th_local_layer",
+    "gbrain_task_manager_pattern",
     "mempalace_verbatim_pattern",
     "agentmemory_lifecycle_profile_pattern",
   ]);

@@ -122,5 +122,17 @@
       "tests/memory-v2-e2e.test.mjs",
       "references/memory-contract.md"
     ]
+  },
+  {
+    "id": "q13-what-open-loops-remain",
+    "question": "How should a future agent find unfinished work, blockers, and concrete next actions at session start?",
+    "category": "open_loop",
+    "required_capabilities": ["open_loop_tracking", "source_provenance"],
+    "evidence_paths": [
+      "references/open-loops.md",
+      "scripts/open-loop.mjs",
+      "scripts/open-loop-brief.mjs",
+      "skills/build/SKILL.md"
+    ]
   }
 ]
