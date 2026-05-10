@@ -117,6 +117,10 @@ After approval, suggest /build with the plan path.
 
 Before trusting repo state, run `node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
 
+## Memory Brief
+
+When `.0th/memory/claims.jsonl` exists, run `node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/memory-brief.mjs"` and read `.0th/memory/brief.md`; read it before browsing indexes or raw notes manually.
+
 ## Memory Integration
 
 Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`, then write only through the target the contract names.

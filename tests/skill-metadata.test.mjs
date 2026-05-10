@@ -249,3 +249,26 @@ test("core skills require conservative repo preflight", () => {
     );
   }
 });
+
+test("core skills read the generated memory brief first when present", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /memory-brief\.mjs/,
+      `${skillName} should name the shared memory brief generator`
+    );
+    assert.match(
+      source,
+      /\.0th\/memory\/brief\.md/,
+      `${skillName} should name the generated brief path`
+    );
+    assert.match(
+      source,
+      /read it before browsing indexes/i,
+      `${skillName} should prefer the brief before manual index browsing`
+    );
+  }
+});
