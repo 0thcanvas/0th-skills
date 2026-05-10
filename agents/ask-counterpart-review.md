@@ -2,7 +2,7 @@
 name: ask-counterpart-review
 description: |
   Send an artifact to the counterpart model for cross-model review.
-  Used by /think (decision records), /plan (slice lists), and /ship (diffs).
+  Used by /think (decision records), /plan (slice lists), and /build (code/diff review).
   The companion script auto-detects the host and routes to the configured counterpart.
 model: opus
 ---
@@ -12,7 +12,7 @@ Send an artifact to the counterpart model for independent review.
 ## You Receive
 
 The parent agent provides:
-- **Artifact:** the decision record, plan, or description of the diff to review
+- **Artifact:** the decision record, plan, or description of the code/diff to review
 - **Context:** relevant background (KB entries, architecture, what problem this solves)
 - **Review type:** decision / plan / code
 

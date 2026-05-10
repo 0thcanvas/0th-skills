@@ -47,7 +47,7 @@ For terminal-based verification commands whose failures should produce a managed
 
 Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
 
-- **UI:** Use Playwright by default for feature-specific UI checks (additive to the Step 0 stack-minimum exercise, which is already governed by the Playwright → bb-browser → computer-use chain per the matrix). Use the `browser_*` MCP tools exposed by `bb-browser` only when the brief invokes the escape hatch (logged-in flows, real-session-only behavior, shared-tab cases) per the bb-browser-escape-hatch row. To use the escape hatch: run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`. If the MCP isn't registered when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics
+- **UI:** Use Playwright by default for feature-specific UI checks (additive to the Step 0 stack-minimum exercise, which is already governed by the Playwright → bb-browser → computer-use chain per the matrix). Use the `browser_*` MCP tools exposed by `bb-browser` only when the brief invokes the escape hatch (logged-in flows, real-session-only behavior, shared-tab cases) per the bb-browser-escape-hatch row. To use the escape hatch: run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`. If the MCP isn't registered when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
 - **API:** Hit endpoints with curl/fetch, verify response shapes and status codes, test write operations and validation
 - **Component:** Render in browser, check documented variants plus representative prop combinations, verify accessibility
@@ -167,6 +167,9 @@ Rounds: [N] ([M] issues found and fixed; 0 if blocked/flaky before any loop)
 Verified as:
   [status] [method] — [what was checked]
 
+Visual invariants:
+  [status] [invariant] — [evidence method; screenshot path, pixel assertion, or test]
+
 Blocked checks:
   [check] — [reason + failing command or error]
 
@@ -187,7 +190,7 @@ Unresolved issues (after 3 rounds):
     → Suggested next step: [recommendation]
 
 Evidence:
-  [screenshots, terminal output, response summaries]
+  [screenshots, terminal output, response summaries; separate verified by tests from visually inspected]
 
 Test enhancement:
   + [file]: "[test description]"

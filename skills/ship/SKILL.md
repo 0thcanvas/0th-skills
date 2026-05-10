@@ -51,15 +51,27 @@ Self-review:
 - Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
 - If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
 
-### 3. Create the PR
+### 3. Evidence Gate
 
-**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. The gate is the only mechanical layer in 0th's flow that converts verifier discipline into a non-LLM gate; running `gh pr create` without it bypasses the architecture.
+**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`).
+
+`/ship` does not re-judge product quality. It checks that `/build` produced current evidence: verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
 ```
 
-If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected stacks were not exercised; re-dispatch the verifier (return to /build's Verification step or invoke /verifier directly with a brief that names the missing rows) to exercise them, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`; the detection logic mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+
+Counterpart review evidence is enforced by the gate. /build must produce one of:
+- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` — the actual review output, or
+- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.skipped` — a non-empty file containing the exact unavailable/quota/auth/network reason.
+
+The gate fails closed if neither file exists, or if the skipped file is empty. Additional human-readable rules:
+- If the review had blockers, the build handoff says they were fixed and re-reviewed.
+- If counterpart review was skipped because quota/auth/network was unavailable, surface that exact state to the user; do not call it clean.
+
+### 4. Create the PR
 
 Only after the gate exits zero, read `templates/pr-body.md`, fill in its placeholders, and use that filled result as the PR body.
 Do not invent a second PR-body shape in this skill. The template file is the source of truth.
@@ -71,27 +83,12 @@ gh pr create --title "<title>" --body "<filled contents of templates/pr-body.md>
 
 PR title: short, imperative ("Add spaced repetition engine", not "Added some stuff for SR").
 
-### 4. Counterpart Reviews the Diff
-
-Send the branch diff to the counterpart reviewer using `ask-counterpart-review`.
-The companion script auto-detects the host and routes to the configured counterpart.
-Redact any secret-bearing context before sending it. Counterpart review gets names, references, and findings; never resolved values.
-- The counterpart responds with:
-- **Blockers:** must fix before merge
-- **Suggestions:** worth considering, user decides
-- **Nits:** style/minor, accept or skip
-
-If blockers exist: fix on the branch, push, re-run counterpart review.
-If the counterpart review times out, hangs, or the wrapper is interrupted, do not treat the wrapper status as the review result. First inspect the persisted session log / resume artifact for that counterpart run. If the counterpart answered there, summarize that answer and continue from it. If there is no answer, retry only after reporting that the log was checked.
-If the counterpart review fails because quota is exhausted or the counterpart is unavailable for the session, report that exact condition and proceed with self-review only for this session unless the user asks to wait or retry. Make the final/user-inspection summary say `Counterpart review: skipped — quota exhausted` (or the observed unavailable reason), not `clean`.
-If the counterpart review fails for any other reason, report the error and let the user decide: proceed without review, retry later, or explicitly authorize a same-model fallback (see `ask-counterpart-review`'s Error Handling section for the labeled-fallback shape).
-
 ### 5. User Inspects
 
 Present to user:
 - The PR URL
 - The file list (so they can see scope at a glance)
-- The counterpart review (blockers/suggestions/nits)
+- Evidence status: verifier PASS, product acceptance PASS or NOT_REQUIRED, counterpart review result or skipped reason
 - Any concerns from the self-review
 
 User decides: merge, request changes, or close. Merge approval is PR-specific: do not carry approval from an earlier PR, a prior "ship it", or a general shipping instruction into a newly opened PR. After checks and reviews pass, stop at "ready to merge" until the user explicitly approves merging that PR number or otherwise clearly approves that specific PR.
@@ -118,7 +115,8 @@ Squash keeps main history clean. Delete branch avoids clutter.
 STATUS: DONE
 PR: <url>
 Tests: X passing, 0 failing
-Counterpart review: [clean / N suggestions / N blockers resolved]
+Product acceptance: [PASS / NOT_REQUIRED]
+Counterpart review: [clean / N blockers resolved / skipped — exact reason]
 ```
 
 ## KB Integration
