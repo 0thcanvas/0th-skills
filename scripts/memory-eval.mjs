@@ -208,7 +208,7 @@ function toMarkdown(report) {
     lines.push(`- ${result.label}: ${misses}`);
   }
 
-  lines.push("", "## Recommendation", "", report.recommendation.rationale, "");
+  lines.push("", "## Recommendation", "", report.recommendation.rationale);
   return `${lines.join("\n")}\n`;
 }
 

@@ -22,4 +22,3 @@ Selected baseline: Thin 0th local layer (thin_0th_local_layer)
 ## Recommendation
 
 Select the highest-scoring baseline for the current workflow, then revisit external backends only after an executable retrieval benchmark shows better recall without losing repo workflow integration.
-
