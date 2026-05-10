@@ -87,7 +87,7 @@ question `best TS TOML parser`.
 
 ### Agent types
 
-- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `zoom-out`
+- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `retro`, `zoom-out`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
 - **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
 - **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
@@ -118,13 +118,15 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 - Claude Code plugin metadata lives in `.claude-plugin/`
 - Codex plugin metadata lives in `.codex-plugin/`
+- Shared workflow sources live in `skills/`
+- Codex-facing skill entrypoints live in `codex-skills/` and point back to the shared workflow sources without Claude-only frontmatter such as `argument-hint`
 
 ## Install
 
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the nine skills under `skills/`
+- Confirm the plugin exposes the ten skills under `codex-skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Claude Code

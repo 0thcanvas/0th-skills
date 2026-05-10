@@ -28,7 +28,8 @@ const expectedCodexAgents = [
   "0th-researcher.toml",
   "0th-reviewer.toml",
   "0th-synthesizer.toml",
-  "0th-test-runner.toml"
+  "0th-test-runner.toml",
+  "0th-verifier.toml"
 ];
 
 function fail(message) {
@@ -89,6 +90,17 @@ function verifyPluginRoot(rootPath) {
     assertFile(
       path.join(rootPath, "skills", skillName, "agents", "openai.yaml"),
       `${skillName} openai.yaml`
+    );
+  }
+
+  const codexSkillsRoot = path.join(
+    rootPath,
+    (codexManifest.skills || "./skills/").replace(/^\.\//, "")
+  );
+  for (const skillName of expectedSkills) {
+    assertFile(
+      path.join(codexSkillsRoot, skillName, "SKILL.md"),
+      `${skillName} Codex SKILL.md`
     );
   }
 

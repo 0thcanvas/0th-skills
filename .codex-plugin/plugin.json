@@ -1,7 +1,7 @@
 {
   "name": "0th-skills",
   "version": "0.2.3",
-  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, deep research, and cross-model review.",
+  "description": "0th workflow skills for solo builders.",
   "author": {
     "name": "0th Canvas",
     "url": "https://github.com/0thcanvas"
@@ -18,7 +18,7 @@
     "research",
     "codex"
   ],
-  "skills": "./skills/",
+  "skills": "./codex-skills/",
   "interface": {
     "displayName": "0th",
     "shortDescription": "A lightweight build and research workflow for solo builders",
@@ -34,9 +34,9 @@
     "privacyPolicyURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/privacy.md",
     "termsOfServiceURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/terms.md",
     "defaultPrompt": [
-      "Turn an idea into a short decision record.",
-      "Implement this change with TDD on a feature branch.",
-      "Debug this from root cause before fixing it."
+      "Think this through.",
+      "Build this with TDD.",
+      "Debug root cause first."
     ],
     "brandColor": "#1B1814",
     "screenshots": []
