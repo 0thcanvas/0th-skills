@@ -222,11 +222,12 @@ Max 3 product acceptance rounds. In each round:
 5. Dispatch the experience reviewer again with updated evidence.
 
 After product acceptance passes, run code/diff counterpart review using `ask-counterpart-review`.
-Persist the result or exact unavailable/skipped reason to
-`${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md`. If blockers exist, fix
-them, rerun the relevant tests, rerun product acceptance if product behavior changed, and rerun
-counterpart review. If counterpart review is unavailable, record the exact reason; do not call it
-clean.
+Persist the result to `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md`.
+If counterpart review is unavailable (quota, auth, network), write the exact reason to
+`${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.skipped` instead — the ship
+gate reads either file and fails closed if neither exists or the skipped file is empty. If blockers
+exist, fix them, rerun the relevant tests, rerun product acceptance if product behavior changed,
+and rerun counterpart review. Never call counterpart review clean when it did not run.
 
 The product acceptance report should include:
 
@@ -251,7 +252,7 @@ The product acceptance report should include:
   "rounds": [],
   "fixed_issues": [],
   "deferred_items": [],
-  "evidence_paths": [],
+  "evidence_paths": ["verification-report/<evidence-path>"],
   "reviewed_at": "2026-05-10T00:00:00.000Z"
 }
 ```

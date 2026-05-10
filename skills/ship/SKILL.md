@@ -53,7 +53,7 @@ Self-review:
 
 ### 3. Evidence Gate
 
-**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`).
+**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`).
 
 `/ship` does not re-judge product quality. It checks that `/build` produced current evidence: verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
 
@@ -63,8 +63,11 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
 
 If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
 
-Check counterpart review evidence from /build:
-- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` exists, or the build handoff names the exact skipped/unavailable reason.
+Counterpart review evidence is enforced by the gate. /build must produce one of:
+- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` — the actual review output, or
+- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.skipped` — a non-empty file containing the exact unavailable/quota/auth/network reason.
+
+The gate fails closed if neither file exists, or if the skipped file is empty. Additional human-readable rules:
 - If the review had blockers, the build handoff says they were fixed and re-reviewed.
 - If counterpart review was skipped because quota/auth/network was unavailable, surface that exact state to the user; do not call it clean.
 

@@ -15,6 +15,14 @@ import process from "node:process";
 
 const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exercised_at"];
 const ACCEPTANCE_OUTCOMES = new Set(["PASS", "NEEDS_ITERATION", "BLOCKED_BY_SPEC", "NOT_REQUIRED"]);
+const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
+// Default freshness window for product-acceptance reports. /ship's gate fails a report whose
+// `reviewed_at` is older than this window — staleness was the contract the decision/plan
+// promised but the original validator only checked string-non-empty.
+const ACCEPTANCE_FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+// Skew tolerance for clock differences between the machine that wrote `reviewed_at` and
+// the machine running the gate (CI vs local laptop).
+const ACCEPTANCE_FUTURE_SKEW_MS = 5 * 60 * 1000;
 
 const WEB_FRAMEWORK_CONFIGS = [
   "next.config.js", "next.config.mjs", "next.config.ts",
@@ -155,7 +163,7 @@ export function validateReport(report, expectedStacks) {
   return { ok: reasons.length === 0, reasons };
 }
 
-export function validateProductAcceptanceReport(report) {
+export function validateProductAcceptanceReport(report, options = {}) {
   const reasons = [];
 
   if (!report || typeof report !== "object") {
@@ -179,8 +187,33 @@ export function validateProductAcceptanceReport(report) {
     reasons.push(`outcome must be one of ${[...ACCEPTANCE_OUTCOMES].join(", ")}`);
   }
 
+  // Freshness: `reviewed_at` must be a parseable ISO timestamp, must not be in the future
+  // (beyond clock skew), and must be within the freshness window of `now`. The decision
+  // record at docs/decisions/2026-05-10-product-acceptance-loop.md promises that ship
+  // checks evidence "presence, freshness, and outcome"; this is the freshness check.
   if (typeof report.reviewed_at !== "string" || report.reviewed_at.trim() === "") {
     reasons.push("reviewed_at must be a non-empty ISO timestamp string");
+  } else if (!ISO_TIMESTAMP_PATTERN.test(report.reviewed_at)) {
+    reasons.push(
+      `reviewed_at '${report.reviewed_at}' is not a parseable ISO timestamp; reviewed_at must be an ISO timestamp like 2026-05-10T20:00:00.000Z`
+    );
+  } else {
+    const reviewedAt = new Date(report.reviewed_at);
+    if (Number.isNaN(reviewedAt.getTime())) {
+      reasons.push(`reviewed_at '${report.reviewed_at}' is not a parseable ISO timestamp`);
+    } else {
+      const now = options.now ?? new Date();
+      const ageMs = now.getTime() - reviewedAt.getTime();
+      const freshWindowMs = options.freshWindowMs ?? ACCEPTANCE_FRESH_WINDOW_MS;
+      const futureSkewMs = options.futureSkewMs ?? ACCEPTANCE_FUTURE_SKEW_MS;
+      if (ageMs < -futureSkewMs) {
+        reasons.push(`reviewed_at '${report.reviewed_at}' is in the future relative to ${now.toISOString()}`);
+      } else if (ageMs > freshWindowMs) {
+        const ageHours = (ageMs / (60 * 60 * 1000)).toFixed(1);
+        const windowHours = (freshWindowMs / (60 * 60 * 1000)).toFixed(1);
+        reasons.push(`reviewed_at '${report.reviewed_at}' is ${ageHours}h old, exceeds freshness window of ${windowHours}h`);
+      }
+    }
   }
 
   if (report.required === true && report.outcome !== "PASS") {
@@ -200,10 +233,68 @@ export function validateProductAcceptanceReport(report) {
     }
     if (!Array.isArray(report.evidence_paths)) {
       reasons.push("evidence_paths must be an array for required product acceptance");
+    } else if (report.evidence_paths.length === 0) {
+      // The PR's central thesis is "if the claim is visual, the evidence must be visual";
+      // an empty evidence_paths defeats it. Required acceptance must cite at least one
+      // concrete piece of evidence (screenshot, verifier dossier, browser note, etc.).
+      reasons.push("evidence_paths must be non-empty for required product acceptance");
     }
   }
 
   return { ok: reasons.length === 0, reasons };
+}
+
+export function validateCounterpartReviewEvidence(repoPath, reportDir) {
+  // /build must either produce a counterpart-review.md (the actual review output) or
+  // a counterpart-review.skipped file containing a non-empty unavailable/quota/auth/network
+  // reason. The decision says: if counterpart review is unavailable, record the exact
+  // reason — do not call it clean. This gate enforces that contract.
+  const reviewPath = join(repoPath, reportDir, "counterpart-review.md");
+  const skippedPath = join(repoPath, reportDir, "counterpart-review.skipped");
+  const reasons = [];
+
+  const reviewExists = existsSync(reviewPath);
+  const skippedExists = existsSync(skippedPath);
+
+  if (reviewExists) {
+    let reviewContent;
+    try {
+      reviewContent = readFileSync(reviewPath, "utf8");
+    } catch (err) {
+      reasons.push(`could not read ${reportDir}/counterpart-review.md: ${err.message}`);
+      return { ok: false, reasons };
+    }
+    if (reviewContent.trim() === "") {
+      reasons.push(
+        `${reportDir}/counterpart-review.md is empty; must contain the actual counterpart review output`
+      );
+      return { ok: false, reasons };
+    }
+    return { ok: true, reasons };
+  }
+
+  if (!skippedExists) {
+    reasons.push(
+      `missing counterpart review evidence: expected ${reportDir}/counterpart-review.md or ${reportDir}/counterpart-review.skipped`
+    );
+    return { ok: false, reasons };
+  }
+
+  let skippedContent;
+  try {
+    skippedContent = readFileSync(skippedPath, "utf8");
+  } catch (err) {
+    reasons.push(`could not read ${reportDir}/counterpart-review.skipped: ${err.message}`);
+    return { ok: false, reasons };
+  }
+  if (skippedContent.trim() === "") {
+    reasons.push(
+      `${reportDir}/counterpart-review.skipped is empty; must contain the exact unavailable/quota/auth/network reason`
+    );
+    return { ok: false, reasons };
+  }
+
+  return { ok: true, reasons };
 }
 
 function main() {
@@ -226,10 +317,27 @@ function main() {
     process.exit(1);
   }
 
-  const acceptanceResult = validateProductAcceptanceReport(acceptanceReport);
+  const acceptanceOptions = {};
+  const freshWindowEnv = process.env.PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS;
+  if (freshWindowEnv) {
+    const hours = Number(freshWindowEnv);
+    if (Number.isFinite(hours) && hours > 0) {
+      acceptanceOptions.freshWindowMs = hours * 60 * 60 * 1000;
+    }
+  }
+  const acceptanceResult = validateProductAcceptanceReport(acceptanceReport, acceptanceOptions);
   if (!acceptanceResult.ok) {
     console.error("ship-gate: product acceptance gate FAILED.");
     for (const reason of acceptanceResult.reasons) {
+      console.error(`ship-gate:   - ${reason}`);
+    }
+    process.exit(1);
+  }
+
+  const counterpartResult = validateCounterpartReviewEvidence(repoPath, reportDir);
+  if (!counterpartResult.ok) {
+    console.error("ship-gate: counterpart review evidence gate FAILED.");
+    for (const reason of counterpartResult.reasons) {
       console.error(`ship-gate:   - ${reason}`);
     }
     process.exit(1);

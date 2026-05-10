@@ -31,6 +31,14 @@ Review:
 - Learning quality: learner level, pedagogy, cognitive load, instruction timing, and human-sounding copy
 - Scope discipline: improvements stay inside the decision and plan
 
+## Visual Evidence
+
+For UI, canvas, SVG, animation, overlay, responsive-layout, or game-scene work:
+Name the visual invariant before judging visual correctness. If the claim is visual, the evidence must be visual:
+use a DOM/e2e test for behavior and routing, screenshot inspection for layout/fit/overlap and
+responsive presentation, and a pixel assertion or screenshot assertion for overlays, canvas, SVG,
+animations, and coordinate-system alignment. Do not let "tests passed" stand in for visual fit.
+
 ## Finding Classes
 
 Use exactly: `BLOCKER | POLISH | NIT | OUT_OF_SCOPE | BLOCKED_BY_SPEC`.

@@ -36,7 +36,7 @@
   "rounds": [],
   "fixed_issues": [],
   "deferred_items": [],
-  "evidence_paths": [],
+  "evidence_paths": ["verification-report/<evidence-path>"],
   "reviewed_at": "2026-05-10T00:00:00.000Z"
 }
 ```

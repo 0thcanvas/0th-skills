@@ -66,3 +66,10 @@ test("visual work names invariants before verification evidence is accepted", ()
   assert.match(checklist, /pixel assertion/);
   assert.match(checklist, /separate verified by tests from visually inspected/);
 });
+
+test("build product acceptance template shows required reports need evidence paths", () => {
+  const source = read("skills/build/SKILL.md");
+
+  assert.doesNotMatch(source, /"evidence_paths": \[\]/);
+  assert.match(source, /"evidence_paths": \[\s*"verification-report\/<evidence-path>"\s*\]/);
+});

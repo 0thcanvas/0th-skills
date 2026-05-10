@@ -42,7 +42,11 @@ const expectedMirrors = {
       "BLOCKER | POLISH | NIT | OUT_OF_SCOPE | BLOCKED_BY_SPEC",
       "Max 3 product acceptance rounds",
       "verification-report/product-acceptance.json",
-      "human-sounding copy"
+      "human-sounding copy",
+      "Name the visual invariant",
+      "If the claim is visual, the evidence must be visual",
+      "screenshot inspection",
+      "pixel assertion"
     ]
   },
   "test-runner": {
