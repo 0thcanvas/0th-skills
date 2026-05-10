@@ -8,22 +8,9 @@ All state lives on disk. Agents communicate through the filesystem, not through 
 
 ## Direct Invocation
 
-Parse `$ARGUMENTS`:
-1. First word is the **mode**: `feasibility`, `decision`, or `survey`.
-2. Everything after the first word is the **question**.
-
-If the mode word is missing or not one of the three valid modes, ask the user:
-> "Which mode? feasibility (build an architecture), decision (compare options), or survey (map a landscape)."
-
-Generate a **topic slug** from the question — kebab-case, 3-5 words, no stop words. Confirm
-with the user before creating any directories:
-> "Topic slug: `{slug}` — OK?"
-
-| Mode | Phases | Output |
-|------|--------|--------|
-| `feasibility` | 0-1-2-3-4-5-6-7 (full loop) | Buildable architecture + experiment results |
-| `decision` | 0-1-2-3-4-5-7d (skip Phase 6) | Decision record |
-| `survey` | 0-1-2-3-7s (skip Phases 4-6) | Wiki pages + landscape overview |
+Invocation parsing (mode, question, topic slug) and the per-mode phase table are
+defined once in `SKILL.md` under `## Direct Invocation`. Read that section before
+the first phase; do not duplicate the mode-to-phases table here.
 
 ## KB Root
 
@@ -38,21 +25,10 @@ Use these logical paths throughout the workflow:
 
 ## Session Resumption
 
-Before starting any work, check `TOPIC_ROOT/state.md`.
-
-If it exists:
-1. Read state.md.
-2. Report: current phase, iteration, sub-problem statuses, what happened last.
-3. Ask: "Resume from Phase {N}, or start fresh?"
-
-If user says **resume**: continue from the phase recorded in state.md.
-
-If user says **start fresh**:
-1. Archive the existing directory to `RESEARCH_ROOT/{topic}-archived-YYYY-MM-DD/`.
-2. Create a new empty topic directory.
-3. Proceed as first run. The archived copy can be referenced manually.
-
-**Concurrency:** Single-session per topic. Running two sessions on the same topic simultaneously is unsupported — agents would clobber each other's `raw/` and `world-model.md`. Different topics can run in parallel safely (separate directories).
+Session resumption (the `state.md` check, resume vs. start-fresh prompt, and
+single-session-per-topic concurrency rule) is defined in `SKILL.md` under
+`## Session Resumption`. Apply that flow before any phase work; do not
+re-implement it here.
 
 ## KB Scaffolding (First Run)
 

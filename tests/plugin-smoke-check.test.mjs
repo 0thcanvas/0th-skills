@@ -13,6 +13,7 @@ const codexManifestPath = path.join(repoRoot, ".codex-plugin", "plugin.json");
 const codexSkillsRoot = path.join(repoRoot, "codex-skills");
 const claudeMarketplacePath = path.join(repoRoot, ".claude-plugin", "marketplace.json");
 const readmePath = path.join(repoRoot, "README.md");
+const licensePath = path.join(repoRoot, "LICENSE");
 
 function estimateTokenCount(text) {
   return text ? Math.ceil(text.length / 4) : 0;
@@ -41,6 +42,8 @@ test("install smoke-check validates the repo packaging", () => {
 test("Codex manifest includes trust links and compact default prompts", () => {
   const manifest = JSON.parse(fs.readFileSync(codexManifestPath, "utf8"));
 
+  assert.equal(manifest.license, "MIT");
+  assert.match(fs.readFileSync(licensePath, "utf8"), /MIT License/);
   assert.match(manifest.interface.privacyPolicyURL, /^https:\/\//);
   assert.match(manifest.interface.termsOfServiceURL, /^https:\/\//);
   assert.equal(manifest.interface.defaultPrompt.length, 3);
