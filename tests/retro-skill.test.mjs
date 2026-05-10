@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -143,11 +144,16 @@ test("README skill list includes /retro", () => {
   assert.match(source, /\/retro\b/, "README should list the /retro skill");
 });
 
-test("install-smoke-check expectedSkills includes retro", () => {
-  const source = read(smokeCheckPath);
-  assert.match(
-    source,
-    /expectedSkills\s*=\s*\[[^\]]*"retro"[^\]]*\]/s,
-    "install-smoke-check.mjs expectedSkills should include \"retro\""
+test("install-smoke-check verifies retro through filesystem-derived skill discovery", () => {
+  assert.equal(
+    fs.existsSync(path.join(repoRoot, "skills", "retro", "SKILL.md")),
+    true,
+    "skills/retro/SKILL.md should exist for smoke-check discovery"
   );
+
+  const result = spawnSync("node", [smokeCheckPath, "--repo-root", repoRoot], {
+    encoding: "utf8"
+  });
+
+  assert.equal(result.status, 0, result.stderr);
 });

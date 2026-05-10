@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const skillsRoot = path.join(repoRoot, "skills");
+const codexSkillsRoot = path.join(repoRoot, "codex-skills");
 const thinkTemplatePath = path.join(skillsRoot, "think", "templates", "decision-record.md");
 const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates", "output-shape.md");
 const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
@@ -41,6 +42,19 @@ test("each skill declares Claude direct-invocation metadata", () => {
   }
 });
 
+test("skill descriptions advertise trigger conditions up front", () => {
+  for (const skillName of [...skillNames, "zoom-out"]) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /^description:\s*"Use when /m,
+      `${skillName} should start its description with a clear Use when trigger`
+    );
+  }
+});
+
 test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
   for (const skillName of skillNames) {
     const metadataPath = path.join(skillsRoot, skillName, "agents", "openai.yaml");
@@ -54,6 +68,25 @@ test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
       source,
       /allow_implicit_invocation:\s*true/,
       `${skillName} should remain implicitly invocable`
+    );
+  }
+});
+
+test("Codex skill entrypoints delegate to shared workflows without Claude-only frontmatter", () => {
+  for (const skillName of [...skillNames, "zoom-out"]) {
+    const codexSkillPath = path.join(codexSkillsRoot, skillName, "SKILL.md");
+    const source = read(codexSkillPath);
+
+    assert.match(
+      source,
+      /^description:\s*"Use when /m,
+      `${skillName} Codex entrypoint should keep a compact trigger description`
+    );
+    assert.doesNotMatch(source, /^argument-hint:/m, `${skillName} Codex entrypoint should omit argument-hint`);
+    assert.match(
+      source,
+      new RegExp(`\\(\\.\\.\\/\\.\\.\\/skills\\/${skillName}\\/SKILL\\.md\\)`),
+      `${skillName} Codex entrypoint should link to the shared workflow`
     );
   }
 });

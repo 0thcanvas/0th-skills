@@ -1,6 +1,6 @@
 ---
 name: debug
-description: "Systematic debugging with root cause investigation. Use when something is broken — bugs, test failures, unexpected behavior, build failures. Iron law: no fixes without root cause. 3-strike escalation."
+description: "Use when something is broken: bugs, test failures, unexpected behavior, or build failures. Investigates root cause before fixing."
 argument-hint: "[symptom or failing test]"
 ---
 

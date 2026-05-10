@@ -37,7 +37,7 @@ test("driver stateSuffix is '.claude.json'", () => {
 
 test("buildArgs returns base args with prompt and cwd only", () => {
   const args = driver.buildArgs({ prompt: "review this", cwd: "/some/dir" });
-  assert.deepEqual(args, ["-p", "--output-format", "json", "--add-dir", "/some/dir", "review this"]);
+  assert.deepEqual(args, ["-p", "--output-format", "json", "--add-dir", "/some/dir", "--", "review this"]);
 });
 
 test("buildArgs appends --model when model is provided", () => {

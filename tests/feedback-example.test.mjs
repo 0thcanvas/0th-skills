@@ -35,9 +35,9 @@ test("FEEDBACK.example.md contains the four canonical anchors users expect", () 
 
 test("committed FEEDBACK.md is preserved in this release for the migration overlap", () => {
   // Decision: skills/FEEDBACK.md is kept for one release alongside FEEDBACK.example.md
-  // so the migration check has something to find. It is removed in v0.2.4.
+  // so the migration check has something to find. Removal is a later follow-up.
   assert.ok(
     fs.existsSync(livePath),
-    "skills/FEEDBACK.md should still ship in v0.2.3 — removal is the v0.2.4 follow-up"
+    "skills/FEEDBACK.md should still ship during the migration-overlap window"
   );
 });

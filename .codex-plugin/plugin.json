@@ -1,7 +1,7 @@
 {
   "name": "0th-skills",
-  "version": "0.2.3",
-  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, deep research, and cross-model review.",
+  "version": "0.2.4",
+  "description": "0th workflow skills for solo builders.",
   "author": {
     "name": "0th Canvas",
     "url": "https://github.com/0thcanvas"
@@ -18,7 +18,7 @@
     "research",
     "codex"
   ],
-  "skills": "./skills/",
+  "skills": "./codex-skills/",
   "interface": {
     "displayName": "0th",
     "shortDescription": "A lightweight build and research workflow for solo builders",
@@ -31,13 +31,12 @@
       "Write"
     ],
     "websiteURL": "https://github.com/0thcanvas/0th-skills",
+    "privacyPolicyURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/privacy.md",
+    "termsOfServiceURL": "https://github.com/0thcanvas/0th-skills/blob/main/docs/terms.md",
     "defaultPrompt": [
-      "Use the think skill to turn this idea into a short decision record.",
-      "Use the build skill to implement this change with TDD on a feature branch.",
-      "Use the debug skill to investigate the root cause before fixing this failure.",
-      "Use the research skill when the answer depends on external docs, open-source tools, or papers.",
-      "Use the deep-research skill when the question needs a feasibility study, decision loop, or research-backed architecture.",
-      "Use the improve-architecture skill periodically to surface deepening opportunities — turn shallow modules into deep ones using the deletion test."
+      "Think this through.",
+      "Build this with TDD.",
+      "Debug root cause first."
     ],
     "brandColor": "#1B1814",
     "screenshots": []

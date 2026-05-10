@@ -1,6 +1,6 @@
 ---
 name: zoom-out
-description: "Tell the agent to step up a layer of abstraction and give a higher-level map of an unfamiliar section of code. User-triggered only."
+description: "Use when the user explicitly asks for a higher-level map of an unfamiliar code area. User-triggered only."
 disable-model-invocation: true
 ---
 

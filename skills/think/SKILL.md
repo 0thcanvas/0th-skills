@@ -1,6 +1,6 @@
 ---
 name: think
-description: "Turn an idea into a decision through structured conversation. Use when starting new features, exploring approaches, or facing design uncertainty. Grills the user, explores alternatives, produces a short decision record."
+description: "Use when starting a feature, exploring approaches, or facing design uncertainty. Produces a short decision record."
 argument-hint: "[idea or design question]"
 ---
 

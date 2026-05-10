@@ -1,7 +1,7 @@
 {
   "name": "0th",
-  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, deep research, and cross-model review.",
-  "version": "0.2.3",
+  "description": "Lightweight development workflow for solo builders with host-native skills, subagents, retros, deep research, and cross-model review.",
+  "version": "0.2.4",
   "author": {
     "name": "0th Canvas"
   },
@@ -13,6 +13,8 @@
     "debugging",
     "solo-dev",
     "research",
-    "deep-research"
+    "deep-research",
+    "architecture",
+    "retrospective"
   ]
 }

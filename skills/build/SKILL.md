@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Implement features with TDD on a feature branch. Takes a direct instruction, decision record, or plan. Red-green-refactor per slice, with BDD-style tests that describe user-visible behavior. Always branches, always PRs."
+description: "Use when implementing a known code change, feature, or fix. Runs TDD on a feature branch and verifies behavior before PR handoff."
 argument-hint: "[instruction or plan path]"
 ---
 

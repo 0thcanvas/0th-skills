@@ -8,18 +8,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const defaultRepoRoot = path.resolve(__dirname, "..");
 
-const expectedSkills = [
-  "build",
-  "debug",
-  "deep-research",
-  "improve-architecture",
-  "plan",
-  "research",
-  "retro",
-  "ship",
-  "think",
-  "zoom-out"
-];
 const expectedCodexAgents = [
   "0th-deep-researcher.toml",
   "0th-explorer.toml",
@@ -28,7 +16,8 @@ const expectedCodexAgents = [
   "0th-researcher.toml",
   "0th-reviewer.toml",
   "0th-synthesizer.toml",
-  "0th-test-runner.toml"
+  "0th-test-runner.toml",
+  "0th-verifier.toml"
 ];
 
 function fail(message) {
@@ -68,6 +57,17 @@ function assertFile(filePath, label) {
   }
 }
 
+function listDirNames(dirPath) {
+  if (!fs.existsSync(dirPath)) {
+    return [];
+  }
+  return fs
+    .readdirSync(dirPath, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
+
 function verifyPluginRoot(rootPath) {
   const codexManifestPath = path.join(rootPath, ".codex-plugin", "plugin.json");
   const claudeManifestPath = path.join(rootPath, ".claude-plugin", "plugin.json");
@@ -84,11 +84,40 @@ function verifyPluginRoot(rootPath) {
     );
   }
 
-  for (const skillName of expectedSkills) {
+  const skillsRoot = path.join(rootPath, "skills");
+  const skillNames = listDirNames(skillsRoot);
+  if (skillNames.length === 0) {
+    fail(`No skills found under ${skillsRoot}`);
+  }
+
+  for (const skillName of skillNames) {
     assertFile(path.join(rootPath, "skills", skillName, "SKILL.md"), `${skillName} SKILL.md`);
     assertFile(
       path.join(rootPath, "skills", skillName, "agents", "openai.yaml"),
       `${skillName} openai.yaml`
+    );
+  }
+
+  const codexSkillsRoot = path.join(
+    rootPath,
+    (codexManifest.skills || "./skills/").replace(/^\.\//, "")
+  );
+  const codexSkillNames = listDirNames(codexSkillsRoot);
+  if (
+    codexSkillNames.length !== skillNames.length ||
+    skillNames.some((skillName, index) => skillName !== codexSkillNames[index])
+  ) {
+    fail(
+      `Codex skill set diverges from shared skills.\n` +
+        `  skills/: ${skillNames.join(", ")}\n` +
+        `  ${path.relative(rootPath, codexSkillsRoot)}/: ${codexSkillNames.join(", ")}\n` +
+        `  Run: node scripts/build-codex-wrappers.mjs`
+    );
+  }
+  for (const skillName of skillNames) {
+    assertFile(
+      path.join(codexSkillsRoot, skillName, "SKILL.md"),
+      `${skillName} Codex SKILL.md`
     );
   }
 

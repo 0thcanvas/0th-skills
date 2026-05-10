@@ -1,6 +1,6 @@
 ---
 name: retro
-description: "Capture user corrections, agent misfires, and tool/skill issues into a structured incident log. Invoke at end of session to write one entry per misfire, classify each, and surface patterns when threshold is crossed."
+description: "Use when closing a session with user corrections, agent misfires, or tool/skill issues to capture into the incident log."
 argument-hint: "[optional: hint at which corrections to capture, e.g. 'today's PR mix-ups']"
 ---
 
