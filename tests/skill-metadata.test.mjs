@@ -250,6 +250,24 @@ test("core skills require conservative repo preflight", () => {
   }
 });
 
+test("core memory commands require configured skill root without local checkout fallbacks", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /\$\{OTH_SKILLS_ROOT:\?Set OTH_SKILLS_ROOT to the 0th-skills directory\}/,
+      `${skillName} should require OTH_SKILLS_ROOT for shared scripts`
+    );
+    assert.doesNotMatch(
+      source,
+      /\$HOME\/0thcanvas|\/Users\/mini\/0thcanvas/,
+      `${skillName} should not assume a local 0thcanvas checkout path`
+    );
+  }
+});
+
 test("core skills read the generated memory brief first when present", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");

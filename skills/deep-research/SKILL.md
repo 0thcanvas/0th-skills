@@ -151,11 +151,11 @@ Survey mode is single-pass: Phase 0-1-2-3-7s, or USER_STOP.
 
 ## Repo Preflight
 
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
+Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
 
 ## Memory Brief
 
-When `.0th/memory/claims.jsonl` exists, run `node "${OTH_SKILLS_ROOT:-$HOME/0thcanvas/skills}/scripts/memory-brief.mjs"` and read `.0th/memory/brief.md`; read it before browsing indexes or raw notes manually.
+When `.0th/memory/claims.jsonl` exists, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-brief.mjs"` and read `.0th/memory/brief.md`; read it before browsing indexes or raw notes manually.
 
 ## Memory Integration
 
