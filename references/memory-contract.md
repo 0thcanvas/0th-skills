@@ -239,9 +239,18 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --limit 5
 ```
 
-Recall returns ranked compact records with `id`, kind/type, lifecycle state, confidence or caveat,
-timestamps, snippets, and source pointers. Use `memory expand --id <id>` to fetch the full record.
-If no record matches, recall/expand returns an abstention-shaped result instead of inventing.
+Default recall is `store_scope: combined`: it searches current-project memory/tasks/evidence first,
+then appends a bounded global-memory result set. This keeps repo work anchored in local state while
+still making cross-project knowledge available. Use `--project-only`, `--global-only`,
+`--source-id <source_id>`, `--project-limit N`, `--global-limit N`, or `--all-project-tasks` when
+the workflow needs narrower routing.
+
+Recall returns ranked compact records with `id`, kind/type, `store_scope`, brain/source/subject
+routing fields, lifecycle state, confidence or caveat, timestamps, snippets, and source pointers.
+Claims with the same `subject_key` and different claim text are surfaced in the top-level
+`conflicts` array with source pointers so an agent can reconcile them with evidence instead of
+silently picking one. Use `memory expand --id <id>` to fetch the full record or source pack. If no
+record matches, recall/expand returns an abstention-shaped result instead of inventing.
 
 Use `memory maintain` to report stale claims, duplicate candidates, missing sources, orphan open
 loops, supersession candidates, and repo drift. `memory maintain --apply` may perform conservative

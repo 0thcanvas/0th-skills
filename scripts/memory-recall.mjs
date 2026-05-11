@@ -5,6 +5,9 @@ import { readJsonl } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveEvidencePaths, resolveMemoryPaths, resolveTaskPaths } from "./runtime-state.mjs";
 import { expandSourcePack } from "./source-pack.mjs";
+import { listOpenLoops } from "./open-loop.mjs";
+
+const STORE_SCOPES = ["project", "global", "combined"];
 
 function normalizeText(value) {
   return String(value ?? "").toLowerCase();
@@ -59,7 +62,7 @@ function routingFields(record, { defaultSourceId }) {
   };
 }
 
-function claimResult(claim, queryTokens) {
+function claimResult(claim, queryTokens, storeScope = "project") {
   const searchText = [
     claim.id,
     claim.type,
@@ -93,11 +96,12 @@ function claimResult(claim, queryTokens) {
     source_pointers: evidenceFor(claim),
     snippet: snippet(claim.claim, queryTokens),
     score,
+    store_scope: storeScope,
     ...routingFields(claim, { defaultSourceId: "project-runtime" })
   };
 }
 
-function openLoopResult(loop, queryTokens) {
+function openLoopResult(loop, queryTokens, storeScope = "project") {
   const searchText = [
     loop.id,
     loop.title,
@@ -112,6 +116,7 @@ function openLoopResult(loop, queryTokens) {
     loop.next_action,
     loop.blocked_reason,
     loop.drop_reason,
+    loop.task_file,
     ...(loop.source_paths ?? []),
     ...(loop.evidence_ids ?? []),
     loop.evidence_path
@@ -128,14 +133,16 @@ function openLoopResult(loop, queryTokens) {
     review_caveat: loop.blocked_reason ?? loop.drop_reason ?? null,
     created_at: loop.created_at,
     updated_at: loop.updated_at,
+    task_file: loop.task_file ?? null,
     source_pointers: evidenceFor(loop),
     snippet: snippet(`${loop.title}: ${loop.next_action}`, queryTokens),
     score,
+    store_scope: storeScope,
     ...routingFields(loop, { defaultSourceId: "task-runtime" })
   };
 }
 
-function evidenceResult(record, queryTokens) {
+function evidenceResult(record, queryTokens, storeScope = "project") {
   const searchText = [
     record.id,
     record.event_type,
@@ -166,17 +173,115 @@ function evidenceResult(record, queryTokens) {
     source_pointers: evidenceFor(record),
     snippet: snippet(record.summary, queryTokens),
     score,
+    store_scope: storeScope,
     ...routingFields(record, { defaultSourceId: "evidence-runtime" })
   };
 }
 
-function matchFilters(result, { kind, type, scope, lifecycleState, source }) {
+function matchFilters(result, { kind, type, scope, lifecycleState, source, sourceId, brainId }) {
   if (kind && result.kind !== kind) return false;
   if (type && result.type !== type) return false;
   if (scope && result.scope !== scope) return false;
   if (lifecycleState && result.lifecycle_state !== lifecycleState) return false;
   if (source && !result.source_pointers.some((pointer) => String(pointer).includes(source))) return false;
+  if (sourceId && result.source_id !== sourceId) return false;
+  if (brainId && result.brain_id !== brainId) return false;
   return true;
+}
+
+function assertStoreScope(storeScope) {
+  if (!STORE_SCOPES.includes(storeScope)) {
+    throw new Error(`store_scope must be one of: ${STORE_SCOPES.join(", ")}`);
+  }
+}
+
+function sortResults(results) {
+  return results.sort((left, right) => {
+    if (right.score !== left.score) return right.score - left.score;
+    return String(right.updated_at ?? "").localeCompare(String(left.updated_at ?? ""));
+  });
+}
+
+function resultsForStore({
+  claims,
+  loops,
+  evidence,
+  queryTokens,
+  storeScope,
+  filters
+}) {
+  return sortResults([
+    ...claims.map((claim) => claimResult(claim, queryTokens, storeScope)),
+    ...loops.map((loop) => openLoopResult(loop, queryTokens, storeScope)),
+    ...evidence.map((record) => evidenceResult(record, queryTokens, storeScope))
+  ]
+    .filter(Boolean)
+    .filter((result) => matchFilters(result, filters)));
+}
+
+function conflictClaimView(claim, queryTokens, storeScope) {
+  const result = claimResult(claim, queryTokens, storeScope);
+  if (!result) return null;
+  return {
+    id: claim.id,
+    store_scope: storeScope,
+    scope: claim.scope,
+    type: claim.type,
+    claim: claim.claim,
+    lifecycle_state: claim.lifecycle_state,
+    confidence: claim.confidence ?? null,
+    review_caveat: claim.review_caveat ?? null,
+    updated_at: claim.last_confirmed_at ?? claim.created_at,
+    source_pointers: evidenceFor(claim),
+    brain_id: result.brain_id,
+    source_id: result.source_id,
+    subject_key: result.subject_key
+  };
+}
+
+function detectSubjectConflicts({
+  projectClaims,
+  globalClaims,
+  queryTokens,
+  filters
+}) {
+  if (filters.kind && filters.kind !== "claim") return [];
+  const claimViews = [
+    ...projectClaims.map((claim) => conflictClaimView(claim, queryTokens, "project")),
+    ...globalClaims.map((claim) => conflictClaimView(claim, queryTokens, "global"))
+  ]
+    .filter(Boolean)
+    .filter((view) => !["archived", "superseded"].includes(view.lifecycle_state))
+    .filter((view) => matchFilters({
+      id: view.id,
+      kind: "claim",
+      type: view.type,
+      scope: view.scope,
+      lifecycle_state: view.lifecycle_state,
+      source_pointers: view.source_pointers,
+      brain_id: view.brain_id,
+      source_id: view.source_id
+    }, filters));
+  const groups = new Map();
+
+  for (const view of claimViews) {
+    if (!view.subject_key) continue;
+    groups.set(view.subject_key, [...(groups.get(view.subject_key) ?? []), view]);
+  }
+
+  return [...groups.entries()]
+    .filter(([, views]) => views.length > 1)
+    .map(([subjectKey, views]) => {
+      const distinctClaims = new Set(views.map((view) => normalizeText(view.claim)));
+      if (distinctClaims.size <= 1) return null;
+      return {
+        subject_key: subjectKey,
+        reason: "matching subject_key with different claim text",
+        claim_ids: views.map((view) => view.id).sort(),
+        claims: views.sort((left, right) => String(left.id).localeCompare(String(right.id)))
+      };
+    })
+    .filter(Boolean);
 }
 
 export function recallMemory({
@@ -187,39 +292,102 @@ export function recallMemory({
   scope = null,
   lifecycleState = null,
   source = null,
+  sourceId = null,
+  brainId = null,
   limit = 10,
+  projectLimit = null,
+  globalLimit = null,
   memoryFile = null,
   taskFile = null,
   evidenceFile = null,
+  globalMemoryFile = null,
+  globalEvidenceFile = null,
   includeTasks = true,
-  includeEvidence = true
+  includeEvidence = true,
+  allProjectTasks = false,
+  storeScope = null
 } = {}) {
+  const resolvedStoreScope = storeScope ?? (
+    memoryFile || taskFile || evidenceFile ? "project" : "combined"
+  );
+  assertStoreScope(resolvedStoreScope);
   const resolvedMemoryFile = memoryFile ?? resolveMemoryPaths({ cwd }).memoryFile;
   const resolvedTaskFile = taskFile ?? resolveTaskPaths({ cwd }).taskFile;
   const resolvedEvidenceFile = evidenceFile ?? resolveEvidencePaths({ cwd }).evidenceFile;
+  const resolvedGlobalMemoryFile = globalMemoryFile ?? (
+    resolvedStoreScope === "global" && memoryFile
+      ? memoryFile
+      : resolveMemoryPaths({ cwd, scope: "global" }).memoryFile
+  );
+  const resolvedGlobalEvidenceFile = globalEvidenceFile ?? (
+    resolvedStoreScope === "global" && evidenceFile
+      ? evidenceFile
+      : resolveEvidencePaths({ cwd, scope: "global" }).evidenceFile
+  );
   const queryTokens = tokens(query);
+  const filters = { kind, type, scope, lifecycleState, source, sourceId, brainId };
+  const includeProjectStore = resolvedStoreScope !== "global";
+  const includeGlobalStore = resolvedStoreScope !== "project";
+  const projectClaims = includeProjectStore ? readJsonl(resolvedMemoryFile) : [];
+  const projectLoops = includeProjectStore && includeTasks
+    ? allProjectTasks
+      ? listOpenLoops({ cwd, allProjects: true }).loops
+      : readJsonl(resolvedTaskFile)
+    : [];
+  const projectEvidence = includeProjectStore && includeEvidence ? readJsonl(resolvedEvidenceFile) : [];
+  const globalClaims = includeGlobalStore ? readJsonl(resolvedGlobalMemoryFile) : [];
+  const globalEvidence = includeGlobalStore && includeEvidence ? readJsonl(resolvedGlobalEvidenceFile) : [];
+  const effectiveProjectLimit = projectLimit ?? limit;
+  const effectiveGlobalLimit = globalLimit ?? (
+    resolvedStoreScope === "global" ? limit : Math.min(3, limit)
+  );
 
-  const results = [
-    ...readJsonl(resolvedMemoryFile).map((claim) => claimResult(claim, queryTokens)),
-    ...(includeTasks ? readJsonl(resolvedTaskFile).map((loop) => openLoopResult(loop, queryTokens)) : []),
-    ...(includeEvidence ? readJsonl(resolvedEvidenceFile).map((record) => evidenceResult(record, queryTokens)) : [])
-  ]
-    .filter(Boolean)
-    .filter((result) => matchFilters(result, { kind, type, scope, lifecycleState, source }))
-    .sort((left, right) => {
-      if (right.score !== left.score) return right.score - left.score;
-      return String(right.updated_at ?? "").localeCompare(String(left.updated_at ?? ""));
-    })
-    .slice(0, limit);
+  const projectResults = includeProjectStore
+    ? resultsForStore({
+      claims: projectClaims,
+      loops: projectLoops,
+      evidence: projectEvidence,
+      queryTokens,
+      storeScope: "project",
+      filters
+    }).slice(0, effectiveProjectLimit)
+    : [];
+  const globalResults = includeGlobalStore
+    ? resultsForStore({
+      claims: globalClaims,
+      loops: [],
+      evidence: globalEvidence,
+      queryTokens,
+      storeScope: "global",
+      filters
+    }).slice(0, effectiveGlobalLimit)
+    : [];
+  const results = resolvedStoreScope === "global" ? globalResults : [...projectResults, ...globalResults];
+  const conflicts = detectSubjectConflicts({
+    projectClaims,
+    globalClaims,
+    queryTokens,
+    filters
+  });
 
   return {
-    memory_file: resolvedMemoryFile,
-    task_file: includeTasks ? resolvedTaskFile : null,
-    evidence_file: includeEvidence ? resolvedEvidenceFile : null,
+    store_scope: resolvedStoreScope,
+    memory_file: includeProjectStore ? resolvedMemoryFile : null,
+    global_memory_file: includeGlobalStore ? resolvedGlobalMemoryFile : null,
+    task_file: includeTasks && includeProjectStore && !allProjectTasks ? resolvedTaskFile : null,
+    task_files: includeTasks && includeProjectStore && allProjectTasks
+      ? [...new Set(projectLoops.map((loop) => loop.task_file).filter(Boolean))].sort()
+      : null,
+    evidence_file: includeEvidence && includeProjectStore ? resolvedEvidenceFile : null,
+    global_evidence_file: includeEvidence && includeGlobalStore ? resolvedGlobalEvidenceFile : null,
     query,
+    project_limit: includeProjectStore ? effectiveProjectLimit : 0,
+    global_limit: includeGlobalStore ? effectiveGlobalLimit : 0,
     result_count: results.length,
     results,
-    abstained: results.length === 0
+    conflicts,
+    has_conflicts: conflicts.length > 0,
+    abstained: results.length === 0 && conflicts.length === 0
   };
 }
 
@@ -297,8 +465,36 @@ function parseArgs(argv) {
       options.source = argv[++index];
       continue;
     }
+    if (token === "--source-id") {
+      options.sourceId = argv[++index];
+      continue;
+    }
+    if (token === "--brain-id") {
+      options.brainId = argv[++index];
+      continue;
+    }
     if (token === "--limit") {
       options.limit = Number.parseInt(argv[++index], 10);
+      continue;
+    }
+    if (token === "--project-limit") {
+      options.projectLimit = Number.parseInt(argv[++index], 10);
+      continue;
+    }
+    if (token === "--global-limit") {
+      options.globalLimit = Number.parseInt(argv[++index], 10);
+      continue;
+    }
+    if (token === "--store-scope") {
+      options.storeScope = argv[++index];
+      continue;
+    }
+    if (token === "--project-only") {
+      options.storeScope = "project";
+      continue;
+    }
+    if (token === "--global-only") {
+      options.storeScope = "global";
       continue;
     }
     if (token === "--memory-file") {
@@ -311,6 +507,14 @@ function parseArgs(argv) {
     }
     if (token === "--evidence-file") {
       options.evidenceFile = argv[++index];
+      continue;
+    }
+    if (token === "--global-memory-file") {
+      options.globalMemoryFile = argv[++index];
+      continue;
+    }
+    if (token === "--global-evidence-file") {
+      options.globalEvidenceFile = argv[++index];
       continue;
     }
     if (token === "--source-root") {
@@ -327,6 +531,10 @@ function parseArgs(argv) {
     }
     if (token === "--no-evidence") {
       options.includeEvidence = false;
+      continue;
+    }
+    if (token === "--all-project-tasks") {
+      options.allProjectTasks = true;
       continue;
     }
     throw new Error(`Unknown option: ${token}`);

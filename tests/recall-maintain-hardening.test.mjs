@@ -6,9 +6,25 @@ import path from "node:path";
 import { recallMemory } from "../scripts/memory-recall.mjs";
 import { runMemoryMaintain } from "../scripts/memory-maintain.mjs";
 import { appendMemoryClaim } from "../scripts/memory-write.mjs";
+import { addOpenLoop } from "../scripts/open-loop.mjs";
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "recall-maintain-"));
+}
+
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = path.join(tempDir(), "state");
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
 }
 
 function write(file, line) {
@@ -79,6 +95,186 @@ test("recall synthesizes routing defaults for legacy project claims", () => {
   assert.equal(recall.results[0].source_id, "project-runtime");
   assert.equal(recall.results[0].subject_key, recall.results[0].id);
   assert.equal(recall.results[0].topic, null);
+});
+
+test("default recall searches project memory first, then bounded global memory", () => {
+  withTempStateRoot(() => {
+    const repo = tempDir();
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "decision",
+        claim: "Project memory routing should stay first for repo work.",
+        scope: "repo",
+        evidence_path: "docs/project.md",
+        confidence: "high"
+      }
+    });
+    for (const claim of [
+      "Global memory routing source packs are useful across projects.",
+      "Global memory routing briefs should be bounded.",
+      "Global memory routing stale checks need maintenance."
+    ]) {
+      appendMemoryClaim({
+        cwd: repo,
+        updateBrief: false,
+        input: {
+          type: "external_research",
+          claim,
+          scope: "global",
+          source_id: "memory-systems-world-model",
+          evidence_path: "sources/memory-systems/source-pack.jsonl",
+          confidence: "high"
+        }
+      });
+    }
+
+    const recall = recallMemory({
+      cwd: repo,
+      query: "memory routing",
+      limit: 5,
+      globalLimit: 1,
+      includeTasks: false,
+      includeEvidence: false
+    });
+
+    assert.equal(recall.store_scope, "combined");
+    assert.equal(recall.result_count, 2);
+    assert.equal(recall.results[0].store_scope, "project");
+    assert.equal(recall.results[0].snippet, "Project memory routing should stay first for repo work.");
+    assert.equal(recall.results[1].store_scope, "global");
+    assert.equal(recall.results[1].source_id, "memory-systems-world-model");
+  });
+});
+
+test("recall can search global-only memory and filter by source namespace", () => {
+  withTempStateRoot(() => {
+    const repo = tempDir();
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Agent memory research belongs to the memory systems source namespace.",
+        scope: "global",
+        source_id: "memory-systems-world-model",
+        evidence_path: "sources/memory-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Design systems research belongs to a different source namespace.",
+        scope: "global",
+        source_id: "design-systems-world-model",
+        evidence_path: "sources/design-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+
+    const recall = recallMemory({
+      cwd: repo,
+      storeScope: "global",
+      sourceId: "memory-systems-world-model",
+      query: "research source namespace",
+      includeTasks: false,
+      includeEvidence: false
+    });
+
+    assert.equal(recall.result_count, 1);
+    assert.equal(recall.results[0].store_scope, "global");
+    assert.equal(recall.results[0].source_id, "memory-systems-world-model");
+  });
+});
+
+test("recall can include open loops across project runtime directories", () => {
+  withTempStateRoot(() => {
+    const repoA = tempDir();
+    const repoB = tempDir();
+    addOpenLoop({
+      cwd: repoA,
+      input: {
+        title: "Cross project loop A",
+        scope: "repo",
+        next_action: "Finish memory recall in project A.",
+        evidence_path: "docs/a.md"
+      }
+    });
+    addOpenLoop({
+      cwd: repoB,
+      input: {
+        title: "Cross project loop B",
+        scope: "repo",
+        next_action: "Finish memory recall in project B.",
+        evidence_path: "docs/b.md"
+      }
+    });
+
+    const recall = recallMemory({
+      cwd: repoA,
+      kind: "open_loop",
+      query: "cross project loop",
+      includeEvidence: false,
+      allProjectTasks: true
+    });
+
+    assert.equal(recall.result_count, 2);
+    assert.deepEqual(recall.results.map((result) => result.id).sort(), [
+      "2026-05-11-repo-cross-project-loop-a",
+      "2026-05-11-repo-cross-project-loop-b"
+    ]);
+  });
+});
+
+test("recall surfaces subject-key conflicts across project and global claims", () => {
+  withTempStateRoot(() => {
+    const repo = tempDir();
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "decision",
+        claim: "Memory startup should read only project memory.",
+        scope: "repo",
+        subject_key: "memory-startup-routing",
+        evidence_path: "docs/project.md",
+        confidence: "medium"
+      }
+    });
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Memory startup should read project memory and a bounded global brief.",
+        scope: "global",
+        source_id: "memory-systems-world-model",
+        subject_key: "memory-startup-routing",
+        evidence_path: "sources/memory-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+
+    const recall = recallMemory({
+      cwd: repo,
+      query: "memory startup",
+      includeTasks: false,
+      includeEvidence: false
+    });
+
+    assert.equal(recall.has_conflicts, true);
+    assert.equal(recall.conflicts.length, 1);
+    assert.equal(recall.conflicts[0].subject_key, "memory-startup-routing");
+    assert.equal(recall.conflicts[0].claim_ids.length, 2);
+    assert.ok(recall.conflicts[0].claim_ids.includes("2026-05-11-decision-memory-startup-should-read-only-project-memory"));
+    assert.ok(recall.conflicts[0].claim_ids.some((id) => (
+      id.startsWith("2026-05-11-external_research-memory-startup-should-read-project-memory-and-a-bounded-global")
+    )));
+  });
 });
 
 test("memory-maintain --apply is idempotent — a second run produces no actions and preserves marked_at", () => {

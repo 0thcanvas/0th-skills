@@ -38,10 +38,10 @@ Add the smallest useful global write path without changing project behavior.
 
 ### 4. Cross-Scope Recall Contract
 Compose project and global recall deterministically instead of one merged fuzzy list.
-- [ ] Default repo recall searches project memory first, then global memory with a bounded per-scope quota.
-- [ ] Agents can request project-only, global-only, source-specific, or all-project open-loop views.
-- [ ] Recall results include brain, source, subject key, lifecycle, confidence, timestamps, and provenance fields.
-- [ ] Claims with matching subject keys and incompatible content surface as conflicts requiring source-backed reconciliation.
+- [x] Default repo recall searches project memory first, then global memory with a bounded per-scope quota.
+- [x] Agents can request project-only, global-only, source-specific, or all-project open-loop views.
+- [x] Recall results include brain, source, subject key, lifecycle, confidence, timestamps, and provenance fields.
+- [x] Claims with matching subject keys and incompatible content surface as conflicts requiring source-backed reconciliation.
 
 ### 5. Startup and Instruction Cutover
 Make Memory v2 the actual workflow path, not an optional side channel.

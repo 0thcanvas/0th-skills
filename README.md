@@ -287,6 +287,7 @@ node scripts/memory.mjs preflight
 node scripts/memory.mjs brief
 node scripts/memory.mjs task-brief
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs recall --global-only --source-id memory-systems-world-model --limit 5
 node scripts/memory.mjs source-pack ingest --json /path/to/source-pack.json
 node scripts/memory.mjs source-pack expand --id memory-systems-world-model
 node scripts/memory.mjs doctor
@@ -315,6 +316,8 @@ Global durable claims require an explicit `source_id`. Source-pack ingestion sto
 metadata at `global/sources/index.jsonl` and verbatim redacted chunks under
 `global/sources/packs/`, deduplicating chunks by content hash. `memory expand --id <source-pack>`
 returns only the requested source pack instead of dumping unrelated global material into context.
+Default recall searches project memory first and then appends a bounded global result set; use
+`--project-only`, `--global-only`, `--source-id`, or `--all-project-tasks` to make routing explicit.
 
 `memory doctor` reports the resolved project paths, global paths, routing rules, and plugin/cache
 versions. `memory.mjs` is the unified entrypoint; the per-command
