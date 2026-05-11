@@ -90,6 +90,33 @@ test("unified memory entrypoint routes normal agent commands", () => {
   assert.equal(claim.type, "decision");
 });
 
+test("unified memory entrypoint reports project and global runtime diagnostics", () => {
+  const dir = tempDir();
+  const stateRoot = path.join(dir, "state");
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    const output = runMemoryCommand(["doctor"], { cwd: dir });
+    const result = JSON.parse(output);
+
+    assert.equal(result.state_root, stateRoot);
+    assert.equal(result.project.memory_file.includes(`${path.sep}projects${path.sep}`), true);
+    assert.equal(result.global.memory_file, path.join(stateRoot, "global", "memory", "claims.jsonl"));
+    assert.equal(result.global.evidence_file, path.join(stateRoot, "global", "evidence", "events.jsonl"));
+    assert.equal(result.global.source_index_file, path.join(stateRoot, "global", "sources", "index.jsonl"));
+    assert.equal(result.global.link_file, path.join(stateRoot, "global", "links", "links.jsonl"));
+    assert.equal(result.routing.global_scope_claims, "global");
+    assert.equal(result.routing.explicit_path_overrides, true);
+    assert.match(result.plugin.repo_version, /^\d+\.\d+\.\d+/);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+});
+
 test("evidence records are local provenance and recall expands by id", () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");
@@ -166,6 +193,36 @@ test("evidence records are local provenance and recall expands by id", () => {
   assert.equal(missing.found, false);
   assert.equal(missing.abstained, true);
   assert.equal(commitEvidence.written, true);
+});
+
+test("global-scope evidence records route to the global brain", () => {
+  const dir = tempDir();
+  const stateRoot = path.join(dir, "state");
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    const evidence = addEvidenceRecord({
+      cwd: dir,
+      now: new Date("2026-05-11T12:30:00.000Z"),
+      input: {
+        event_type: "research",
+        scope: "global",
+        summary: "GBrain-style sources route cross-project knowledge by source namespace.",
+        source_paths: ["sources/global-memory/research-pack.jsonl"],
+        redaction_status: "no_secrets_observed"
+      }
+    });
+
+    assert.equal(evidence.evidence_file, path.join(stateRoot, "global", "evidence", "events.jsonl"));
+    assert.equal(readJsonl(evidence.evidence_file)[0].scope, "global");
+    assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
 });
 
 test("locked writes preserve concurrent memory claims", async () => {

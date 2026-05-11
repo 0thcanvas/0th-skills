@@ -123,7 +123,10 @@ export function addEvidenceRecord({
   input,
   now = new Date()
 } = {}) {
-  const resolvedEvidenceFile = evidenceFile ?? resolveEvidencePaths({ cwd }).evidenceFile;
+  const resolvedEvidenceFile = evidenceFile ?? resolveEvidencePaths({
+    cwd,
+    scope: input?.scope ?? "repo"
+  }).evidenceFile;
   return withFileLock(resolvedEvidenceFile, (lockState) => {
     const existingEvidence = readJsonl(resolvedEvidenceFile);
     const record = normalizeEvidenceRecord(input, { existingEvidence, now });

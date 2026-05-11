@@ -86,11 +86,65 @@ export function resolveProjectStateDir({
   return path.join(resolveStateRoot({ env, homeDir }), "projects", project_key);
 }
 
-export function resolveMemoryPaths({
-  cwd = process.cwd(),
+export function resolveGlobalStateDir({
   env = process.env,
   homeDir = os.homedir()
 } = {}) {
+  return path.join(resolveStateRoot({ env, homeDir }), "global");
+}
+
+export function resolveGlobalMemoryPaths({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const globalDir = resolveGlobalStateDir({ env, homeDir });
+  return {
+    memoryFile: path.join(globalDir, "memory", "claims.jsonl"),
+    briefFile: path.join(globalDir, "memory", "brief.md")
+  };
+}
+
+export function resolveGlobalEvidencePaths({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const globalDir = resolveGlobalStateDir({ env, homeDir });
+  return {
+    evidenceFile: path.join(globalDir, "evidence", "events.jsonl")
+  };
+}
+
+export function resolveGlobalSourcePaths({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const globalDir = resolveGlobalStateDir({ env, homeDir });
+  const sourceRoot = path.join(globalDir, "sources");
+  return {
+    sourceRoot,
+    sourceIndexFile: path.join(sourceRoot, "index.jsonl")
+  };
+}
+
+export function resolveGlobalLinkPaths({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const globalDir = resolveGlobalStateDir({ env, homeDir });
+  return {
+    linkFile: path.join(globalDir, "links", "links.jsonl")
+  };
+}
+
+export function resolveMemoryPaths({
+  cwd = process.cwd(),
+  env = process.env,
+  homeDir = os.homedir(),
+  scope = "repo"
+} = {}) {
+  if (scope === "global") {
+    return resolveGlobalMemoryPaths({ env, homeDir });
+  }
   const projectDir = resolveProjectStateDir({ cwd, env, homeDir });
   return {
     memoryFile: path.join(projectDir, "memory", "claims.jsonl"),
@@ -101,8 +155,12 @@ export function resolveMemoryPaths({
 export function resolveEvidencePaths({
   cwd = process.cwd(),
   env = process.env,
-  homeDir = os.homedir()
+  homeDir = os.homedir(),
+  scope = "repo"
 } = {}) {
+  if (scope === "global") {
+    return resolveGlobalEvidencePaths({ env, homeDir });
+  }
   const projectDir = resolveProjectStateDir({ cwd, env, homeDir });
   return {
     evidenceFile: path.join(projectDir, "evidence", "events.jsonl")

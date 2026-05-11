@@ -9,7 +9,7 @@ records, compact recall, and expand-by-id are the machine-facing recall layer.
 ## Runtime State
 
 Generated Memory v2 state is user/runtime data, not product-repo content. By default, scripts
-store it outside the target checkout under:
+store project-scoped state outside the target checkout under:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` when `OTH_SKILLS_STATE_DIR` is set.
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` when `XDG_STATE_HOME` is set.
@@ -19,6 +19,17 @@ store it outside the target checkout under:
 path for non-Git directories. The command JSON output always reports the concrete file it read or
 wrote. Use explicit `--memory-file`, `--brief-output`, `--task-file`, or `--output` only for tests
 or deliberate migration work.
+
+Global cross-project claims and evidence use the same state-root contract, but route to the
+shared global brain instead of the current project store:
+
+- `$OTH_SKILLS_STATE_DIR/global/...`
+- `$XDG_STATE_HOME/0th-skills/global/...`
+- `~/.0th/skills/global/...`
+
+For normal memory/evidence writes, `scope: global` routes to the global brain. Explicit file flags
+still win for tests and deliberate migration work. Use `memory doctor` when an agent needs to
+inspect the resolved project paths, global paths, routing rules, and plugin/cache versions.
 
 ## Memory Types
 

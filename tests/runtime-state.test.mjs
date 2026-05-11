@@ -5,6 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
+  resolveGlobalEvidencePaths,
+  resolveGlobalLinkPaths,
+  resolveGlobalMemoryPaths,
+  resolveGlobalSourcePaths,
+  resolveGlobalStateDir,
   resolveMemoryPaths,
   resolveProjectStateDir,
   resolveTaskPaths
@@ -81,4 +86,44 @@ test("credentialed HTTPS remotes resolve to the same project state as clean HTTP
     resolveProjectStateDir({ cwd: clean, env }),
     resolveProjectStateDir({ cwd: credentialed, env })
   );
+});
+
+test("global Memory v2 paths live under the shared global brain", () => {
+  const stateRoot = path.join(tempDir(), "state");
+  const env = { OTH_SKILLS_STATE_DIR: stateRoot };
+
+  const globalDir = resolveGlobalStateDir({ env });
+  const memory = resolveGlobalMemoryPaths({ env });
+  const evidence = resolveGlobalEvidencePaths({ env });
+  const sources = resolveGlobalSourcePaths({ env });
+  const links = resolveGlobalLinkPaths({ env });
+
+  assert.equal(globalDir, path.join(stateRoot, "global"));
+  assert.deepEqual(memory, {
+    memoryFile: path.join(stateRoot, "global", "memory", "claims.jsonl"),
+    briefFile: path.join(stateRoot, "global", "memory", "brief.md")
+  });
+  assert.deepEqual(evidence, {
+    evidenceFile: path.join(stateRoot, "global", "evidence", "events.jsonl")
+  });
+  assert.deepEqual(sources, {
+    sourceRoot: path.join(stateRoot, "global", "sources"),
+    sourceIndexFile: path.join(stateRoot, "global", "sources", "index.jsonl")
+  });
+  assert.deepEqual(links, {
+    linkFile: path.join(stateRoot, "global", "links", "links.jsonl")
+  });
+});
+
+test("scope global routes memory paths to the global brain instead of the current project", () => {
+  const repo = initRepoWithRemote("git@github.com:0thcanvas/example-product.git");
+  const stateRoot = path.join(tempDir(), "state");
+  const env = { OTH_SKILLS_STATE_DIR: stateRoot };
+
+  const projectMemory = resolveMemoryPaths({ cwd: repo, env });
+  const globalMemory = resolveMemoryPaths({ cwd: repo, env, scope: "global" });
+
+  assert.ok(projectMemory.memoryFile.includes(`${path.sep}projects${path.sep}`));
+  assert.equal(globalMemory.memoryFile, path.join(stateRoot, "global", "memory", "claims.jsonl"));
+  assert.equal(globalMemory.briefFile, path.join(stateRoot, "global", "memory", "brief.md"));
 });

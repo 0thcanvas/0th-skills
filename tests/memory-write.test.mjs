@@ -112,6 +112,30 @@ test("appendMemoryClaim default stores runtime state outside the project checkou
   });
 });
 
+test("appendMemoryClaim routes global-scope claims to the global brain", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const result = appendMemoryClaim({
+      cwd: repo,
+      now: new Date("2026-05-11T12:00:00.000Z"),
+      input: {
+        type: "external_research",
+        claim: "Global memory source packs preserve verbatim chunks and hashes.",
+        scope: "global",
+        evidence_path: "sources/memory-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+
+    const [claim] = readJsonl(result.memory_file);
+
+    assert.equal(result.memory_file, path.join(stateRoot, "global", "memory", "claims.jsonl"));
+    assert.equal(result.brief_file, path.join(stateRoot, "global", "memory", "brief.md"));
+    assert.equal(claim.scope, "global");
+    assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
+  });
+});
+
 test("appendMemoryClaim refuses duplicate explicit ids", () => {
   const repo = tempDir();
   const memoryFile = path.join(repo, ".0th", "memory", "claims.jsonl");

@@ -162,7 +162,7 @@ export function appendMemoryClaim({
     throw new Error("input memory claim is required");
   }
 
-  const defaults = resolveMemoryPaths({ cwd });
+  const defaults = resolveMemoryPaths({ cwd, scope: input.scope ?? "repo" });
   const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
   const resolvedBriefFile = briefFile ?? (
     memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile

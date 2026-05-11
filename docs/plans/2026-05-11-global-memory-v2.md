@@ -16,10 +16,10 @@
 
 ### 1. Routing Contract and Global Paths
 Define owner-vs-scope routing before adding any global writes.
-- [ ] Global memory, evidence, source-pack, link, and brief locations resolve under the same state root contract as project state.
-- [ ] Existing project state paths remain stable and backward compatible.
-- [ ] `scope: global` no longer strands claims in the current project store; writes either route to the global brain or fail with a clear error.
-- [ ] A diagnostic command reports project paths, global paths, routing precedence, and plugin/cache version in one machine-readable payload.
+- [x] Global memory, evidence, source-pack, link, and brief locations resolve under the same state root contract as project state.
+- [x] Existing project state paths remain stable and backward compatible.
+- [x] `scope: global` no longer strands claims in the current project store; writes either route to the global brain or fail with a clear error.
+- [x] A diagnostic command reports project paths, global paths, routing precedence, and plugin/cache version in one machine-readable payload.
 
 ### 2. Record Schema and Source Fidelity
 Upgrade records so global memory can be cited, compared, and replayed safely.

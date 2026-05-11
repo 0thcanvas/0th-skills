@@ -23,7 +23,8 @@ const COMMANDS = new Map([
   ["open-loop", ["open-loop.mjs"]],
   ["tasks", ["open-loop.mjs"]],
   ["task-brief", ["open-loop-brief.mjs"]],
-  ["evidence", ["evidence.mjs"]]
+  ["evidence", ["evidence.mjs"]],
+  ["doctor", ["memory-doctor.mjs"]]
 ]);
 
 function helpText() {
@@ -41,6 +42,7 @@ function helpText() {
     "  reconcile        Confirm or caveat claims from an inspected read set.",
     "  open-loop|tasks  Add/list/block/close/drop/reopen unfinished work.",
     "  evidence         Add/list local provenance events.",
+    "  doctor           Report project/global runtime paths and install versions.",
     "  maintain         Report stale, duplicate, orphaned, and drifted memory.",
     "  eval             Run memory evaluation reports.",
     "  runtime-eval     Run executable Memory v2 runtime fixtures.",

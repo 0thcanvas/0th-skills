@@ -287,11 +287,12 @@ node scripts/memory.mjs preflight
 node scripts/memory.mjs brief
 node scripts/memory.mjs task-brief
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs doctor
 node scripts/memory.mjs runtime-eval
 ```
 
-By default the memory, evidence, repo-state, and open-loop commands store generated JSONL/brief
-files at:
+By default project-scoped memory, evidence, repo-state, and open-loop commands store generated
+JSONL/brief files at:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` if set
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` if `XDG_STATE_HOME` is set
@@ -299,7 +300,17 @@ files at:
 
 The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
 the same repo share one local Memory v2 state directory. Each command prints the concrete file path
-it read or wrote in its JSON result. `memory.mjs` is the unified entrypoint; the per-command
+it read or wrote in its JSON result.
+
+Global cross-project memory and evidence route to the shared global brain when written with
+`scope: global`:
+
+- `$OTH_SKILLS_STATE_DIR/global/...` if set
+- `$XDG_STATE_HOME/0th-skills/global/...` if `XDG_STATE_HOME` is set
+- `~/.0th/skills/global/...` otherwise
+
+`memory doctor` reports the resolved project paths, global paths, routing rules, and plugin/cache
+versions. `memory.mjs` is the unified entrypoint; the per-command
 scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
 implementation. Direct invocation is supported for tests and migration work; explicit path flags
 only matter when you need to override the default project-keyed runtime location.
