@@ -355,3 +355,36 @@ test("core skills read the generated memory brief first when present", () => {
     );
   }
 });
+
+test("core skills read global memory before project memory and degrade visibly", () => {
+  for (const skillName of skillNames) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /brief" --scope global|brief --scope global/,
+      `${skillName} should generate the global memory brief first`
+    );
+    assert.match(
+      source,
+      /global brief[\s\S]*warn[\s\S]*continue/i,
+      `${skillName} should warn and continue when global memory is missing or corrupt`
+    );
+    assert.match(
+      source,
+      /canonical agent recall path/i,
+      `${skillName} should name Memory v2 runtime as canonical recall`
+    );
+    assert.match(
+      source,
+      /legacy KB|Obsidian|markdown/i,
+      `${skillName} should mention legacy markdown KB fallback/import-export handling`
+    );
+    assert.match(
+      source,
+      /source packs[\s\S]*on demand/i,
+      `${skillName} should keep large source packs out of startup context`
+    );
+  }
+});

@@ -12,6 +12,8 @@ const COMMANDS = new Map([
   ["preflight", ["session-preflight.mjs"]],
   ["remember", ["memory-write.mjs"]],
   ["write", ["memory-write.mjs"]],
+  ["write-gate", ["memory-gate.mjs"]],
+  ["gate", ["memory-gate.mjs"]],
   ["recall", ["memory-recall.mjs", "recall"]],
   ["expand", ["memory-recall.mjs", "expand"]],
   ["brief", ["memory-brief.mjs"]],
@@ -23,7 +25,9 @@ const COMMANDS = new Map([
   ["open-loop", ["open-loop.mjs"]],
   ["tasks", ["open-loop.mjs"]],
   ["task-brief", ["open-loop-brief.mjs"]],
-  ["evidence", ["evidence.mjs"]]
+  ["evidence", ["evidence.mjs"]],
+  ["source-pack", ["source-pack.mjs"]],
+  ["doctor", ["memory-doctor.mjs"]]
 ]);
 
 function helpText() {
@@ -35,12 +39,15 @@ function helpText() {
     "  brief            Generate the compact memory brief.",
     "  task-brief       Generate the open-loop brief.",
     "  remember|write   Write a schema-validated durable memory claim.",
+    "  write-gate|gate  Classify and capture a workflow memory event.",
     "  recall           Search compact memory/open-loop/evidence records.",
     "  expand           Expand one record by id.",
     "  sync             Mark claims needs_review after source changes.",
     "  reconcile        Confirm or caveat claims from an inspected read set.",
     "  open-loop|tasks  Add/list/block/close/drop/reopen unfinished work.",
     "  evidence         Add/list local provenance events.",
+    "  source-pack      Ingest/list/expand global source packs.",
+    "  doctor           Report project/global runtime paths and install versions.",
     "  maintain         Report stale, duplicate, orphaned, and drifted memory.",
     "  eval             Run memory evaluation reports.",
     "  runtime-eval     Run executable Memory v2 runtime fixtures.",

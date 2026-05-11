@@ -27,7 +27,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Scale to uncertainty.** Low uncertainty = /build. Medium = /think then /build. High = /think with divergent design exploration.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.
-- **Session resumption is explicit.** Every skill checks KB + git log + open decisions when starting a new session.
+- **Session resumption is explicit.** Every skill checks Memory v2 runtime + git log + open decisions when starting a new session; markdown KB material is fallback/source evidence, not the primary recall path.
 - **Research is source-aware.** Use official docs, GitHub, papers, and direct source search, not one generic web query.
 - **Agent manifests are host-native.** Claude-side manifests live in `agents/*.md`, while Codex subagents use TOML under `.codex/agents/`.
 - **Shared behavior changes must update both hosts.** If a mirrored agent's behavior changes, update both `agents/*.md` and `.codex/agents/*.toml` in the same slice unless the difference is intentionally host-specific.
@@ -38,7 +38,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Cross-model review is script-driven.** A single `counterpart-companion.mjs` auto-detects the host and loads the appropriate driver.
 - **Cross-model review uses a generic helper.** `ask-counterpart-review` replaces the old `ask-codex-review` and `ask-claude-review` (deprecated shims, removed next release).
 - **Cross-model review details live in `README.md`.** Use that as the authoritative reference for bridge-helper behavior and state handling.
-- **KB behavior is editor-agnostic.** If a project uses a knowledge base, follow its configured root and the markdown-first protocol in `PROTOCOL.md`; do not assume Obsidian.
+- **KB behavior is editor-agnostic.** Memory v2 runtime is the canonical agent recall path. If a project uses a markdown knowledge base, follow its configured root and the compatibility protocol in `PROTOCOL.md`; do not assume Obsidian.
 - **Secret values stay outside agents.** Agents may handle secret names, environment variable names, and secret-manager references, but not resolved secret values. Code should read secrets from environment variables or runtime bindings, while a human-owned secret runner injects values into the target process.
 
 ## Secret Handling Contract
@@ -70,12 +70,15 @@ Prefer behavioral contracts over file-path references in specs and plans.
 
 ## Knowledge Base
 
-Some projects keep a markdown knowledge base alongside code and docs. When a project mentions a KB:
+Memory v2 runtime is the canonical agent recall path: read the global/project memory briefs, compact
+recall results, and open-loop brief before browsing markdown notes. Some projects keep a markdown
+knowledge base alongside code and docs; treat it as optional source material, import/export storage,
+or human-rendered evidence rather than the primary memory interface. When a project mentions a KB:
 
 - Resolve the KB root in this order: `KB_ROOT`, then project instructions, then a one-time human prompt
-- Read the KB root `index.md` at session start
+- Read the KB root `index.md` only after Memory v2 runtime recall does not answer, or when a skill explicitly needs the markdown source
 - Read the repo's or project's KB instructions before writing
-- Follow the editor-agnostic KB protocol in `PROTOCOL.md`
+- Follow the editor-agnostic compatibility protocol in `PROTOCOL.md`
 - Do not assume the human is using Obsidian, even if their KB can be viewed there
 - If you had to ask for the KB location, recommend persisting it via `KB_ROOT` or project instructions
 

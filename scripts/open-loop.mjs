@@ -7,6 +7,8 @@ import { runOpenLoopBriefGeneration } from "./open-loop-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { emitBriefRegenerationFailed } from "./lib/diagnostics.mjs";
+import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveAllProjectStateDirs, resolveTaskPaths } from "./runtime-state.mjs";
 
@@ -168,6 +170,7 @@ function regenerateBriefSafely({ cwd, taskFile, briefFile, updateBrief }) {
       brief = regenerateBrief({ cwd, taskFile, briefFile, updateBrief });
     } catch (err) {
       briefError = err.message;
+      emitBriefRegenerationFailed(err);
     }
   }
   return { brief, briefError };
@@ -385,7 +388,7 @@ export function updateOpenLoopStatus({
 }
 
 function readJsonArg(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return readJsonFileArg(filePath);
 }
 
 function pushListOption(options, key, value) {

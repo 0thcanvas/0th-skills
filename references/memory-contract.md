@@ -9,7 +9,7 @@ records, compact recall, and expand-by-id are the machine-facing recall layer.
 ## Runtime State
 
 Generated Memory v2 state is user/runtime data, not product-repo content. By default, scripts
-store it outside the target checkout under:
+store project-scoped state outside the target checkout under:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` when `OTH_SKILLS_STATE_DIR` is set.
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` when `XDG_STATE_HOME` is set.
@@ -19,6 +19,17 @@ store it outside the target checkout under:
 path for non-Git directories. The command JSON output always reports the concrete file it read or
 wrote. Use explicit `--memory-file`, `--brief-output`, `--task-file`, or `--output` only for tests
 or deliberate migration work.
+
+Global cross-project claims and evidence use the same state-root contract, but route to the
+shared global brain instead of the current project store:
+
+- `$OTH_SKILLS_STATE_DIR/global/...`
+- `$XDG_STATE_HOME/0th-skills/global/...`
+- `~/.0th/skills/global/...`
+
+For normal memory/evidence writes, `scope: global` routes to the global brain. Explicit file flags
+still win for tests and deliberate migration work. Use `memory doctor` when an agent needs to
+inspect the resolved project paths, global paths, routing rules, and plugin/cache versions.
 
 ## Memory Types
 
@@ -75,11 +86,53 @@ Evidence records include:
 - `summary`
 - `observed_at`
 - `redaction_status`: no_secrets_observed, redacted, or secret_reference_only
-- optional `source_paths`, `evidence_paths`, and `related_ids`
+- at least one of `source_paths`, `evidence_paths`, or `related_ids` (any subset is allowed; supplying none is a validation error)
 
 Secret-bearing values must never be written to evidence records. The evidence writer rejects
 obvious token/API-key shapes, but the workflow still depends on agents recording source pointers
 and redacted summaries rather than raw transcript dumps.
+
+## Global Routing Fields
+
+Global Memory v2 separates record ownership from recall scope. Claims and evidence may carry:
+
+- `brain_id` — storage owner, e.g. `global` or `project`.
+- `source_id` — named source namespace, e.g. a research pack or workflow domain.
+- `topic` — coarse retrieval bucket.
+- `subject_key` — stable conflict/reconciliation key for the thing being discussed.
+- `owner_project_key` — project that produced or applies the record when relevant.
+- `related_ids` — explicit source-backed links to other records.
+
+Legacy project records without these fields remain valid. Recall synthesizes defaults rather than
+rewriting old memory: `brain_id: project`, `source_id: project-runtime`, `subject_key: <record id>`,
+and `topic: null`.
+
+Global claim writes are stricter than project claim writes: `scope: global` requires an explicit
+`source_id` plus normal evidence/source pointers. This prevents reusable cross-project memory from
+landing in the global brain without a named source namespace.
+
+## Source Packs
+
+Source packs are the fidelity layer for global research/reference material. A source pack stores
+verbatim redacted text chunks, stable source-pointer metadata, chunk summaries, timestamps,
+redaction status, stale-after policy, and content hashes. Hashes are computed from the stored
+redacted bytes plus stable source-pointer metadata, so deduplication and fidelity checks are
+reproducible. Summaries and indexes point back to chunks; they do not replace source text.
+
+Source packs are written through the unified memory surface:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" source-pack ingest \
+  --json /path/to/source-pack.json
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" source-pack expand \
+  --id memory-systems-world-model
+```
+
+The global source store keeps compact metadata in `global/sources/index.jsonl` and verbatim chunks
+in per-pack JSONL files under `global/sources/packs/`. Ingestion normalizes and scans chunks for
+secret-like content before taking the write lock, then deduplicates by `content_hash`. Expansion by
+id reads only the requested pack file; agents should expand source packs on demand instead of
+loading all global source material at startup.
 
 ## Memory Write Gate
 
@@ -110,6 +163,24 @@ For every durable outcome, record:
 
 If the outcome is `nothing durable`, write nothing and say so only when the user needs to know.
 
+When the scope is not obvious, use the executable gate:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate \
+  --event-type research \
+  --claim "Source-pack content hashes are reusable across memory projects." \
+  --source-id memory-systems-world-model \
+  --evidence-path "sources/memory/source-pack.jsonl" \
+  --confidence high
+```
+
+The gate classifies events as `project`, `global`, `both`, or `nothing_durable`. Global and `both`
+capture require `source_id` plus source-backed evidence. `both` writes one canonical global claim
+and, only when a distinct `--project-claim` is supplied, a project-local application note linked to
+the global claim by `related_ids` and the shared `subject_key`; it does not silently duplicate the
+global claim into the project store. Consolidation from source packs or evidence into durable claims
+requires an explicit reusable lesson and source-backed evidence.
+
 ## Canonical Writer
 
 Durable memory claims must be written through `scripts/memory.mjs remember`; do not hand-edit
@@ -117,7 +188,7 @@ the runtime `claims.jsonl`. The canonical implementation lives in `scripts/memor
 `scripts/memory.mjs` is a routing dispatcher and direct invocation of `scripts/memory-write.mjs`
 is supported for tests and migration tooling.
 
-Minimum command shape:
+Minimum command shape (`--scope` may be omitted; it defaults to `repo`):
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember \
@@ -186,11 +257,25 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --limit 5
 ```
 
-Recall returns ranked compact records with `id`, kind/type, lifecycle state, confidence or caveat,
-timestamps, snippets, and source pointers. Use `memory expand --id <id>` to fetch the full record.
-If no record matches, recall/expand returns an abstention-shaped result instead of inventing.
+Default recall is `store_scope: combined`: it searches current-project memory/tasks/evidence first,
+then appends a bounded global-memory result set. This keeps repo work anchored in local state while
+still making cross-project knowledge available. Use `--project-only`, `--global-only`,
+`--source-id <source_id>`, `--project-limit N`, `--global-limit N`, or `--all-project-tasks` when
+the workflow needs narrower routing.
+
+Recall returns ranked compact records with `id`, kind/type, `store_scope`, brain/source/subject
+routing fields, lifecycle state, confidence or caveat, timestamps, snippets, and source pointers.
+Claims with the same `subject_key` and different claim text are surfaced in the top-level
+`conflicts` array with source pointers so an agent can reconcile them with evidence instead of
+silently picking one. Use `memory expand --id <id>` to fetch the full record or source pack. If no
+record matches, recall/expand returns an abstention-shaped result instead of inventing.
 
 Use `memory maintain` to report stale claims, duplicate candidates, missing sources, orphan open
-loops, supersession candidates, and repo drift. `memory maintain --apply` may perform conservative
-source-backed lifecycle changes, such as marking duplicate candidates `needs_review`; it does not
-destructively delete memory.
+loops, supersession candidates, repo drift, and global brain health. Global maintenance reports
+stale global claims, expired source packs, duplicate global claims, missing global source evidence,
+orphan `related_ids`, and subject-key conflicts.
+
+`memory maintain --apply` may perform only conservative source-backed lifecycle changes, such as
+marking affected claims `needs_review`; it does not destructively delete memory or source-pack
+material. When project and global claims both need updates, maintenance takes locks in deterministic
+project-then-global order and preserves successful writes even if derived brief regeneration fails.

@@ -16,7 +16,7 @@ If the user invoked this skill directly, treat `$ARGUMENTS` as a hint about whic
 
 ## Step 0 — Check for FEEDBACK.md migration (one-time per upgrade)
 
-Before authoring any new incident, check whether the user has un-migrated content in their committed `skills/FEEDBACK.md`. The decision moves user feedback from `skills/FEEDBACK.md` to `${KB_ROOT}/learning/feedback.md`; this step is the migration entry point that runs when /retro is invoked.
+Before authoring any new incident, check whether the user has un-migrated content in their committed repo-root `FEEDBACK.md`. The decision moves user feedback from `FEEDBACK.md` to `${KB_ROOT}/learning/feedback.md`; this step is the migration entry point that runs when /retro is invoked.
 
 Run the migration script in dry-run mode first:
 
@@ -28,9 +28,9 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --dry-run
 ```
 
-If `needed: true` (with `missingCount: <N>`), tell the user "you have N un-migrated feedback line(s); shall I migrate them now?" Do NOT echo the line contents to the user via this script's output — the CLI default reports counts only so feedback content doesn't leak through transcripts. If the user wants to inspect the lines first, read `skills/FEEDBACK.md` directly with the same redaction discipline that applies to incident `correction evidence`. To apply, re-run the script without `--dry-run`. If `needed: false`, skip silently. The migration is idempotent — re-runs converge to a no-op once the destination contains every non-template line.
+If `needed: true` (with `missingCount: <N>`), tell the user "you have N un-migrated feedback line(s); shall I migrate them now?" Do NOT echo the line contents to the user via this script's output — the CLI default reports counts only so feedback content doesn't leak through transcripts. If the user wants to inspect the lines first, read repo-root `FEEDBACK.md` directly with the same redaction discipline that applies to incident `correction evidence`. To apply, re-run the script without `--dry-run`. If `needed: false`, skip silently. The migration is idempotent — re-runs converge to a no-op once the destination contains every non-template line.
 
-The same script is also invoked from the "process the skill feedback" flow (see `skills/FEEDBACK.md`) so both entry points share one comparator.
+The same script is also invoked from the "process the skill feedback" flow (see repo-root `FEEDBACK.md`) so both entry points share one comparator.
 
 ## When to Use
 
@@ -198,7 +198,7 @@ Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to
 
 ## Memory Brief
 
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the `output_file` path from its JSON result; the script resolves Memory v2 user-level runtime state outside the product repo. Read the generated brief before browsing indexes or raw notes manually.
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
 
 ## Open Loop Brief
 
@@ -206,11 +206,11 @@ Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/s
 
 ## Memory Integration
 
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`. For durable outcomes, write through `memory remember`; do not hand-edit runtime `claims.jsonl`.
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
 
 ## Open Loop Integration
 
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop`; do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
+When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
 
 ## KB Integration
 

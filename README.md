@@ -30,9 +30,13 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 
 ## Knowledge Base
 
-Projects using 0th skills may also maintain a markdown knowledge base. The skills repo now includes an editor-agnostic KB protocol in [PROTOCOL.md](PROTOCOL.md).
+Memory v2 runtime is the canonical agent recall path. Generated global/project briefs, compact
+recall, source-pack expansion, and open-loop briefs are read before any markdown KB browsing.
+Projects may still maintain a markdown knowledge base as source material, import/export storage, or
+human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
+[PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
 
-The protocol assumes:
+The markdown KB protocol assumes:
 
 - `KB_ROOT` is the canonical KB path contract
 - agents resolve the KB root from `KB_ROOT`, then project instructions, then a one-time user prompt
@@ -154,6 +158,12 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### 0.3.1
+
+- Added the global Memory v2 runtime layer: project/global brain routing, source namespaces, source-pack ingestion, scoped recall, conflict surfacing, global maintenance, and no-Obsidian runtime evaluation.
+- Hardened Memory v2 review edges from counterpart feedback: source-aware recall degradation, structured preflight unreadable-state flags, stderr markers for degraded preflight and brief regeneration failures, path-aware JSON argument parse errors, and visible git fallback warnings.
+- Clarified Memory v2 contracts and prompts: evidence records require at least one source pointer, `memory remember` / `memory open-loop` are shorthand for full node commands, and repo-root `FEEDBACK.md` / `CLAUDE.md` references are named correctly.
+
 ### 0.3.0
 
 - Added Memory v2 runtime hardening: a unified `scripts/memory.mjs` surface for recall, expand, write, preflight, repo-state, evidence, open-loop, maintenance, and runtime eval workflows.
@@ -177,9 +187,9 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 - Added `/retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log under `${KB_ROOT}/learning/skill-incidents/<YYYY-MM-DD>-<slug>.md`. The skill enforces a four-stage authoring workflow (extract evidence → redact → classify → aggregate) with a flat 7-bucket classification taxonomy (`user-ambiguity | skill-issue | context-rot | tool-failure | model-limitation | verification-skipped | unknown`); `unknown` requires either `candidate_new_category:` or `insufficient_evidence:` to prevent junk-drawer drift. Manual capture only — no auto-hook
 - Added `scripts/retro-aggregator.mjs` — deterministic directory walk that grouped-counts incidents by `(classification × skill)`, `(classification)`, and `(tags)` per-distinct-value; surfaces buckets at ≥ 3 lifetime, annotates whether ≥ 3 entries fall within the last 30 days as a "recent cluster" (using each entry's frontmatter `date`, not the filename, with timezone-aware timestamps; `0 ≤ current_run_at − date ≤ 30 days`, inclusive); excludes the just-written entry from prior-entry links so reports stay retrospective. `related_skills` is informational only and does NOT fan out into bucket counts (regression test enforces this)
-- Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed `skills/FEEDBACK.md` is kept in this release for the migration-overlap window; removal is a later follow-up once users have had a chance to migrate
+- Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed repo-root `FEEDBACK.md` is kept in this release for the migration-overlap window; removal is a later follow-up once users have had a chance to migrate
 - Added `scripts/feedback-migrator.mjs` — shared idempotent comparator invoked from both `/retro` (Step 0) and the "process the skill feedback" flow. Rule: any non-empty line whose trimmed content is not present in `FEEDBACK.example.md` = non-template; missing destination is treated as empty; only the not-yet-copied lines are appended; re-runs converge to a no-op
-- Plumbing: `/retro` registered for both hosts via `skills/retro/agents/openai.yaml`; `skills/CLAUDE.md` skill table and routing, `README.md` skill list, `scripts/install-smoke-check.mjs` `expectedSkills`, and the metadata + routing parity tests all updated
+- Plumbing: `/retro` registered for both hosts via `skills/retro/agents/openai.yaml`; the repo-root `CLAUDE.md` skill table and routing, `README.md` skill list, `scripts/install-smoke-check.mjs` `expectedSkills`, and the metadata + routing parity tests all updated
 - Decision record: [`docs/decisions/2026-05-03-skill-incident-log.md`](https://github.com/0thcanvas/0th-skills/blob/main/docs/decisions/2026-05-03-skill-incident-log.md) (six rounds of cross-model review with Codex/gpt-5.5; both sides converged)
 
 ### 0.2.2
@@ -286,12 +296,17 @@ use the unified command surface:
 node scripts/memory.mjs preflight
 node scripts/memory.mjs brief
 node scripts/memory.mjs task-brief
+node scripts/memory.mjs write-gate --event-type research --claim "..." --source-id memory-systems-world-model --evidence-path sources/memory/source-pack.jsonl --confidence high
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs recall --global-only --source-id memory-systems-world-model --limit 5
+node scripts/memory.mjs source-pack ingest --json /path/to/source-pack.json
+node scripts/memory.mjs source-pack expand --id memory-systems-world-model
+node scripts/memory.mjs doctor
 node scripts/memory.mjs runtime-eval
 ```
 
-By default the memory, evidence, repo-state, and open-loop commands store generated JSONL/brief
-files at:
+By default project-scoped memory, evidence, repo-state, and open-loop commands store generated
+JSONL/brief files at:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` if set
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` if `XDG_STATE_HOME` is set
@@ -299,8 +314,25 @@ files at:
 
 The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
 the same repo share one local Memory v2 state directory. Each command prints the concrete file path
-it read or wrote in its JSON result. `memory.mjs` is the unified entrypoint; the per-command
-scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
+it read or wrote in its JSON result.
+
+Global cross-project memory and evidence route to the shared global brain when written with
+`scope: global`:
+
+- `$OTH_SKILLS_STATE_DIR/global/...` if set
+- `$XDG_STATE_HOME/0th-skills/global/...` if `XDG_STATE_HOME` is set
+- `~/.0th/skills/global/...` otherwise
+
+Global durable claims require an explicit `source_id`. Source-pack ingestion stores compact
+metadata at `global/sources/index.jsonl` and verbatim redacted chunks under
+`global/sources/packs/`, deduplicating chunks by content hash. `memory expand --id <source-pack>`
+returns only the requested source pack instead of dumping unrelated global material into context.
+Default recall searches project memory first and then appends a bounded global result set; use
+`--project-only`, `--global-only`, `--source-id`, or `--all-project-tasks` to make routing explicit.
+
+`memory doctor` reports the resolved project paths, global paths, routing rules, and plugin/cache
+versions. `memory.mjs` is the unified entrypoint; the per-command
+scripts (`memory-write.mjs`, `source-pack.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
 implementation. Direct invocation is supported for tests and migration work; explicit path flags
 only matter when you need to override the default project-keyed runtime location.
 

@@ -38,6 +38,22 @@ function readJsonl(filePath) {
     .map((line) => JSON.parse(line));
 }
 
+function captureStderr(callback) {
+  const originalWrite = process.stderr.write;
+  let stderr = "";
+  process.stderr.write = (chunk, ...args) => {
+    stderr += String(chunk);
+    const maybeCallback = args.find((arg) => typeof arg === "function");
+    if (maybeCallback) maybeCallback();
+    return true;
+  };
+  try {
+    return { result: callback(), stderr };
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+}
+
 test("memory sync marks claims tied to changed source paths as needs_review", () => {
   const repo = tempRepo();
   const memoryFile = path.join(repo, "claims.jsonl");
@@ -138,4 +154,32 @@ test("memory sync regenerates the brief after flipping lifecycle_state to needs_
     /needs[ _-]?review|Repo State Warnings|cart-claim/i,
     `brief should reflect the needs_review claim, got: ${brief.slice(0, 200)}`
   );
+});
+
+test("memory sync emits a stderr marker when brief regeneration fails after mutation", () => {
+  const repo = tempRepo();
+  const from = sh(repo, ["git", "rev-parse", "HEAD"]);
+  fs.writeFileSync(path.join(repo, "src", "cart.js"), "export const cart = 3;\n");
+  sh(repo, ["git", "add", "src/cart.js"]);
+  sh(repo, ["git", "commit", "-m", "update cart again"]);
+  const to = sh(repo, ["git", "rev-parse", "HEAD"]);
+
+  const memoryFile = path.join(repo, "claims.jsonl");
+  appendJsonl(memoryFile, [
+    {
+      id: "cart-claim",
+      claim: "Cart logic is single-line export.",
+      lifecycle_state: "active",
+      source_paths: ["src/cart.js"]
+    }
+  ]);
+  fs.writeFileSync(path.join(repo, "brief-blocker"), "");
+  const briefFile = path.join(repo, "brief-blocker", "brief.md");
+
+  const { result, stderr } = captureStderr(() => runMemorySync({ cwd: repo, from, to, memoryFile, briefFile }));
+
+  assert.deepEqual(result.affected_claim_ids, ["cart-claim"]);
+  assert.equal(result.brief_updated, false);
+  assert.ok(result.brief_error);
+  assert.match(stderr, /brief-regeneration-failed:/);
 });

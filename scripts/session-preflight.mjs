@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { runMemorySync } from "./memory-sync.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { writeStderrLine } from "./lib/diagnostics.mjs";
 import { readRepoState, writeRepoState } from "./repo-state.mjs";
 import { resolveRepoStatePaths } from "./runtime-state.mjs";
 
@@ -59,10 +60,11 @@ export function runPreflight({
   // (`previousRepoState = null`). Without this guard the entire preflight
   // aborted on a corrupt or partially-written `state.json`.
   const previousRepoStateRaw = readRepoState({ cwd: repoRoot, repoStateFile: resolvedRepoStateFile });
-  if (previousRepoStateRaw?.unreadable) {
+  const repoStateUnreadable = previousRepoStateRaw?.unreadable === true;
+  if (repoStateUnreadable) {
     warnings.push(`repo state unreadable; ignoring ${previousRepoStateRaw.repo_state_file}: ${previousRepoStateRaw.error}`);
   }
-  const previousRepoState = previousRepoStateRaw?.unreadable ? null : previousRepoStateRaw;
+  const previousRepoState = repoStateUnreadable ? null : previousRepoStateRaw;
   let driftSync = null;
   let memorySyncFailed = false;
   let driftSyncFailed = false;
@@ -174,6 +176,7 @@ export function runPreflight({
     action,
     memory_sync_failed: memorySyncFailed,
     drift_sync_failed: driftSyncFailed,
+    repo_state_unreadable: repoStateUnreadable,
     warnings
   };
   const repoStateWrite = writeRepoState({
@@ -181,6 +184,16 @@ export function runPreflight({
     repoStateFile: resolvedRepoStateFile,
     state: repoState
   });
+
+  if (memorySyncFailed) {
+    writeStderrLine("preflight-degraded: memory_sync_failed after fast-forward; memory claims may be stale until reconciled");
+  }
+  if (driftSyncFailed) {
+    writeStderrLine("preflight-degraded: drift_sync_failed for unseen HEAD drift; memory claims may be stale until reconciled");
+  }
+  if (repoStateUnreadable) {
+    writeStderrLine(`preflight-degraded: repo_state_unreadable; ignoring corrupt ${previousRepoStateRaw.repo_state_file}`);
+  }
 
   const result = {
     repo_root: repoRoot,
@@ -198,6 +211,7 @@ export function runPreflight({
     action,
     memory_sync_failed: memorySyncFailed,
     drift_sync_failed: driftSyncFailed,
+    repo_state_unreadable: repoStateUnreadable,
     warnings
   };
 

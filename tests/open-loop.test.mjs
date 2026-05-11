@@ -39,6 +39,22 @@ function readJsonl(filePath) {
     .map((line) => JSON.parse(line));
 }
 
+function captureStderr(callback) {
+  const originalWrite = process.stderr.write;
+  let stderr = "";
+  process.stderr.write = (chunk, ...args) => {
+    stderr += String(chunk);
+    const maybeCallback = args.find((arg) => typeof arg === "function");
+    if (maybeCallback) maybeCallback();
+    return true;
+  };
+  try {
+    return { result: callback(), stderr };
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+}
+
 test("normalizeOpenLoop validates the action tracking contract", () => {
   assert.throws(
     () => normalizeOpenLoop({ title: "x", next_action: "do it", evidence_path: "docs/x.md" }),
@@ -133,7 +149,7 @@ test("open-loop mutations persist even when brief generation fails", () => {
   fs.writeFileSync(path.join(repo, "brief-blocker"), "");
   const briefFile = path.join(repo, "brief-blocker", "brief.md");
 
-  const added = addOpenLoop({
+  const { result: added, stderr: addStderr } = captureStderr(() => addOpenLoop({
     cwd: repo,
     taskFile,
     briefFile,
@@ -146,14 +162,15 @@ test("open-loop mutations persist even when brief generation fails", () => {
       next_action: "Report the brief refresh error without dropping state.",
       evidence_path: "docs/pr19.md"
     }
-  });
+  }));
 
   assert.equal(added.written, true);
   assert.equal(added.brief_updated, false);
   assert.ok(added.brief_error);
+  assert.match(addStderr, /brief-regeneration-failed:/);
   assert.equal(readJsonl(taskFile)[0].id, "brief-failure-loop");
 
-  const updated = updateOpenLoopStatus({
+  const { result: updated, stderr: updateStderr } = captureStderr(() => updateOpenLoopStatus({
     cwd: repo,
     taskFile,
     briefFile,
@@ -161,12 +178,13 @@ test("open-loop mutations persist even when brief generation fails", () => {
     status: "blocked",
     blockedReason: "Brief output path is blocked.",
     now: new Date("2026-05-11T02:05:00.000Z")
-  });
+  }));
 
   const [loop] = readJsonl(taskFile);
   assert.equal(updated.updated, true);
   assert.equal(updated.brief_updated, false);
   assert.ok(updated.brief_error);
+  assert.match(updateStderr, /brief-regeneration-failed:/);
   assert.equal(loop.status, "blocked");
   assert.equal(loop.blocked_reason, "Brief output path is blocked.");
 });
