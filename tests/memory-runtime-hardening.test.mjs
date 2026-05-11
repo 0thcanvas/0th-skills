@@ -117,6 +117,40 @@ test("unified memory entrypoint reports project and global runtime diagnostics",
   }
 });
 
+test("unified memory entrypoint ingests and expands global source packs", () => {
+  const dir = tempDir();
+  const stateRoot = path.join(dir, "state");
+  const packFile = path.join(dir, "pack.json");
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  fs.writeFileSync(packFile, JSON.stringify({
+    id: "memory-systems-world-model",
+    source_id: "memory-systems-world-model",
+    chunks: [
+      {
+        text: "Source packs keep verbatim chunks behind compact indexes.",
+        source_pointer: { kind: "note", id: "source-pack-contract" },
+        summary: "Source pack expansion is id-scoped."
+      }
+    ]
+  }));
+  try {
+    const ingested = JSON.parse(runMemoryCommand(["source-pack", "ingest", "--json", packFile], { cwd: dir }));
+    const expanded = JSON.parse(runMemoryCommand(["expand", "--id", "memory-systems-world-model"], { cwd: dir }));
+
+    assert.equal(ingested.source_index_file, path.join(stateRoot, "global", "sources", "index.jsonl"));
+    assert.equal(ingested.added_chunks, 1);
+    assert.equal(expanded.kind, "source_pack");
+    assert.equal(expanded.record.chunks[0].text, "Source packs keep verbatim chunks behind compact indexes.");
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+});
+
 test("evidence records are local provenance and recall expands by id", () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");

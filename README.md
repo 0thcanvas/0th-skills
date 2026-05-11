@@ -287,6 +287,8 @@ node scripts/memory.mjs preflight
 node scripts/memory.mjs brief
 node scripts/memory.mjs task-brief
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs source-pack ingest --json /path/to/source-pack.json
+node scripts/memory.mjs source-pack expand --id memory-systems-world-model
 node scripts/memory.mjs doctor
 node scripts/memory.mjs runtime-eval
 ```
@@ -309,9 +311,14 @@ Global cross-project memory and evidence route to the shared global brain when w
 - `$XDG_STATE_HOME/0th-skills/global/...` if `XDG_STATE_HOME` is set
 - `~/.0th/skills/global/...` otherwise
 
+Global durable claims require an explicit `source_id`. Source-pack ingestion stores compact
+metadata at `global/sources/index.jsonl` and verbatim redacted chunks under
+`global/sources/packs/`, deduplicating chunks by content hash. `memory expand --id <source-pack>`
+returns only the requested source pack instead of dumping unrelated global material into context.
+
 `memory doctor` reports the resolved project paths, global paths, routing rules, and plugin/cache
 versions. `memory.mjs` is the unified entrypoint; the per-command
-scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
+scripts (`memory-write.mjs`, `source-pack.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
 implementation. Direct invocation is supported for tests and migration work; explicit path flags
 only matter when you need to override the default project-keyed runtime location.
 

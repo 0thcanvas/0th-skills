@@ -122,6 +122,7 @@ test("appendMemoryClaim routes global-scope claims to the global brain", () => {
         type: "external_research",
         claim: "Global memory source packs preserve verbatim chunks and hashes.",
         scope: "global",
+        source_id: "memory-systems-world-model",
         evidence_path: "sources/memory-systems/source-pack.jsonl",
         confidence: "high"
       }
@@ -132,8 +133,31 @@ test("appendMemoryClaim routes global-scope claims to the global brain", () => {
     assert.equal(result.memory_file, path.join(stateRoot, "global", "memory", "claims.jsonl"));
     assert.equal(result.brief_file, path.join(stateRoot, "global", "memory", "brief.md"));
     assert.equal(claim.scope, "global");
+    assert.equal(claim.source_id, "memory-systems-world-model");
     assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
   });
+});
+
+test("appendMemoryClaim refuses global claims without an explicit source namespace", () => {
+  const repo = tempDir();
+  const memoryFile = path.join(repo, "claims.jsonl");
+
+  assert.throws(
+    () => appendMemoryClaim({
+      cwd: repo,
+      memoryFile,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Global claims need a source namespace.",
+        scope: "global",
+        evidence_path: "sources/memory-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    }),
+    /global memory claims require source_id/
+  );
+  assert.equal(fs.existsSync(memoryFile), false);
 });
 
 test("memory claims preserve global routing and provenance fields", () => {

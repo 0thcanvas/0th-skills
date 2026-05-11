@@ -106,6 +106,9 @@ export function normalizeMemoryClaim(input, {
   if (!evidencePath && sourcePaths.length === 0 && evidenceIds.length === 0) {
     throw new Error("evidence_path, evidence_id, or at least one source_path is required");
   }
+  if (scope === "global" && !sourceId) {
+    throw new Error("global memory claims require source_id");
+  }
   if (!confidence && !reviewCaveat) {
     throw new Error("confidence or review_caveat is required");
   }

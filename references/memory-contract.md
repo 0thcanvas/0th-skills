@@ -107,6 +107,10 @@ Legacy project records without these fields remain valid. Recall synthesizes def
 rewriting old memory: `brain_id: project`, `source_id: project-runtime`, `subject_key: <record id>`,
 and `topic: null`.
 
+Global claim writes are stricter than project claim writes: `scope: global` requires an explicit
+`source_id` plus normal evidence/source pointers. This prevents reusable cross-project memory from
+landing in the global brain without a named source namespace.
+
 ## Source Packs
 
 Source packs are the fidelity layer for global research/reference material. A source pack stores
@@ -114,6 +118,21 @@ verbatim redacted text chunks, stable source-pointer metadata, chunk summaries, 
 redaction status, stale-after policy, and content hashes. Hashes are computed from the stored
 redacted bytes plus stable source-pointer metadata, so deduplication and fidelity checks are
 reproducible. Summaries and indexes point back to chunks; they do not replace source text.
+
+Source packs are written through the unified memory surface:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" source-pack ingest \
+  --json /path/to/source-pack.json
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" source-pack expand \
+  --id memory-systems-world-model
+```
+
+The global source store keeps compact metadata in `global/sources/index.jsonl` and verbatim chunks
+in per-pack JSONL files under `global/sources/packs/`. Ingestion normalizes and scans chunks for
+secret-like content before taking the write lock, then deduplicates by `content_hash`. Expansion by
+id reads only the requested pack file; agents should expand source packs on demand instead of
+loading all global source material at startup.
 
 ## Memory Write Gate
 

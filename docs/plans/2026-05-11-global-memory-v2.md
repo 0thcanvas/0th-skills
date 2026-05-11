@@ -31,10 +31,10 @@ Upgrade records so global memory can be cited, compared, and replayed safely.
 
 ### 3. Global Writes and Source-Pack Ingestion
 Add the smallest useful global write path without changing project behavior.
-- [ ] Agents can write global claims only with an explicit source namespace and source-backed evidence.
-- [ ] Source-pack ingestion deduplicates by content hash before adding chunks or derived claims.
-- [ ] A source pack can be expanded by id without loading unrelated global knowledge into context.
-- [ ] Redaction checks run before any claim, evidence record, source chunk, or link reaches disk.
+- [x] Agents can write global claims only with an explicit source namespace and source-backed evidence.
+- [x] Source-pack ingestion deduplicates by content hash before adding chunks or derived claims.
+- [x] A source pack can be expanded by id without loading unrelated global knowledge into context.
+- [x] Redaction checks run before any claim, evidence record, source chunk, or link reaches disk.
 
 ### 4. Cross-Scope Recall Contract
 Compose project and global recall deterministically instead of one merged fuzzy list.

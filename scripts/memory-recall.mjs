@@ -4,6 +4,7 @@ import process from "node:process";
 import { readJsonl } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveEvidencePaths, resolveMemoryPaths, resolveTaskPaths } from "./runtime-state.mjs";
+import { expandSourcePack } from "./source-pack.mjs";
 
 function normalizeText(value) {
   return String(value ?? "").toLowerCase();
@@ -227,7 +228,9 @@ export function expandMemory({
   id,
   memoryFile = null,
   taskFile = null,
-  evidenceFile = null
+  evidenceFile = null,
+  sourceRoot = null,
+  sourceIndexFile = null
 } = {}) {
   if (!id) throw new Error("id is required");
   const resolvedMemoryFile = memoryFile ?? resolveMemoryPaths({ cwd }).memoryFile;
@@ -250,6 +253,9 @@ export function expandMemory({
       };
     }
   }
+
+  const sourcePack = expandSourcePack({ cwd, sourceRoot, sourceIndexFile, id });
+  if (sourcePack.found) return sourcePack;
 
   return {
     found: false,
@@ -305,6 +311,14 @@ function parseArgs(argv) {
     }
     if (token === "--evidence-file") {
       options.evidenceFile = argv[++index];
+      continue;
+    }
+    if (token === "--source-root") {
+      options.sourceRoot = argv[++index];
+      continue;
+    }
+    if (token === "--source-index-file") {
+      options.sourceIndexFile = argv[++index];
       continue;
     }
     if (token === "--no-tasks") {
