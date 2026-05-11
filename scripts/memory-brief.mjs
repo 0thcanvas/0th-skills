@@ -30,10 +30,12 @@ function itemFor(claim) {
   return `- ${claim.claim} (state: ${claim.lifecycle_state}; source: ${evidenceFor(claim)})`;
 }
 
-export function generateBrief(claims) {
+export function generateBrief(claims, {
+  title = "Project Memory Brief"
+} = {}) {
   const sorted = [...claims].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
   const lines = [
-    "# Project Memory Brief",
+    `# ${title}`,
     "",
     "Generated from structured memory claims. Treat `needs_review` items as caveated until re-verified."
   ];
@@ -54,15 +56,18 @@ export function generateBrief(claims) {
 export function runBriefGeneration({
   cwd = process.cwd(),
   memoryFile = null,
-  outputFile = null
+  outputFile = null,
+  scope = "repo"
 } = {}) {
-  const defaults = resolveMemoryPaths({ cwd });
+  const defaults = resolveMemoryPaths({ cwd, scope });
   const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
   const resolvedOutputFile = outputFile ?? (
     memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
   );
   const claims = readJsonl(resolvedMemoryFile);
-  const brief = generateBrief(claims);
+  const brief = generateBrief(claims, {
+    title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief"
+  });
   // PR #21 review NEW4: tmp+rename so a crash or concurrent reader cannot
   // observe a truncated brief. The brief is derived state, but agents
   // depend on it at session start.
@@ -79,6 +84,10 @@ function parseArgs(argv) {
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
+    if (token === "--scope") {
+      options.scope = argv[++index];
+      continue;
+    }
     if (token === "--memory-file") {
       options.memoryFile = argv[++index];
       continue;

@@ -45,11 +45,11 @@ Compose project and global recall deterministically instead of one merged fuzzy 
 
 ### 5. Startup and Instruction Cutover
 Make Memory v2 the actual workflow path, not an optional side channel.
-- [ ] Core skills read a small global brief, then the current project memory and open-loop briefs, before any legacy KB fallback.
-- [ ] `AGENTS.md`/`CLAUDE.md`, README, and the shared memory block name Memory v2 runtime as the canonical recall path and Obsidian/KB markdown as optional import/export.
-- [ ] Repo-authored docs such as decisions, plans, and `CONTEXT.md` remain valid source/evidence artifacts; they are no longer the primary memory interface.
-- [ ] If global state is missing or corrupt, startup degrades with a visible warning and still reads project memory.
-- [ ] Large research packs stay out of startup context until recalled or expanded.
+- [x] Core skills read a small global brief, then the current project memory and open-loop briefs, before any legacy KB fallback.
+- [x] `AGENTS.md`/`CLAUDE.md`, README, and the shared memory block name Memory v2 runtime as the canonical recall path and Obsidian/KB markdown as optional import/export.
+- [x] Repo-authored docs such as decisions, plans, and `CONTEXT.md` remain valid source/evidence artifacts; they are no longer the primary memory interface.
+- [x] If global state is missing or corrupt, startup degrades with a visible warning and still reads project memory.
+- [x] Large research packs stay out of startup context until recalled or expanded.
 
 ### 6. Event-Gated Global Capture
 Capture global knowledge at workflow boundaries instead of relying on migration or session-end hooks.

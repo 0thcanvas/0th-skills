@@ -30,9 +30,13 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 
 ## Knowledge Base
 
-Projects using 0th skills may also maintain a markdown knowledge base. The skills repo now includes an editor-agnostic KB protocol in [PROTOCOL.md](PROTOCOL.md).
+Memory v2 runtime is the canonical agent recall path. Generated global/project briefs, compact
+recall, source-pack expansion, and open-loop briefs are read before any markdown KB browsing.
+Projects may still maintain a markdown knowledge base as source material, import/export storage, or
+human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
+[PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
 
-The protocol assumes:
+The markdown KB protocol assumes:
 
 - `KB_ROOT` is the canonical KB path contract
 - agents resolve the KB root from `KB_ROOT`, then project instructions, then a one-time user prompt

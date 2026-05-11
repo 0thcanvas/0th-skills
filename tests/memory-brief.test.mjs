@@ -9,6 +9,21 @@ function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-brief-"));
 }
 
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = path.join(tempDir(), "state");
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+}
+
 function writeJsonl(filePath, entries) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
@@ -95,4 +110,30 @@ test("memory brief generation is deterministic", () => {
   assert.equal(firstText, secondText);
   assert.match(firstText, /Keep markdown as evidence/);
   assert.match(firstText, /Branch has no upstream/);
+});
+
+test("memory brief can generate the global startup brief without reading project memory", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const globalMemoryFile = path.join(stateRoot, "global", "memory", "claims.jsonl");
+    writeJsonl(globalMemoryFile, [
+      {
+        id: "global-research",
+        type: "external_research",
+        claim: "Global memory briefs summarize reusable cross-project knowledge.",
+        scope: "global",
+        lifecycle_state: "active",
+        evidence_path: "sources/memory/source-pack.jsonl"
+      }
+    ]);
+
+    const result = runBriefGeneration({ cwd: repo, scope: "global" });
+    const brief = fs.readFileSync(result.output_file, "utf8");
+
+    assert.equal(result.memory_file, globalMemoryFile);
+    assert.equal(result.output_file, path.join(stateRoot, "global", "memory", "brief.md"));
+    assert.match(brief, /^# Global Memory Brief/);
+    assert.match(brief, /reusable cross-project knowledge/);
+    assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
+  });
 });
