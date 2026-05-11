@@ -93,9 +93,6 @@ export function normalizeMemoryClaim(input, {
   const topic = input.topic ? String(input.topic).trim() : "";
   const subjectKey = input.subject_key ? String(input.subject_key).trim() : "";
   const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
-  const migrationId = input.migration_id ? String(input.migration_id).trim() : "";
-  const migrationSourcePath = input.migration_source_path ? String(input.migration_source_path).trim() : "";
-  const migrationContentHash = input.migration_content_hash ? String(input.migration_content_hash).trim() : "";
 
   if (!type) throw new Error("type is required");
   assertAllowed("type", type, MEMORY_TYPES);
@@ -137,10 +134,7 @@ export function normalizeMemoryClaim(input, {
     sourceId,
     topic,
     subjectKey,
-    ownerProjectKey,
-    migrationId,
-    migrationSourcePath,
-    migrationContentHash
+    ownerProjectKey
   ], "memory claim contains secret-like content; redact it before writing");
 
   const claim = {
@@ -173,9 +167,6 @@ export function normalizeMemoryClaim(input, {
   if (topic) claim.topic = topic;
   if (subjectKey) claim.subject_key = subjectKey;
   if (ownerProjectKey) claim.owner_project_key = ownerProjectKey;
-  if (migrationId) claim.migration_id = migrationId;
-  if (migrationSourcePath) claim.migration_source_path = migrationSourcePath;
-  if (migrationContentHash) claim.migration_content_hash = migrationContentHash;
 
   return claim;
 }

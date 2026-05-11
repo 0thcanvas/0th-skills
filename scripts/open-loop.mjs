@@ -78,9 +78,6 @@ export function normalizeOpenLoop(input, {
   const evidencePath = maybeText(input.evidence_path ?? input.evidencePath);
   const evidenceIds = normalizeList(input.evidence_ids ?? input.evidence_id ?? input.evidenceId);
   const sourcePaths = normalizeList(input.source_paths ?? input.source_path ?? input.sourcePath);
-  const migrationId = maybeText(input.migration_id ?? input.migrationId);
-  const migrationSourcePath = maybeText(input.migration_source_path ?? input.migrationSourcePath);
-  const migrationContentHash = maybeText(input.migration_content_hash ?? input.migrationContentHash);
   const createdAt = input.created_at ?? now.toISOString();
   const updatedAt = input.updated_at ?? createdAt;
 
@@ -108,9 +105,6 @@ export function normalizeOpenLoop(input, {
     maybeText(input.owner),
     maybeText(input.blocked_reason ?? input.blockedReason),
     maybeText(input.drop_reason ?? input.dropReason),
-    migrationId,
-    migrationSourcePath,
-    migrationContentHash,
     ...evidenceIds,
     ...sourcePaths
   ], "open loop contains secret-like content; redact it before writing");
@@ -148,10 +142,7 @@ export function normalizeOpenLoop(input, {
     ["blocked_reason", input.blocked_reason ?? input.blockedReason],
     ["drop_reason", input.drop_reason ?? input.dropReason],
     ["closed_at", input.closed_at ?? input.closedAt],
-    ["dropped_at", input.dropped_at ?? input.droppedAt],
-    ["migration_id", migrationId],
-    ["migration_source_path", migrationSourcePath],
-    ["migration_content_hash", migrationContentHash]
+    ["dropped_at", input.dropped_at ?? input.droppedAt]
   ]) {
     const text = maybeText(value);
     if (text) loop[key] = text;
