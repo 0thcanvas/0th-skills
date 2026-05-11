@@ -8,11 +8,14 @@ the same ~1.5 KB block, with no test enforcing identity. If the block in
 one skill diverges, agents on that skill read a contradictory instruction
 and there is no failure signal.
 
-`tests/skill-metadata.test.mjs` now reads this file, extracts the canonical
-block, and asserts every core SKILL.md contains it byte-for-byte. To update
-the block, edit it here; the test will fail until every SKILL.md is updated
-to match. Use `node scripts/skill-block-sync.mjs --check` (or `--write`) to
-audit / propagate changes.
+`tests/skill-block-sync.test.mjs` reads this file via
+`scripts/skill-block-sync.mjs`, extracts the canonical block, and asserts
+every core SKILL.md contains it byte-for-byte. (`tests/skill-metadata.test.mjs`
+only spot-checks that the preflight invocation is present; it does not
+enforce the full byte-for-byte sync.) To update the block, edit it here;
+the byte-for-byte test will fail until every SKILL.md is updated to match.
+Use `node scripts/skill-block-sync.mjs --check` (or `--write`) to audit /
+propagate changes.
 -->
 
 ## Repo Preflight

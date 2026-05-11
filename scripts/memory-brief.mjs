@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { readJsonl } from "./lib/jsonl.mjs";
+import { readJsonl, writeTextAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
@@ -63,8 +63,10 @@ export function runBriefGeneration({
   );
   const claims = readJsonl(resolvedMemoryFile);
   const brief = generateBrief(claims);
-  fs.mkdirSync(path.dirname(resolvedOutputFile), { recursive: true });
-  fs.writeFileSync(resolvedOutputFile, brief);
+  // PR #21 review NEW4: tmp+rename so a crash or concurrent reader cannot
+  // observe a truncated brief. The brief is derived state, but agents
+  // depend on it at session start.
+  writeTextAtomic(resolvedOutputFile, brief);
   return {
     memory_file: resolvedMemoryFile,
     output_file: resolvedOutputFile,

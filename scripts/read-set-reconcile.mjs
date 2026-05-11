@@ -6,6 +6,7 @@ import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
@@ -56,6 +57,19 @@ export function reconcileReadSet({
 
   return withFileLock(resolvedMemoryFile, (lockState) => {
     const normalizedReadSet = normalizeReadSet(readSet);
+
+    // PR #21 review NEW3: verification.evidence and verification.evidence_path
+    // get spliced into the on-disk `review` block (and surface in briefs) with
+    // no redaction check. The explorer agent emits these strings; an
+    // adversarial or careless prompt could land a raw token here. Same guard
+    // contract as the canonical writers.
+    for (const verified of normalizedReadSet.verified_claims) {
+      assertNoSecretLikeText([
+        verified.evidence,
+        verified.evidence_path
+      ], `read-set verification for claim ${verified.id} contains secret-like content; redact it before writing`);
+    }
+
     const claims = readJsonl(resolvedMemoryFile);
     const verifiedById = new Map(normalizedReadSet.verified_claims.map((claim) => [claim.id, claim]));
     const checked = [];

@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-import { readJsonl } from "./lib/jsonl.mjs";
+import { readJsonl, writeTextAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveTaskPaths } from "./runtime-state.mjs";
 
@@ -107,8 +107,9 @@ export function runOpenLoopBriefGeneration({
   );
   const loops = readJsonl(resolvedTaskFile);
   const brief = generateOpenLoopBrief(loops, { now, staleDays });
-  fs.mkdirSync(path.dirname(resolvedOutputFile), { recursive: true });
-  fs.writeFileSync(resolvedOutputFile, brief);
+  // PR #21 review NEW4: tmp+rename atomicity so partial writes are never
+  // visible to a concurrent reader.
+  writeTextAtomic(resolvedOutputFile, brief);
   return {
     task_file: resolvedTaskFile,
     output_file: resolvedOutputFile,

@@ -17,11 +17,17 @@ function tokens(value) {
 }
 
 function evidenceFor(record) {
+  // PR #21 review NEW2: pre-fix, this function omitted `source_symbols` even
+  // though `claimResult` already included them in the scoring search text.
+  // Net result: a free-text query for a symbol name found the claim, but
+  // `--source FooBar` returned zero. Recall is now consistent — anything
+  // the scorer considers a pointer also surfaces as a filterable pointer.
   return [
     ...(record.evidence_path ? [record.evidence_path] : []),
     ...(record.evidence_paths ?? []),
     ...(record.evidence_ids ?? []),
     ...(record.source_paths ?? []),
+    ...(record.source_symbols ?? []),
     ...(record.related_ids ?? [])
   ];
 }

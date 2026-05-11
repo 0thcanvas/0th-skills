@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { execFileSync } from "node:child_process";
@@ -29,9 +30,21 @@ function normalizePathPointer(pointer) {
     .replace(/^\.\//, "");
 }
 
+function expandHome(pointer) {
+  // PR #21 review (claude code-reviewer #8): pre-fix, `~/.0th/x.md` was
+  // joined with cwd and reported as missing. Workflow agents that
+  // legitimately wrote home-relative paths to evidence saw false-positive
+  // `missing_sources` findings. Expand only a leading `~/` (or bare `~`)
+  // because POSIX shells do not expand `~` mid-path.
+  if (pointer === "~" || pointer === "~/") return os.homedir();
+  if (pointer.startsWith("~/")) return path.join(os.homedir(), pointer.slice(2));
+  return pointer;
+}
+
 function pathExists(cwd, pointer) {
-  if (!pointer || /^https?:\/\//.test(pointer) || pointer.startsWith("op://")) return true;
-  const normalized = normalizePathPointer(pointer);
+  if (!pointer || /^https?:\/\//.test(pointer) || pointer.startsWith("op://") || pointer.startsWith("doppler://")) return true;
+  const expanded = expandHome(String(pointer));
+  const normalized = normalizePathPointer(expanded);
   const absolute = path.isAbsolute(normalized) ? normalized : path.join(cwd, normalized);
   return fs.existsSync(absolute);
 }
@@ -135,9 +148,25 @@ export function runMemoryMaintain({
     let briefError = null;
 
     if (apply && duplicates.length > 0) {
+      // PR #21 review NEW1: pre-fix, every duplicate tail was
+      // re-marked and `review.marked_at` was overwritten on every apply.
+      // Running `memory maintain --apply` twice in a row pushed the same
+      // action twice and made `marked_at` an unreliable freshness signal.
+      // Fix: skip claims that are already `needs_review` with the same
+      // reason — that means a previous apply already handled them and there
+      // is no work to do.
       const duplicateIds = new Set(duplicates.flatMap((entry) => entry.ids.slice(1)));
+      let mutated = false;
       updatedClaims = claims.map((claim) => {
         if (!duplicateIds.has(claim.id)) return claim;
+        if (
+          claim.lifecycle_state === "needs_review"
+          && claim.review?.reason === "duplicate_candidate"
+        ) {
+          // Already marked by a previous apply — no-op for idempotency.
+          return claim;
+        }
+        mutated = true;
         actions.push({ action: "marked_needs_review", id: claim.id, reason: "duplicate_candidate" });
         return {
           ...claim,
@@ -148,11 +177,14 @@ export function runMemoryMaintain({
           }
         };
       });
-      writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
-      try {
-        brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
-      } catch (err) {
-        briefError = err.message;
+
+      if (mutated) {
+        writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
+        try {
+          brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+        } catch (err) {
+          briefError = err.message;
+        }
       }
     }
 

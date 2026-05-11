@@ -15,8 +15,8 @@ action.
   `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...`, or
   `~/.0th/skills/projects/<project-key>/...`.
 - Use `scripts/memory.mjs open-loop` for writes and status changes (`add`, `block`, `close`,
-  `drop`, `reopen`, plus `list` for read access). `scripts/open-loop.mjs` remains a direct
-  compatibility wrapper.
+  `drop`, `reopen`, plus `list` for read access). `scripts/open-loop.mjs` holds the canonical
+  implementation; direct invocation is supported for tests and migration tooling.
 - Use `scripts/memory.mjs task-brief` for the generated startup brief.
 - If task-brief regeneration fails after an open-loop write, the task mutation is preserved and the
   command result reports `brief_error` with `brief_updated: false`.
@@ -33,6 +33,13 @@ action.
 - `repo` — tied to one checkout or PR.
 - `project` — spans multiple repos in one product.
 - `global` — cross-project operating concern.
+
+The open-loop `scope` vocabulary is intentionally narrower than the memory-claim and evidence-record
+vocabularies (which also include `domain` and `user`). Open loops describe **work items** —
+actionable next steps that map cleanly onto a checkout, a product, or a cross-project concern.
+Memory claims and evidence records describe **knowledge**, which can also be domain-specific (e.g.,
+JavaScript module resolution) or user-specific (an operator's preference). Do not paste a
+`--scope domain` flag from a memory write into an open-loop add; the writer will reject it.
 
 ## Required Fields
 

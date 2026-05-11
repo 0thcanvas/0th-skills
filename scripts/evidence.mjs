@@ -6,6 +6,7 @@ import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveEvidencePaths } from "./runtime-state.mjs";
 
 export const EVIDENCE_EVENT_TYPES = [
@@ -23,11 +24,9 @@ export const EVIDENCE_EVENT_TYPES = [
 export const EVIDENCE_SCOPES = ["repo", "project", "domain", "user", "global"];
 export const REDACTION_STATUSES = ["no_secrets_observed", "redacted", "secret_reference_only"];
 
-const SECRET_PATTERNS = [
-  /\b(?:sk|rk|ghp|github_pat|glpat|xox[baprs]?)-[A-Za-z0-9_=-]{12,}\b/,
-  /\b(?:api[_-]?key|access[_-]?token|secret|password)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}/i,
-  /\b(?=[A-Za-z0-9+/]*[+/=])[A-Za-z0-9+/]{32,}={0,2}\b/
-];
+// Pattern set lives in `scripts/lib/redaction.mjs` (PR #21 review). The
+// previous local copy missed every modern token shape — see the adversarial
+// corpus in `tests/redaction.test.mjs` for what we now reject.
 
 function normalizeList(value) {
   if (value == null) return [];
@@ -50,13 +49,6 @@ function datePart(value) {
 function assertAllowed(name, value, allowed) {
   if (!allowed.includes(value)) {
     throw new Error(`${name} must be one of: ${allowed.join(", ")}`);
-  }
-}
-
-function assertNoSecretLikeText(values) {
-  const text = values.filter(Boolean).join("\n").replace(/op:\/\/\S+/g, "op://redacted-reference");
-  if (SECRET_PATTERNS.some((pattern) => pattern.test(text))) {
-    throw new Error("evidence contains secret-like content; redact it before writing");
   }
 }
 
@@ -102,11 +94,12 @@ export function normalizeEvidenceRecord(input, {
   }
 
   assertNoSecretLikeText([
+    input.id,
     summary,
     ...sourcePaths,
     ...evidencePaths,
     ...relatedIds
-  ]);
+  ], "evidence contains secret-like content; redact it before writing");
 
   const record = {
     id: uniqueId({ id: input.id, eventType, summary, observedAt, existingEvidence }),

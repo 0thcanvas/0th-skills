@@ -7,6 +7,7 @@ import { runBriefGeneration } from "./memory-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 export const MEMORY_TYPES = [
@@ -102,6 +103,24 @@ export function normalizeMemoryClaim(input, {
   if (!confidence && !reviewCaveat) {
     throw new Error("confidence or review_caveat is required");
   }
+
+  // PR #21 review: every JSONL writer must enforce the same secret-shape
+  // guard before the value lands on disk. Pre-fix, only `evidence.mjs` did —
+  // an agent could write `evidence_path: https://user:s3cr3t@host/x` to a
+  // memory claim and the value would be re-emitted by `memory-brief.mjs` into
+  // the agent-readable startup brief. See `scripts/lib/redaction.mjs` for the
+  // pattern set and `tests/redaction.test.mjs` for adversarial coverage.
+  assertNoSecretLikeText([
+    input.id,
+    String(input.claim),
+    evidencePath,
+    reviewCaveat,
+    ...evidenceIds,
+    ...sourcePaths,
+    ...sourceSymbols,
+    ...supersedes,
+    ...supersededBy
+  ], "memory claim contains secret-like content; redact it before writing");
 
   const claim = {
     id: uniqueId({
@@ -294,7 +313,8 @@ function main() {
     process.stdout.write([
       "Usage: node scripts/memory-write.mjs --type TYPE --claim TEXT --evidence-path PATH --confidence LEVEL [options]",
       "",
-      "Required for durable writes: --type, --claim, --scope, evidence/source path, and --confidence or --review-caveat.",
+      "Required for durable writes: --type, --claim, evidence/source path, and --confidence or --review-caveat.",
+      "Optional: --scope SCOPE (defaults to 'repo'; one of repo/project/domain/user/global).",
       "Use --json FILE for richer inputs. The generated brief is updated unless --no-brief is passed.",
       ""
     ].join("\n"));

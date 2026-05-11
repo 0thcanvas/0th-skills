@@ -46,6 +46,13 @@ The next fair benchmark for us is an executable local fixture suite with these t
 
 ## Sources
 
+The links below are cited as authored at compile time. They have **not been
+independently re-verified inside this repo** (per PR #21 comment-analyzer
+finding) — confirm each URL resolves to the named paper or post before
+relying on it externally. The `2603.*` arXiv prefix in particular is
+future-dated relative to the current document compile date and may not yet
+exist.
+
 - LongMemEval paper: https://arxiv.org/abs/2410.10813
 - LongMemEval code: https://github.com/xiaowu0162/LongMemEval
 - Mem0 paper: https://arxiv.org/abs/2504.19413

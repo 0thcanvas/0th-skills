@@ -52,9 +52,20 @@ export function runPreflight({
   const beforeHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
   const fetchedAt = new Date().toISOString();
   const resolvedRepoStateFile = repoStateFile ?? resolveRepoStatePaths({ cwd: repoRoot }).repoStateFile;
-  const previousRepoState = readRepoState({ cwd: repoRoot, repoStateFile: resolvedRepoStateFile });
   const warnings = [];
+  // PR #21 review: readRepoState now returns a structured `{ unreadable }`
+  // sentinel rather than throwing on parse failure. Surface the unreadable
+  // case as a warning and fall back to first-preflight semantics
+  // (`previousRepoState = null`). Without this guard the entire preflight
+  // aborted on a corrupt or partially-written `state.json`.
+  const previousRepoStateRaw = readRepoState({ cwd: repoRoot, repoStateFile: resolvedRepoStateFile });
+  if (previousRepoStateRaw?.unreadable) {
+    warnings.push(`repo state unreadable; ignoring ${previousRepoStateRaw.repo_state_file}: ${previousRepoStateRaw.error}`);
+  }
+  const previousRepoState = previousRepoStateRaw?.unreadable ? null : previousRepoStateRaw;
   let driftSync = null;
+  let memorySyncFailed = false;
+  let driftSyncFailed = false;
 
   if (
     previousRepoState?.last_seen_head &&
@@ -68,6 +79,12 @@ export function runPreflight({
         ...(memoryFile ? { memoryFile } : {})
       });
     } catch (err) {
+      // PR #21 verifier I5-partial: pre-fix the drift-sync failure was
+      // warning-only, parallel to the post-FF memory-sync failure which
+      // (after the first slice) gained a structured `memory_sync_failed`
+      // flag. Surface drift-sync failure the same way so downstream gates
+      // can branch on it without string-matching warnings.
+      driftSyncFailed = true;
       warnings.push(`memory-sync failed for previously unseen HEAD drift: ${err.message}`);
     }
   }
@@ -130,6 +147,12 @@ export function runPreflight({
         ...(memoryFile ? { memoryFile } : {})
       });
     } catch (err) {
+      // PR #21 review I5: pre-fix, only the warning carried the signal that
+      // memory-sync failed after the fast-forward. Downstream agent gates
+      // keyed on `action: "fast_forward_pulled"` saw a healthy-looking
+      // result and proceeded on stale claims. The structured flag below
+      // lets gates branch on the failure without string-matching warnings.
+      memorySyncFailed = true;
       warnings.push(`memory-sync failed after fast-forward: ${err.message}`);
     }
   }
@@ -149,6 +172,8 @@ export function runPreflight({
     fetched_at: fetchedAt,
     last_memory_sync_at: (memorySync || driftSync) ? new Date().toISOString() : previousRepoState?.last_memory_sync_at ?? null,
     action,
+    memory_sync_failed: memorySyncFailed,
+    drift_sync_failed: driftSyncFailed,
     warnings
   };
   const repoStateWrite = writeRepoState({
@@ -171,6 +196,8 @@ export function runPreflight({
     fetched_at: fetchedAt,
     fetch_ok: fetchOk,
     action,
+    memory_sync_failed: memorySyncFailed,
+    drift_sync_failed: driftSyncFailed,
     warnings
   };
 

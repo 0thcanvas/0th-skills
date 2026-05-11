@@ -7,6 +7,7 @@ import { runOpenLoopBriefGeneration } from "./open-loop-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveAllProjectStateDirs, resolveTaskPaths } from "./runtime-state.mjs";
 
 export const OPEN_LOOP_STATUSES = ["open", "blocked", "done", "dropped"];
@@ -89,6 +90,24 @@ export function normalizeOpenLoop(input, {
   if (!evidencePath && sourcePaths.length === 0 && evidenceIds.length === 0) {
     throw new Error("evidence_path, evidence_id, or at least one source_path is required");
   }
+
+  // PR #21 review: open-loop records get the same secret-shape guard as
+  // memory claims and evidence records. The `next_action` and `blocked_reason`
+  // fields are the most common leak vector — a hurried agent jots
+  // "rotate ghp_… and rerun" instead of using a reference.
+  assertNoSecretLikeText([
+    input.id,
+    title,
+    nextAction,
+    evidencePath,
+    maybeText(input.project),
+    maybeText(input.repo),
+    maybeText(input.owner),
+    maybeText(input.blocked_reason ?? input.blockedReason),
+    maybeText(input.drop_reason ?? input.dropReason),
+    ...evidenceIds,
+    ...sourcePaths
+  ], "open loop contains secret-like content; redact it before writing");
 
   const loop = {
     id: uniqueId({
@@ -260,6 +279,22 @@ export function updateOpenLoopStatus({
     const loops = readJsonl(resolvedTaskFile);
     const index = loops.findIndex((loop) => loop.id === id);
     if (index === -1) throw new Error(`open loop not found: ${id}`);
+
+    // PR #21 review verifier finding C-partial: pre-fix, only the
+    // `add` path scanned for secret shapes. Status updates (`block`, `close`,
+    // `drop`, `reopen`) accepted `blocked_reason` / `drop_reason` /
+    // `next_action` / `evidence_path` / `source_paths` from the caller and
+    // wrote them straight into the loop record + history without the
+    // redaction guard. The most common leak vector is a hurried `block`
+    // reason like "rotate ghp_… and rerun".
+    assertNoSecretLikeText([
+      maybeText(blockedReason),
+      maybeText(dropReason),
+      maybeText(nextAction),
+      maybeText(evidencePath),
+      ...normalizeList(evidenceIds),
+      ...normalizeList(sourcePaths)
+    ], "open-loop status update contains secret-like content; redact it before writing");
 
     const updatedAt = now.toISOString();
     const current = loops[index];

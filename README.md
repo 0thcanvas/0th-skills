@@ -296,8 +296,10 @@ files at:
 
 The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
 the same repo share one local Memory v2 state directory. Each command prints the concrete file path
-it read or wrote in its JSON result. Direct scripts such as `memory-write.mjs` and `open-loop.mjs`
-remain compatibility wrappers; use explicit path flags only for tests or migration work.
+it read or wrote in its JSON result. `memory.mjs` is the unified entrypoint; the per-command
+scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
+implementation. Direct invocation is supported for tests and migration work; explicit path flags
+only matter when you need to override the default project-keyed runtime location.
 
 ## Verification
 

@@ -46,8 +46,9 @@ claims; do not store TODOs as memory claims.
 Track open loops through `scripts/memory.mjs open-loop`, then generate the open-loop brief with
 `scripts/memory.mjs task-brief` at session start after the memory brief. Use `repo` scope for work
 tied to one checkout, `project` scope for work spanning repos in the same product, and `global`
-scope only for cross-project operating concerns. Direct scripts remain compatibility wrappers for
-tests and migration work.
+scope only for cross-project operating concerns. `memory.mjs` is the unified entrypoint; the
+named per-command scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold
+the canonical implementation and remain usable directly for tests and migration work.
 
 Normal agents should use the unified entrypoint:
 
@@ -55,7 +56,9 @@ Normal agents should use the unified entrypoint:
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop list
 ```
 
-Direct scripts remain compatibility wrappers for tests and migration work.
+The per-command scripts hold the canonical implementation; `memory.mjs` only routes. Direct
+invocation of `scripts/memory-write.mjs`, `scripts/open-loop.mjs`, etc. is supported for tests
+and migration tooling.
 
 ## Evidence Records
 
@@ -110,7 +113,9 @@ If the outcome is `nothing durable`, write nothing and say so only when the user
 ## Canonical Writer
 
 Durable memory claims must be written through `scripts/memory.mjs remember`; do not hand-edit
-the runtime `claims.jsonl`. `scripts/memory-write.mjs` remains a compatibility wrapper.
+the runtime `claims.jsonl`. The canonical implementation lives in `scripts/memory-write.mjs`;
+`scripts/memory.mjs` is a routing dispatcher and direct invocation of `scripts/memory-write.mjs`
+is supported for tests and migration tooling.
 
 Minimum command shape:
 
