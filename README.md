@@ -154,8 +154,11 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
-### Unreleased
+### 0.3.0
 
+- Added Memory v2 runtime hardening: a unified `scripts/memory.mjs` surface for recall, expand, write, preflight, repo-state, evidence, open-loop, maintenance, and runtime eval workflows.
+- Moved generated Memory v2 state toward agent-first local runtime files with evidence pointers, lifecycle metadata, generated startup briefs, first-class open loops, and explicit maintenance reports.
+- Hardened Memory v2 runtime safety with locked JSONL writes, stale/release-failed lock recovery, atomic brief/repo-state writes, repo drift reconciliation, shared redaction guards, and regression tests for concurrent writes, stale state, and secret-like inputs.
 - Added the Product Acceptance Loop to `/build`: completed features now produce `verification-report/product-acceptance.json`, run an experience reviewer for complex/UI/content-heavy work, move code/diff counterpart review into build evidence, and leave `/ship` as a lightweight evidence and PR hygiene gate.
 - Added visual invariant guardrails: frontend work must name what could visually fail and verify the claim with screenshot or pixel evidence instead of treating DOM tests as visual proof.
 - Added mirrored Claude/Codex `experience-reviewer` agents plus parity and workflow tests so product, UX, learner-fit, and copy-quality review stay available on both hosts.
