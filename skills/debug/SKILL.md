@@ -84,6 +84,8 @@ Try in roughly this order:
 9. **Differential loop** — run the same input through old vs new (or two configs), diff outputs.
 10. **HITL bash script** — last resort, drive a human through `scripts/hitl-loop.template.sh` so the loop is still structured.
 
+Visual bugs need a visual feedback loop. A DOM test is not enough for alignment, overlap, clipping, animation, canvas/SVG coordinates, or layout fit; capture a screenshot, video, screenshot assertion, or pixel assertion that proves the visible symptom changed.
+
 **Iterate on the loop itself.** Once you have one, ask: faster (cache setup, skip unrelated init, narrow scope)? sharper (assert the specific symptom, not "didn't crash")? more deterministic (pin time, seed RNG, isolate filesystem, freeze network)? A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
 
 When a loop is managed verification and its failure should be surfaced back through 0th hooks, wrap it with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <loop command>`; use a fresh `--run-id` per run.
