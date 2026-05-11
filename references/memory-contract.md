@@ -163,6 +163,24 @@ For every durable outcome, record:
 
 If the outcome is `nothing durable`, write nothing and say so only when the user needs to know.
 
+When the scope is not obvious, use the executable gate:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate \
+  --event-type research \
+  --claim "Source-pack content hashes are reusable across memory projects." \
+  --source-id memory-systems-world-model \
+  --evidence-path "sources/memory/source-pack.jsonl" \
+  --confidence high
+```
+
+The gate classifies events as `project`, `global`, `both`, or `nothing_durable`. Global and `both`
+capture require `source_id` plus source-backed evidence. `both` writes one canonical global claim
+and, only when a distinct `--project-claim` is supplied, a project-local application note linked to
+the global claim by `related_ids` and the shared `subject_key`; it does not silently duplicate the
+global claim into the project store. Consolidation from source packs or evidence into durable claims
+requires an explicit reusable lesson and source-backed evidence.
+
 ## Canonical Writer
 
 Durable memory claims must be written through `scripts/memory.mjs remember`; do not hand-edit

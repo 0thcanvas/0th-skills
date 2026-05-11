@@ -290,6 +290,7 @@ use the unified command surface:
 node scripts/memory.mjs preflight
 node scripts/memory.mjs brief
 node scripts/memory.mjs task-brief
+node scripts/memory.mjs write-gate --event-type research --claim "..." --source-id memory-systems-world-model --evidence-path sources/memory/source-pack.jsonl --confidence high
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
 node scripts/memory.mjs recall --global-only --source-id memory-systems-world-model --limit 5
 node scripts/memory.mjs source-pack ingest --json /path/to/source-pack.json

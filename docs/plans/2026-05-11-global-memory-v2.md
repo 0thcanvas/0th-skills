@@ -53,10 +53,10 @@ Make Memory v2 the actual workflow path, not an optional side channel.
 
 ### 6. Event-Gated Global Capture
 Capture global knowledge at workflow boundaries instead of relying on migration or session-end hooks.
-- [ ] The write gate can classify new knowledge as project-local, global, both, or nothing durable.
-- [ ] `both` means one canonical global claim plus an optional project-local application note, sharing evidence and `subject_key`; it does not mean silent duplicate claims.
-- [ ] Research, user preference, recurring workflow lesson, and cross-project architecture events can write global claims with evidence.
-- [ ] Consolidation promotes source-pack/evidence material into durable claims only when the reusable lesson is explicit and source-backed.
+- [x] The write gate can classify new knowledge as project-local, global, both, or nothing durable.
+- [x] `both` means one canonical global claim plus an optional project-local application note, sharing evidence and `subject_key`; it does not mean silent duplicate claims.
+- [x] Research, user preference, recurring workflow lesson, and cross-project architecture events can write global claims with evidence.
+- [x] Consolidation promotes source-pack/evidence material into durable claims only when the reusable lesson is explicit and source-backed.
 
 ### 7. Maintenance, Staleness, and Locks
 Extend maintenance from project runtime state to global brain health without creating racey multi-file updates.
