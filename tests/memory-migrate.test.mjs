@@ -30,6 +30,28 @@ function writeJsonl(filePath, records) {
   fs.writeFileSync(filePath, records.map((record) => JSON.stringify(record)).join("\n") + "\n");
 }
 
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const text = fs.readFileSync(filePath, "utf8").trim();
+  if (!text) return [];
+  return text.split("\n").map((line) => JSON.parse(line));
+}
+
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = path.join(tempDir(), "state");
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+}
+
 test("Obsidian migration dry-run manifest classifies markdown without writing runtime state", () => {
   const kbRoot = tempDir();
   const stateRoot = path.join(tempDir(), "state");
@@ -132,11 +154,62 @@ test("Obsidian migration routes stale material to source packs and speculative m
   assert.equal(stale.action, "source_pack");
   assert.match(stale.reason, /stale/i);
   assert.equal(stale.proposed_record.source_id, "kb-migration");
-  assert.equal(stale.proposed_record.redaction_status, "no_secrets_observed");
+  assert.equal(stale.proposed_record.chunks.length, 1);
+  assert.equal(stale.proposed_record.chunks[0].redaction_status, "no_secrets_observed");
+  assert.match(stale.proposed_record.chunks[0].text, /old note may still be useful/);
 
   const speculative = manifest.candidates.find((candidate) => candidate.relative_path === "research/raw/speculative.md");
   assert.equal(speculative.action, "skip");
   assert.match(speculative.skip_reason, /speculative/i);
+});
+
+test("Obsidian migration replay records are accepted by Memory v2 writers and remain rollback-addressable", () => {
+  withTempStateRoot((stateRoot) => {
+    const kbRoot = tempDir();
+    const repo = tempDir();
+    writeFile(kbRoot, "tech/raw/global-lesson.md", [
+      "---",
+      "scope: global",
+      "confidence: high",
+      "subject_key: global-lesson",
+      "---",
+      "Global memory should prefer generated briefs over direct legacy markdown browsing."
+    ].join("\n"));
+    writeFile(kbRoot, "research/raw/stale-source.md", [
+      "---",
+      "scope: global",
+      "lifecycle: stale",
+      "---",
+      "This stale note is evidence only and should replay as a source pack."
+    ].join("\n"));
+
+    const manifest = buildObsidianMigrationManifest({
+      kbRoot,
+      now: new Date("2026-05-11T19:12:00.000Z")
+    });
+    const durable = manifest.candidates.find((candidate) => candidate.action === "durable_claim");
+    const sourcePack = manifest.candidates.find((candidate) => candidate.action === "source_pack");
+    const durableJson = writeFile(kbRoot, "durable.json", JSON.stringify(durable.proposed_record));
+    const packJson = writeFile(kbRoot, "pack.json", JSON.stringify(sourcePack.proposed_record));
+
+    runMemoryCommand(["remember", "--json", durableJson], { cwd: repo });
+    runMemoryCommand(["source-pack", "ingest", "--json", packJson], { cwd: repo });
+
+    const claims = readJsonl(path.join(stateRoot, "global", "memory", "claims.jsonl"));
+    const sourceIndex = readJsonl(path.join(stateRoot, "global", "sources", "index.jsonl"));
+    const [claim] = claims;
+
+    assert.equal(claim.migration_id, durable.migration_id);
+    assert.equal(claim.migration_source_path, durable.relative_path);
+    assert.equal(claim.migration_content_hash, durable.content_hash);
+    assert.equal(claim.scope, "global");
+    assert.equal(claim.source_id, "kb-migration");
+    assert.equal(claim.subject_key, "global-lesson");
+    assert.equal(sourceIndex[0].id, sourcePack.proposed_record.id);
+    assert.equal(sourceIndex[0].migration_id, sourcePack.migration_id);
+    assert.equal(sourceIndex[0].migration_source_path, sourcePack.relative_path);
+    assert.equal(sourceIndex[0].migration_content_hash, sourcePack.content_hash);
+  });
 });
 
 test("Obsidian migration manifest includes replay and rollback instructions for every candidate", () => {

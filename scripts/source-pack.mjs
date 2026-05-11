@@ -102,6 +102,9 @@ function packMetadata(pack, {
   if (pack.topic) metadata.topic = pack.topic;
   if (pack.stale_after_days != null) metadata.stale_after_days = pack.stale_after_days;
   if (pack.related_ids?.length > 0) metadata.related_ids = pack.related_ids;
+  if (pack.migration_id) metadata.migration_id = pack.migration_id;
+  if (pack.migration_source_path) metadata.migration_source_path = pack.migration_source_path;
+  if (pack.migration_content_hash) metadata.migration_content_hash = pack.migration_content_hash;
   return metadata;
 }
 
@@ -165,6 +168,9 @@ export function normalizeSourcePack(input, {
   const topic = input.topic ? String(input.topic).trim() : "";
   const staleAfterDays = input.stale_after_days ?? input.staleAfterDays ?? null;
   const relatedIds = normalizeList(input.related_ids ?? input.related_id ?? input.relatedId);
+  const migrationId = input.migration_id ? String(input.migration_id).trim() : "";
+  const migrationSourcePath = input.migration_source_path ? String(input.migration_source_path).trim() : "";
+  const migrationContentHash = input.migration_content_hash ? String(input.migration_content_hash).trim() : "";
   const chunks = Array.isArray(input.chunks) ? input.chunks : [];
 
   if (!sourceId) throw new Error("source_id is required");
@@ -174,7 +180,10 @@ export function normalizeSourcePack(input, {
     input.id,
     sourceId,
     topic,
-    ...relatedIds
+    ...relatedIds,
+    migrationId,
+    migrationSourcePath,
+    migrationContentHash
   ], "source pack contains secret-like content; redact it before writing");
 
   const pack = {
@@ -187,6 +196,9 @@ export function normalizeSourcePack(input, {
   if (topic) pack.topic = topic;
   if (staleAfterDays != null) pack.stale_after_days = Number(staleAfterDays);
   if (relatedIds.length > 0) pack.related_ids = relatedIds;
+  if (migrationId) pack.migration_id = migrationId;
+  if (migrationSourcePath) pack.migration_source_path = migrationSourcePath;
+  if (migrationContentHash) pack.migration_content_hash = migrationContentHash;
 
   return pack;
 }

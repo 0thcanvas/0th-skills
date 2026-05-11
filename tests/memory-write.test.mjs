@@ -129,68 +129,95 @@ test("appendMemoryClaim routes global-scope claims to the global brain", () => {
     });
 
     const [claim] = readJsonl(result.memory_file);
+    const brief = fs.readFileSync(result.brief_file, "utf8");
 
     assert.equal(result.memory_file, path.join(stateRoot, "global", "memory", "claims.jsonl"));
     assert.equal(result.brief_file, path.join(stateRoot, "global", "memory", "brief.md"));
     assert.equal(claim.scope, "global");
     assert.equal(claim.source_id, "memory-systems-world-model");
+    assert.match(brief, /^# Global Memory Brief/m);
     assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
   });
 });
 
 test("appendMemoryClaim refuses global claims without an explicit source namespace", () => {
-  const repo = tempDir();
-  const memoryFile = path.join(repo, "claims.jsonl");
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
 
-  assert.throws(
-    () => appendMemoryClaim({
-      cwd: repo,
-      memoryFile,
-      updateBrief: false,
-      input: {
-        type: "external_research",
-        claim: "Global claims need a source namespace.",
-        scope: "global",
-        evidence_path: "sources/memory-systems/source-pack.jsonl",
-        confidence: "high"
-      }
-    }),
-    /global memory claims require source_id/
-  );
-  assert.equal(fs.existsSync(memoryFile), false);
+    assert.throws(
+      () => appendMemoryClaim({
+        cwd: repo,
+        updateBrief: false,
+        input: {
+          type: "external_research",
+          claim: "Global claims need a source namespace.",
+          scope: "global",
+          evidence_path: "sources/memory-systems/source-pack.jsonl",
+          confidence: "high"
+        }
+      }),
+      /global memory claims require source_id/
+    );
+    assert.equal(fs.existsSync(path.join(stateRoot, "global", "memory", "claims.jsonl")), false);
+  });
+});
+
+test("appendMemoryClaim refuses to strand global claims in an override file", () => {
+  withTempStateRoot(() => {
+    const repo = tempDir();
+    const memoryFile = path.join(repo, "claims.jsonl");
+
+    assert.throws(
+      () => appendMemoryClaim({
+        cwd: repo,
+        memoryFile,
+        updateBrief: false,
+        input: {
+          type: "external_research",
+          claim: "Global claims must route to the global brain.",
+          scope: "global",
+          source_id: "memory-systems-world-model",
+          evidence_path: "sources/memory-systems/source-pack.jsonl",
+          confidence: "high"
+        }
+      }),
+      /global memory claims must use the global memory file/
+    );
+    assert.equal(fs.existsSync(memoryFile), false);
+  });
 });
 
 test("memory claims preserve global routing and provenance fields", () => {
-  const repo = tempDir();
-  const memoryFile = path.join(repo, "claims.jsonl");
+  withTempStateRoot(() => {
+    const repo = tempDir();
 
-  appendMemoryClaim({
-    cwd: repo,
-    memoryFile,
-    updateBrief: false,
-    now: new Date("2026-05-11T13:00:00.000Z"),
-    input: {
-      type: "external_research",
-      claim: "Brain/source routing separates storage owner from knowledge namespace.",
-      scope: "global",
-      brain_id: "global",
-      source_id: "memory-systems-world-model",
-      topic: "agent-memory",
-      subject_key: "memory-routing",
-      owner_project_key: "0th-skills",
-      related_ids: ["source-pack-memory-systems"],
-      evidence_path: "sources/memory-systems/source-pack.jsonl",
-      confidence: "high"
-    }
+    const result = appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      now: new Date("2026-05-11T13:00:00.000Z"),
+      input: {
+        type: "external_research",
+        claim: "Brain/source routing separates storage owner from knowledge namespace.",
+        scope: "global",
+        brain_id: "global",
+        source_id: "memory-systems-world-model",
+        topic: "agent-memory",
+        subject_key: "memory-routing",
+        owner_project_key: "0th-skills",
+        related_ids: ["source-pack-memory-systems"],
+        evidence_path: "sources/memory-systems/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+
+    const [claim] = readJsonl(result.memory_file);
+    assert.equal(claim.brain_id, "global");
+    assert.equal(claim.source_id, "memory-systems-world-model");
+    assert.equal(claim.topic, "agent-memory");
+    assert.equal(claim.subject_key, "memory-routing");
+    assert.equal(claim.owner_project_key, "0th-skills");
+    assert.deepEqual(claim.related_ids, ["source-pack-memory-systems"]);
   });
-
-  const [claim] = readJsonl(memoryFile);
-  assert.equal(claim.brain_id, "global");
-  assert.equal(claim.source_id, "memory-systems-world-model");
-  assert.equal(claim.topic, "agent-memory");
-  assert.equal(claim.subject_key, "memory-routing");
-  assert.equal(claim.owner_project_key, "0th-skills");
-  assert.deepEqual(claim.related_ids, ["source-pack-memory-systems"]);
 });
 
 test("appendMemoryClaim refuses duplicate explicit ids", () => {

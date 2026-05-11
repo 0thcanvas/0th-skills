@@ -108,9 +108,24 @@ test("unified memory entrypoint reports project and global runtime diagnostics",
     assert.equal(result.routing.global_scope_claims, "global");
     assert.equal(result.routing.explicit_path_overrides, true);
     assert.match(result.plugin.repo_version, /^\d+\.\d+\.\d+/);
-    assert.equal(result.readiness.recall_ready, true);
+    assert.equal(result.readiness.recall_ready, false);
     assert.equal(typeof result.readiness.project_memory_file_exists, "boolean");
     assert.equal(typeof result.readiness.global_memory_file_exists, "boolean");
+
+    for (const filePath of [
+      result.project.memory_file,
+      result.project.task_file,
+      result.global.memory_file
+    ]) {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, "\n");
+    }
+
+    const initialized = JSON.parse(runMemoryCommand(["doctor"], { cwd: dir }));
+    assert.equal(initialized.readiness.project_memory_file_exists, true);
+    assert.equal(initialized.readiness.global_memory_file_exists, true);
+    assert.equal(initialized.readiness.project_task_file_exists, true);
+    assert.equal(initialized.readiness.recall_ready, true);
   } finally {
     if (previous === undefined) {
       delete process.env.OTH_SKILLS_STATE_DIR;

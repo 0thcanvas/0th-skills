@@ -69,6 +69,8 @@ export function runMemoryRuntimeEval() {
   const globalMemoryFile = path.join(runtimeDir, "global", "memory", "claims.jsonl");
   const sourceRoot = path.join(runtimeDir, "global", "sources");
   const sourceIndexFile = path.join(sourceRoot, "index.jsonl");
+  const previousStateRoot = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = runtimeDir;
 
   const results = [];
 
@@ -203,7 +205,6 @@ export function runMemoryRuntimeEval() {
   results.push(fixture("global-write-scoped-recall", () => {
     const claim = appendMemoryClaim({
       cwd: repo,
-      memoryFile: globalMemoryFile,
       updateBrief: false,
       input: {
         type: "external_research",
@@ -243,7 +244,6 @@ export function runMemoryRuntimeEval() {
     });
     appendMemoryClaim({
       cwd: repo,
-      memoryFile: globalMemoryFile,
       updateBrief: false,
       input: {
         type: "external_research",
@@ -373,13 +373,19 @@ export function runMemoryRuntimeEval() {
   }));
 
   const passed = results.filter((result) => result.pass).length;
-  return {
+  const report = {
     fixture_count: results.length,
     passed,
     failed: results.length - passed,
     outcome: passed === results.length ? "PASS" : "FAIL",
     results
   };
+  if (previousStateRoot === undefined) {
+    delete process.env.OTH_SKILLS_STATE_DIR;
+  } else {
+    process.env.OTH_SKILLS_STATE_DIR = previousStateRoot;
+  }
+  return report;
 }
 
 function main() {

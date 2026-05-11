@@ -231,6 +231,34 @@ function replayInstruction(action) {
   return { command: "no runtime write; keep this manifest candidate for audit" };
 }
 
+function sourcePackRecord({
+  relativePath,
+  contentHash,
+  topic,
+  body,
+  sourcePointer,
+  now,
+  staleAfterDays = null
+}) {
+  const record = {
+    id: `kb-migration-${slugify(relativePath)}`,
+    source_id: "kb-migration",
+    topic,
+    chunks: [
+      {
+        id: `chunk-${contentHash.slice(0, 12)}`,
+        text: body.trim(),
+        source_pointer: sourcePointer,
+        summary: firstUsefulLine(body, relativePath),
+        redaction_status: "no_secrets_observed",
+        observed_at: now.toISOString()
+      }
+    ]
+  };
+  if (staleAfterDays != null) record.stale_after_days = staleAfterDays;
+  return record;
+}
+
 function classifyMarkdownNote({
   relativePath,
   content,
@@ -309,14 +337,15 @@ function classifyMarkdownNote({
       now,
       action: "source_pack",
       reason: "Stale material is preserved as source-pack evidence instead of becoming an active claim.",
-      proposedRecord: {
-        id: `kb-migration-${slugify(relativePath)}`,
-        source_id: "kb-migration",
+      proposedRecord: sourcePackRecord({
+        relativePath,
+        contentHash,
         topic,
-        stale_after_days: 30,
-        redaction_status: "no_secrets_observed",
-        source_pointer: sourcePointer
-      }
+        body,
+        sourcePointer,
+        now,
+        staleAfterDays: 30
+      })
     });
   }
   if (isHighConfidence(frontmatter) && isCrossProject(relativePath, frontmatter, body)) {
@@ -346,13 +375,14 @@ function classifyMarkdownNote({
       now,
       action: "source_pack",
       reason: "Cross-project material without high confidence stays as source-pack evidence for later consolidation.",
-      proposedRecord: {
-        id: `kb-migration-${slugify(relativePath)}`,
-        source_id: "kb-migration",
+      proposedRecord: sourcePackRecord({
+        relativePath,
+        contentHash,
         topic,
-        redaction_status: "no_secrets_observed",
-        source_pointer: sourcePointer
-      }
+        body,
+        sourcePointer,
+        now
+      })
     });
   }
 

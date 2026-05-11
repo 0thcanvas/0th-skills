@@ -73,6 +73,21 @@ export function runMemoryDoctor({
   const globalEvidence = resolveGlobalEvidencePaths({ env, homeDir });
   const globalSources = resolveGlobalSourcePaths({ env, homeDir });
   const globalLinks = resolveGlobalLinkPaths({ env, homeDir });
+  const readiness = {
+    project_state_dir_exists: exists(resolveProjectStateDir({ cwd, env, homeDir })),
+    project_memory_file_exists: exists(projectMemory.memoryFile),
+    project_brief_file_exists: exists(projectMemory.briefFile),
+    project_task_file_exists: exists(projectTasks.taskFile),
+    global_state_dir_exists: exists(resolveGlobalStateDir({ env, homeDir })),
+    global_memory_file_exists: exists(globalMemory.memoryFile),
+    global_brief_file_exists: exists(globalMemory.briefFile),
+    global_source_index_file_exists: exists(globalSources.sourceIndexFile)
+  };
+  readiness.recall_ready = Boolean(
+    readiness.project_memory_file_exists &&
+    readiness.project_task_file_exists &&
+    readiness.global_memory_file_exists
+  );
 
   return {
     state_root: resolveStateRoot({ env, homeDir }),
@@ -107,17 +122,7 @@ export function runMemoryDoctor({
       repo_version: repoVersion(),
       codex_cache_versions: cacheVersions({ homeDir })
     },
-    readiness: {
-      project_state_dir_exists: exists(resolveProjectStateDir({ cwd, env, homeDir })),
-      project_memory_file_exists: exists(projectMemory.memoryFile),
-      project_brief_file_exists: exists(projectMemory.briefFile),
-      project_task_file_exists: exists(projectTasks.taskFile),
-      global_state_dir_exists: exists(resolveGlobalStateDir({ env, homeDir })),
-      global_memory_file_exists: exists(globalMemory.memoryFile),
-      global_brief_file_exists: exists(globalMemory.briefFile),
-      global_source_index_file_exists: exists(globalSources.sourceIndexFile),
-      recall_ready: Boolean(projectMemory.memoryFile && globalMemory.memoryFile && projectTasks.taskFile)
-    }
+    readiness
   };
 }
 
