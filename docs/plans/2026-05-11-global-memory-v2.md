@@ -67,10 +67,10 @@ Extend maintenance from project runtime state to global brain health without cre
 
 ### 8. Evaluation and Dogfood Gates
 Protect the design with executable behavior checks before calling the global layer done.
-- [ ] Runtime eval covers global write, scoped recall, project/global conflict, source-pack expansion, stale global maintenance, and no-Obsidian dependency.
-- [ ] A dogfood report compares startup usefulness before and after global briefs using real 0th sessions: useful recalls, stale/conflicting recalls, token cost, and whether legacy KB fallback was needed.
-- [ ] Install/runtime doctor verifies repo version, plugin cache version, project state, global state, and recall readiness.
-- [ ] Source-pack fidelity checks prove verbatim chunks round-trip by content hash.
+- [x] Runtime eval covers global write, scoped recall, project/global conflict, source-pack expansion, stale global maintenance, and no-Obsidian dependency.
+- [x] A dogfood report compares startup usefulness before and after global briefs using real 0th sessions: useful recalls, stale/conflicting recalls, token cost, and whether legacy KB fallback was needed.
+- [x] Install/runtime doctor verifies repo version, plugin cache version, project state, global state, and recall readiness.
+- [x] Source-pack fidelity checks prove verbatim chunks round-trip by content hash.
 
 ### 9. Obsidian Migration Off-Ramp
 Replace the old KB only after evaluation proves Memory v2 can stand alone.

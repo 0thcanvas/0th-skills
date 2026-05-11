@@ -8,10 +8,12 @@ import process from "node:process";
 import { addEvidenceRecord } from "./evidence.mjs";
 import { appendMemoryClaim } from "./memory-write.mjs";
 import { expandMemory, recallMemory } from "./memory-recall.mjs";
+import { runMemoryMaintain } from "./memory-maintain.mjs";
 import { runMemorySync } from "./memory-sync.mjs";
 import { addOpenLoop, listOpenLoops, updateOpenLoopStatus } from "./open-loop.mjs";
 import { writeRepoState } from "./repo-state.mjs";
 import { runPreflight } from "./session-preflight.mjs";
+import { hashSourceChunk, ingestSourcePack } from "./source-pack.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 
 function sh(cwd, args) {
@@ -52,6 +54,11 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function appendJsonl(filePath, record) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
 export function runMemoryRuntimeEval() {
   const repo = tempRepo();
   const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-runtime-eval-state-"));
@@ -59,6 +66,9 @@ export function runMemoryRuntimeEval() {
   const taskFile = path.join(runtimeDir, "open-loops.jsonl");
   const evidenceFile = path.join(runtimeDir, "events.jsonl");
   const repoStateFile = path.join(runtimeDir, "repo-state.json");
+  const globalMemoryFile = path.join(runtimeDir, "global", "memory", "claims.jsonl");
+  const sourceRoot = path.join(runtimeDir, "global", "sources");
+  const sourceIndexFile = path.join(sourceRoot, "index.jsonl");
 
   const results = [];
 
@@ -188,6 +198,164 @@ export function runMemoryRuntimeEval() {
     const recalled = recallMemory({ cwd: repo, memoryFile, taskFile, evidenceFile, query: "retrieval recall QA accuracy correction" });
     assert(recalled.results.some((result) => result.id === claim.id), "correction incident was not recalled");
     return { recalled: claim.id };
+  }));
+
+  results.push(fixture("global-write-scoped-recall", () => {
+    const claim = appendMemoryClaim({
+      cwd: repo,
+      memoryFile: globalMemoryFile,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Global runtime eval writes source-backed reusable memory.",
+        scope: "global",
+        source_id: "memory-systems-world-model",
+        evidence_path: "sources/memory/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+    const recalled = recallMemory({
+      cwd: repo,
+      storeScope: "global",
+      memoryFile: globalMemoryFile,
+      query: "source-backed reusable memory",
+      includeTasks: false,
+      includeEvidence: false
+    });
+    assert(recalled.results.some((result) => result.id === claim.id), "global claim was not recalled");
+    assert(recalled.results.every((result) => result.store_scope === "global"), "global-only recall leaked project results");
+    return { recalled: claim.id, store_scope: recalled.store_scope };
+  }));
+
+  results.push(fixture("project-global-conflict", () => {
+    appendMemoryClaim({
+      cwd: repo,
+      memoryFile,
+      updateBrief: false,
+      input: {
+        type: "decision",
+        claim: "Runtime eval startup reads project memory only.",
+        scope: "repo",
+        subject_key: "runtime-eval-startup",
+        evidence_path: "docs/runtime-eval.md",
+        confidence: "medium"
+      }
+    });
+    appendMemoryClaim({
+      cwd: repo,
+      memoryFile: globalMemoryFile,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Runtime eval startup reads project memory plus bounded global memory.",
+        scope: "global",
+        source_id: "memory-systems-world-model",
+        subject_key: "runtime-eval-startup",
+        evidence_path: "sources/memory/source-pack.jsonl",
+        confidence: "high"
+      }
+    });
+    const recalled = recallMemory({
+      cwd: repo,
+      storeScope: "combined",
+      memoryFile,
+      globalMemoryFile,
+      query: "runtime eval startup memory",
+      includeTasks: false,
+      includeEvidence: false
+    });
+    assert(recalled.has_conflicts, "project/global conflict was not surfaced");
+    return { conflicts: recalled.conflicts.map((entry) => entry.subject_key) };
+  }));
+
+  results.push(fixture("source-pack-fidelity", () => {
+    const text = "Source-pack fidelity fixture keeps verbatim text.";
+    const sourcePointer = { kind: "note", id: "runtime-eval-source-pack" };
+    const ingested = ingestSourcePack({
+      cwd: repo,
+      sourceRoot,
+      input: {
+        id: "runtime-eval-source-pack",
+        source_id: "runtime-eval-source-pack",
+        chunks: [
+          {
+            id: "runtime-eval-chunk",
+            text,
+            source_pointer: sourcePointer,
+            summary: "Round-trip source-pack fidelity."
+          }
+        ]
+      }
+    });
+    const expanded = expandMemory({
+      cwd: repo,
+      sourceRoot,
+      sourceIndexFile,
+      id: "runtime-eval-source-pack"
+    });
+    const [chunk] = expanded.record.chunks;
+    assert(expanded.kind === "source_pack", "source pack did not expand by id");
+    assert(chunk.text === text, "source chunk text did not round-trip");
+    assert(chunk.content_hash === hashSourceChunk({
+      text,
+      source_pointer: sourcePointer,
+      redaction_status: "no_secrets_observed"
+    }), "source chunk hash did not round-trip");
+    return { source_pack: ingested.id, content_hash: chunk.content_hash };
+  }));
+
+  results.push(fixture("stale-global-maintenance", () => {
+    appendJsonl(globalMemoryFile, {
+      id: "runtime-eval-stale-global",
+      type: "external_research",
+      claim: "Runtime eval stale global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems-world-model",
+      evidence_path: "sources/memory/source-pack.jsonl",
+      last_confirmed_at: "2026-01-01T00:00:00.000Z",
+      stale_after_days: 30
+    });
+    const maintained = runMemoryMaintain({
+      cwd: repo,
+      memoryFile,
+      taskFile,
+      repoStateFile,
+      globalMemoryFile,
+      sourceIndexFile,
+      maintainedAt: "2026-03-15T00:00:00.000Z"
+    });
+    assert(
+      maintained.findings.global.stale_claims.some((entry) => entry.id === "runtime-eval-stale-global"),
+      "stale global claim was not reported"
+    );
+    return { stale_claims: maintained.findings.global.stale_claims.map((entry) => entry.id) };
+  }));
+
+  results.push(fixture("no-obsidian-dependency", () => {
+    const previousKbRoot = process.env.KB_ROOT;
+    delete process.env.KB_ROOT;
+    try {
+      const recalled = recallMemory({
+        cwd: repo,
+        memoryFile,
+        taskFile,
+        evidenceFile,
+        query: "source-backed memory",
+        includeTasks: false,
+        includeEvidence: false
+      });
+      assert(recalled.result_count > 0, "runtime recall should not require KB_ROOT or Obsidian");
+      assert(!JSON.stringify(recalled).toLowerCase().includes("obsidian"), "runtime recall leaked an Obsidian dependency");
+      return { kb_root_required: false, obsidian_dependency: false };
+    } finally {
+      if (previousKbRoot === undefined) {
+        delete process.env.KB_ROOT;
+      } else {
+        process.env.KB_ROOT = previousKbRoot;
+      }
+    }
   }));
 
   results.push(fixture("abstention", () => {

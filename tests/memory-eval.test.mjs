@@ -168,3 +168,17 @@ test("memory eval CLI emits JSON and writes a markdown report", () => {
   assert.match(markdown, /# Memory Backend Eval/);
   assert.match(markdown, /Memory v2 runtime hardening/);
 });
+
+test("global Memory v2 dogfood report covers startup comparison dimensions", () => {
+  const report = fs.readFileSync(
+    path.join(repoRoot, "docs/evals/2026-05-11-global-memory-v2-dogfood.md"),
+    "utf8",
+  );
+
+  assert.match(report, /Useful recalls/);
+  assert.match(report, /Stale\/conflicting recalls/);
+  assert.match(report, /Token cost proxy/);
+  assert.match(report, /Legacy KB fallback/);
+  assert.match(report, /runtime-eval/);
+  assert.match(report, /doctor/);
+});
