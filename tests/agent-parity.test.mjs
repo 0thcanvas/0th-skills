@@ -237,3 +237,17 @@ test("README documents the deliberate asymmetry between mirrored and Claude-only
     "README should explain the parity philosophy"
   );
 });
+
+test("Codex explorer returns a structured read set for memory reconciliation", () => {
+  const source = read(path.join(codexAgentsDir, "0th-explorer.toml"));
+
+  for (const fragment of [
+    "READ_SET:",
+    "files:",
+    "symbols:",
+    "tests:",
+    "claims:"
+  ]) {
+    assert.ok(source.includes(fragment), `0th_explorer should include "${fragment}"`);
+  }
+});

@@ -6,8 +6,10 @@ import os from "node:os";
 import path from "node:path";
 import {
   detectStacks,
+  findLocalPathLeaksInText,
   loadBrief,
   resolveRepoRoot,
+  scanTrackedFilesForLocalPathLeaks,
   validateCounterpartReviewEvidence,
   validateProductAcceptanceReport,
   validateReport
@@ -36,7 +38,6 @@ function writeProductAcceptance(dir, payload = {}) {
       required: false,
       required_rationale: "Mechanical test fixture with no product surface.",
       outcome: "NOT_REQUIRED",
-      // Use `now` so fixtures stay inside the 24h freshness window across runs.
       reviewed_at: new Date().toISOString(),
       ...payload
     })
@@ -99,6 +100,57 @@ test("detectStacks: brief mentioning logged-in yields bb-browser-escape-hatch", 
   const repo = makeTempRepo();
   const stacks = detectStacks(repo, "verify the logged-in dashboard flow");
   assert.ok(stacks.includes("bb-browser-escape-hatch"));
+});
+
+test("findLocalPathLeaksInText: flags machine-specific home paths", () => {
+  const macPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  const linuxPath = `/${["home", "alice", "project", "app"].join("/")}`;
+  const windowsPath = ["C:", "Users", "mini", "project"].join("\\");
+  const homeFallback = "$" + "{HOME}" + "/0thcanvas/skills";
+  const source = [
+    `Research note: ${macPath}`,
+    `Cache: ${linuxPath}`,
+    `Workspace: ${windowsPath}`,
+    `Fallback: ${homeFallback}`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("example.md", source);
+
+  assert.equal(leaks.length, 4);
+  assert.deepEqual(
+    leaks.map((leak) => leak.label),
+    [
+      "macOS user home path",
+      "Linux user home path",
+      "Windows user profile path",
+      "0th Canvas checkout fallback"
+    ]
+  );
+});
+
+test("findLocalPathLeaksInText: allows portable path contracts", () => {
+  const source = [
+    'node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT}/scripts/session-preflight.mjs"',
+    "${KB_ROOT}/tech/raw/research.md",
+    "~/.0th/reviews",
+    "$HOME/.0th/reviews",
+    ".0th/memory/claims.jsonl"
+  ].join("\n");
+
+  assert.deepEqual(findLocalPathLeaksInText("example.md", source), []);
+});
+
+test("scanTrackedFilesForLocalPathLeaks: scans tracked files only", () => {
+  const repo = makeTempGitRepo();
+  const trackedPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  fs.writeFileSync(path.join(repo, "tracked.md"), `bad: ${trackedPath}\n`);
+  fs.writeFileSync(path.join(repo, "untracked.md"), `bad: ${trackedPath}\n`);
+  execFileSync("git", ["add", "tracked.md"], { cwd: repo, stdio: "ignore" });
+
+  const leaks = scanTrackedFilesForLocalPathLeaks(repo);
+
+  assert.equal(leaks.length, 1);
+  assert.equal(leaks[0].file, "tracked.md");
 });
 
 test("resolveRepoRoot: returns git toplevel when invoked from a subdir", () => {
@@ -201,6 +253,31 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   }
   assert.equal(exitCode, 0, `expected exit 0 from subdir invocation, got ${exitCode}: ${out}`);
   assert.match(out, /gate PASSED.*electron-desktop/);
+});
+
+test("ship-gate CLI fails on tracked local path leaks even when no stacks are detected", () => {
+  const repo = makeTempGitRepo();
+  const localPath = `/${["Users", "mini", "0thcanvas", "skills"].join("/")}`;
+  fs.writeFileSync(path.join(repo, "decision.md"), `Research note: ${localPath}\n`);
+  execFileSync("git", ["add", "decision.md"], { cwd: repo, stdio: "ignore" });
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out = "";
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+
+  assert.equal(exitCode, 1);
+  assert.match(out, /local path check FAILED/);
+  assert.match(out, /decision\.md:1/);
 });
 
 test("detectStacks: flat multi-match (electron + manifest at root) matches both rows", () => {
@@ -391,7 +468,7 @@ test("validateProductAcceptanceReport: rejects non-ISO reviewed_at strings even 
 
 test("validateProductAcceptanceReport: rejects stale reviewed_at outside freshness window", () => {
   const now = new Date("2026-05-12T00:00:00.000Z");
-  const reviewedAt = "2026-05-10T20:00:00.000Z"; // ~28h before `now`
+  const reviewedAt = "2026-05-10T20:00:00.000Z";
   const result = validateProductAcceptanceReport({
     schema_version: 1,
     required: false,
@@ -405,7 +482,7 @@ test("validateProductAcceptanceReport: rejects stale reviewed_at outside freshne
 
 test("validateProductAcceptanceReport: rejects reviewed_at in the future beyond skew", () => {
   const now = new Date("2026-05-10T20:00:00.000Z");
-  const reviewedAt = "2026-05-10T21:00:00.000Z"; // 1h in the future, well beyond 5min skew
+  const reviewedAt = "2026-05-10T21:00:00.000Z";
   const result = validateProductAcceptanceReport({
     schema_version: 1,
     required: false,
@@ -419,7 +496,6 @@ test("validateProductAcceptanceReport: rejects reviewed_at in the future beyond 
 
 test("validateProductAcceptanceReport: accepts reviewed_at within future-skew tolerance", () => {
   const now = new Date("2026-05-10T20:00:00.000Z");
-  // 2 minutes in the future — clock skew between writer and gate machine.
   const reviewedAt = new Date(now.getTime() + 2 * 60 * 1000).toISOString();
   const result = validateProductAcceptanceReport({
     schema_version: 1,
@@ -433,7 +509,6 @@ test("validateProductAcceptanceReport: accepts reviewed_at within future-skew to
 
 test("validateProductAcceptanceReport: freshWindowMs option overrides default 24h window", () => {
   const now = new Date("2026-05-10T20:00:00.000Z");
-  // 48h before `now` — outside the default 24h window but inside a 72h window.
   const reviewedAt = "2026-05-08T20:00:00.000Z";
   const result = validateProductAcceptanceReport({
     schema_version: 1,
@@ -540,9 +615,6 @@ test("validateProductAcceptanceReport: required acceptance with PASS + full payl
 });
 
 test("ship-gate end-to-end: required:true PASS happy path exits 0", () => {
-  // The previously-missing test for the most consequential branch: a real shipping PR
-  // with a fully-required acceptance report. If a future refactor breaks this path,
-  // every shipping PR breaks — and we want to know.
   const repo = makeTempGitRepo();
   writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
@@ -614,7 +686,7 @@ test("ship-gate end-to-end: required:true with empty evidence_paths exits 1", ()
       source: { decision: "x", plan: "y" },
       judgment_hierarchy: ["decision_record"],
       outcome: "PASS",
-      evidence_paths: [], // empty — should be rejected
+      evidence_paths: [],
       reviewed_at: new Date().toISOString()
     })
   );
@@ -640,7 +712,6 @@ test("ship-gate end-to-end: fails with missing counterpart review evidence", () 
   const repo = makeTempGitRepo();
   writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
   writeProductAcceptance(repo);
-  // Deliberately omit counterpart-review.{md,skipped} — gate should fail.
   fs.writeFileSync(
     path.join(repo, "verification-report", "report.json"),
     JSON.stringify({
@@ -672,4 +743,106 @@ test("ship-gate end-to-end: fails with missing counterpart review evidence", () 
   }
   assert.equal(exitCode, 1, `expected exit 1 for missing counterpart evidence, got ${exitCode}: ${out}`);
   assert.match(out, /counterpart review evidence gate FAILED/);
+});
+
+// -----------------------------------------------------------------------------
+// Slice 1 — ship-gate safety fixes (PR #19 review)
+// -----------------------------------------------------------------------------
+
+test("ship-gate fails closed on malformed package.json (no silent stack-empty exit 0)", () => {
+  const repo = makeTempGitRepo();
+  // Malformed JSON that JSON.parse rejects
+  fs.writeFileSync(path.join(repo, "package.json"), "{ broken json");
+  execFileSync("git", ["add", "package.json"], { cwd: repo, stdio: "ignore" });
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out = "";
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+
+  assert.notEqual(exitCode, 0, "malformed package.json must NOT exit 0");
+  assert.match(out, /package\.json/);
+  assert.match(out, /not valid JSON|malformed|invalid/i);
+});
+
+test("ship-gate fails closed when git ls-files fails inside a git repo (not a no-op)", () => {
+  // Simulate by passing a non-existent dir as repoPath after pre-asserting .git presence —
+  // here we exercise the function directly with a path that has .git but git can't read.
+  const dir = makeTempRepo();
+  // Create a .git that is NOT a valid repository (file, not directory, with junk content)
+  fs.writeFileSync(path.join(dir, ".git"), "not-a-real-gitdir");
+
+  assert.throws(
+    () => scanTrackedFilesForLocalPathLeaks(dir),
+    /git ls-files|not a git repository|ship-gate/i,
+    "must throw when .git exists but git command fails (fail closed)"
+  );
+});
+
+test("scanTrackedFilesForLocalPathLeaks: returns [] for non-git directories (no .git present)", () => {
+  const dir = makeTempRepo();
+  // No .git anywhere — function should treat this as "nothing tracked to scan", not fail
+  assert.deepEqual(scanTrackedFilesForLocalPathLeaks(dir), []);
+});
+
+test("findLocalPathLeaksInText: does NOT flag URLs that happen to contain /Users or /home", () => {
+  // Build URL test fixtures from parts so the ship-gate's own tracked-file
+  // scanner doesn't flag THIS test file as a leak source. (Same convention
+  // as the bad-paths test below — fake paths must be assembled at runtime.)
+  const usersAlice = "/" + ["Users", "alice", "orders"].join("/");
+  const homeV1 = "/" + ["home", "v1", "data"].join("/");
+  const usersProfile = "/" + ["Users", "profile", "avatar"].join("/");
+  const source = [
+    `GET https://example.com${usersAlice}`,
+    `API_BASE_URL=https://api.example.com${homeV1}`,
+    `fetch("https://service.io${usersProfile}")`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("config.json", source);
+  assert.deepEqual(leaks, [], `URL paths must not be flagged as home paths, got ${JSON.stringify(leaks)}`);
+});
+
+test("findLocalPathLeaksInText: still flags actual home paths in JSON/quoted contexts", () => {
+  // Construct the bad paths from parts so the ship-gate's own scanner
+  // doesn't catch THIS test file as containing real leaks.
+  const macPath = "/" + ["Users", "alice", "project"].join("/");
+  const linuxPath = "/" + ["home", "bob", "data"].join("/");
+  const macComment = "/" + ["Users", "eve", "scratch"].join("/");
+  const source = [
+    `"workspace":"${macPath}"`,
+    `cache_dir = ${linuxPath}`,
+    `// ${macComment}`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("file.json", source);
+  assert.equal(leaks.length, 3, `expected 3 real leaks, got ${JSON.stringify(leaks)}`);
+});
+
+test("findLocalPathLeaksInText: leak records do NOT echo full line content (secret-leak defense)", () => {
+  // A line where a local path shares a line with a token-shaped secret.
+  // The leak record must not echo the secret.
+  const fakeSecret = "sk-" + "FAKE" + "1234567890abcdefghij";
+  const buildOutput = "/" + ["Users", "alice", "builds", "output.log"].join("/");
+  const source = `API_KEY=${fakeSecret} build_output=${buildOutput}`;
+
+  const leaks = findLocalPathLeaksInText("note.md", source);
+  assert.equal(leaks.length, 1);
+  const serialized = JSON.stringify(leaks[0]);
+  assert.ok(
+    !serialized.includes(fakeSecret),
+    `leak record must not echo the secret '${fakeSecret}': ${serialized}`
+  );
+  assert.ok(
+    !serialized.includes("API_KEY"),
+    `leak record must not echo arbitrary line content; got ${serialized}`
+  );
 });

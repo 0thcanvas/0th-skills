@@ -47,6 +47,7 @@ git log main..HEAD --oneline  # commit history
 Self-review:
 - Are there files that shouldn't have changed?
 - Is the scope contained to what was intended?
+- Any hardcoded local workstation paths left in? Flag macOS/Linux/Windows user-profile paths, or HOME-based fallbacks to a local 0th Canvas checkout.
 - Any secrets, credentials, debug code left in?
 - Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
 - If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
@@ -56,6 +57,8 @@ Self-review:
 **Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`).
 
 `/ship` does not re-judge product quality. It checks that `/build` produced current evidence: verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
+
+The gate also scans tracked files for hardcoded workstation-local paths before the stack check. This runs even when no app/runtime stack is detected, because portability leaks are still release blockers in docs-only or skills-only repos.
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
@@ -118,6 +121,26 @@ Tests: X passing, 0 failing
 Product acceptance: [PASS / NOT_REQUIRED]
 Counterpart review: [clean / N blockers resolved / skipped — exact reason]
 ```
+
+## Repo Preflight
+
+Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
+
+## Memory Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-brief.mjs"` and read the `output_file` path from its JSON result; the script resolves Memory v2 user-level runtime state outside the product repo. Read the generated brief before browsing indexes or raw notes manually.
+
+## Open Loop Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/open-loop-brief.mjs"` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
+
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`. For durable outcomes, write through `memory-write.mjs`; do not hand-edit runtime `claims.jsonl`.
+
+## Open Loop Integration
+
+When work remains unfinished, blocked, or intentionally dropped, update open loops through `open-loop.mjs`; do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, and `drop` when no longer worth doing.
 
 ## KB Integration
 

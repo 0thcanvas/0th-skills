@@ -121,6 +121,26 @@ User has final say. Update the decision record if anything changed.
 
 After approval, suggest /plan (if work needs slicing) or /build (if it's ready to implement).
 
+## Repo Preflight
+
+Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
+
+## Memory Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-brief.mjs"` and read the `output_file` path from its JSON result; the script resolves Memory v2 user-level runtime state outside the product repo. Read the generated brief before browsing indexes or raw notes manually.
+
+## Open Loop Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/open-loop-brief.mjs"` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
+
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`. For durable outcomes, write through `memory-write.mjs`; do not hand-edit runtime `claims.jsonl`.
+
+## Open Loop Integration
+
+When work remains unfinished, blocked, or intentionally dropped, update open loops through `open-loop.mjs`; do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, and `drop` when no longer worth doing.
+
 ## KB Integration
 
 - **Reads:** project domain index, design principles, prior decisions in this area

@@ -68,7 +68,7 @@ Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op in
 - Read relevant KB entries for this domain
 - Read `CONTEXT.md` at the project root if it exists — use its vocabulary for variable names, file names, and test descriptions
 - Understand the current codebase state
-- On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious
+- On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious. Capture the explorer's JSON-fenced `READ_SET` block (files, symbols, tests, plus any `verified_claims` it confirmed or contradicted) and pass it to `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/read-set-reconcile.mjs" --read-set <json-path>` so claims you actually verified get flipped to `active` (with a fresh `last_confirmed_at`) and contradictions get marked `needs_review` with evidence. On Claude-hosted runs, the built-in `Explore` agent does not emit the JSON contract — extract files/symbols/tests by hand and write the JSON yourself before running the reconciler, or skip reconciliation for that exploration.
 
 ### 2. Build Per Slice
 
@@ -297,6 +297,26 @@ Every changed line must trace to the slice spec. While building:
 - **Atomic commits per slice** — each commit is a self-contained change
 - **Surgical changes only** — every changed line traces to the slice spec
 - **No "done" without verification** — the verifier must PASS before /ship
+
+## Repo Preflight
+
+Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/session-preflight.mjs"`. It fetches upstream, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
+
+## Memory Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-brief.mjs"` and read the `output_file` path from its JSON result; the script resolves Memory v2 user-level runtime state outside the product repo. Read the generated brief before browsing indexes or raw notes manually.
+
+## Open Loop Brief
+
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/open-loop-brief.mjs"` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
+
+## Memory Integration
+
+Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Classify new knowledge as `decision`, `observation`, `root_cause`, `vocabulary`, `incident`, `repo_state`, `external_research`, or `nothing durable`. For durable outcomes, write through `memory-write.mjs`; do not hand-edit runtime `claims.jsonl`.
+
+## Open Loop Integration
+
+When work remains unfinished, blocked, or intentionally dropped, update open loops through `open-loop.mjs`; do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, and `drop` when no longer worth doing.
 
 ## KB Integration
 

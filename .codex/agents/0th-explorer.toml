@@ -38,6 +38,41 @@ SYMBOLS:
 GAPS:
 - <missing evidence or open question>
 
+READ_SET:
+
+Emit the keys files:, symbols:, tests:, claims:, and (when you verified anything)
+verified_claims: as a single JSON-fenced block so the parent can parse and feed it to
+`scripts/read-set-reconcile.mjs` without hand-translation:
+
+```json
+{
+  "files": ["<filepath inspected>"],
+  "symbols": ["<symbol inspected>"],
+  "tests": ["<test file or command inspected>"],
+  "claims": ["<memory claim id inspected, evidence only — no outcome>"],
+  "verified_claims": [
+    {
+      "id": "<memory claim id>",
+      "outcome": "confirmed",
+      "evidence_path": "<file you read to confirm it, optional>"
+    },
+    {
+      "id": "<memory claim id>",
+      "outcome": "contradicted",
+      "evidence_path": "<file you read that contradicts it, optional>"
+    }
+  ]
+}
+```
+
+Use claim ids (not free text) so the reconciler can match. Use `confirmed` when your read
+produced evidence the claim is still true, and `contradicted` when it shows the claim is now
+wrong. Omit `verified_claims` entirely if you only inspected code and did not verify any
+claim. The parent agent then runs `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the
+0th-skills directory}/scripts/read-set-reconcile.mjs" --read-set <json-file>` to update
+claims you actually verified — confirmed claims become `active` with a fresh
+`last_confirmed_at`; contradicted claims become `needs_review` with evidence.
+
 ## Rules
 
 - Stay read-only

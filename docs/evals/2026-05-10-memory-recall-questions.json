@@ -1,0 +1,138 @@
+[
+  {
+    "id": "q01-session-end-is-not-a-memory-boundary",
+    "question": "Why does 0th Memory v2 reject session-end-only memory capture?",
+    "category": "decision",
+    "required_capabilities": ["event_capture", "lifecycle_state", "source_provenance"],
+    "evidence_paths": [
+      "docs/decisions/2026-05-10-0th-memory-v2.md",
+      "references/memory-contract.md"
+    ]
+  },
+  {
+    "id": "q02-when-should-a-skill-write-memory",
+    "question": "Which memory types, write gates, and lifecycle states should a core skill use when deciding whether to write memory?",
+    "category": "decision",
+    "required_capabilities": ["event_capture", "lifecycle_state", "source_provenance"],
+    "evidence_paths": [
+      "references/memory-contract.md",
+      "skills/build/SKILL.md",
+      "skills/think/SKILL.md"
+    ]
+  },
+  {
+    "id": "q03-clean-behind-upstream-startup",
+    "question": "What should happen when a clean local branch is behind upstream at session start?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["repo_preflight", "repo_sync", "source_provenance"],
+    "evidence_paths": [
+      "scripts/session-preflight.mjs",
+      "tests/session-preflight.test.mjs"
+    ]
+  },
+  {
+    "id": "q04-dirty-or-divergent-branch-startup",
+    "question": "What should happen when a dirty or divergent branch is behind upstream at session start?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["repo_preflight", "source_provenance"],
+    "evidence_paths": [
+      "scripts/session-preflight.mjs",
+      "tests/session-preflight.test.mjs"
+    ]
+  },
+  {
+    "id": "q05-fast-forward-changes-claimed-files",
+    "question": "After a repo update changes files tied to memory claims, what should happen to those claims?",
+    "category": "stale_claim",
+    "required_capabilities": ["repo_sync", "lifecycle_state", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-sync.mjs",
+      "tests/memory-sync.test.mjs",
+      "references/memory-contract.md"
+    ]
+  },
+  {
+    "id": "q06-starting-brief-before-manual-browsing",
+    "question": "How should a future agent start recall before manually browsing KB indexes?",
+    "category": "repo_vocabulary",
+    "required_capabilities": ["generated_brief", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-brief.mjs",
+      "tests/memory-brief.test.mjs",
+      "skills/build/SKILL.md"
+    ]
+  },
+  {
+    "id": "q07-code-exploration-without-whole-kb-scan",
+    "question": "How should code exploration update memory without comparing the whole codebase to the whole KB?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["read_set_reconciliation", "lifecycle_state", "source_provenance"],
+    "evidence_paths": [
+      "scripts/read-set-reconcile.mjs",
+      "tests/read-set-reconcile.test.mjs",
+      ".codex/agents/0th-explorer.toml"
+    ]
+  },
+  {
+    "id": "q08-recurring-retro-misfire",
+    "question": "What recurring workflow failure led to the retro incident-memory rule?",
+    "category": "recurring_mistake",
+    "required_capabilities": ["incident_aggregation", "event_capture", "source_provenance"],
+    "evidence_paths": [
+      "docs/decisions/2026-05-03-skill-incident-log.md",
+      "skills/retro/SKILL.md"
+    ]
+  },
+  {
+    "id": "q09-self-testing-failure-dossiers",
+    "question": "What failure artifact pattern did self-testing failure dossiers establish?",
+    "category": "recurring_mistake",
+    "required_capabilities": ["failure_artifacts", "source_provenance"],
+    "evidence_paths": [
+      "docs/decisions/2026-05-04-self-testing-failure-dossiers.md"
+    ]
+  },
+  {
+    "id": "q10-which-backend-now",
+    "question": "Which memory backend should 0th use now, and why not adopt MemPalace or agentmemory immediately?",
+    "category": "decision",
+    "required_capabilities": ["backend_decision", "source_provenance"],
+    "evidence_paths": [
+      "docs/decisions/2026-05-10-memory-backend-eval.md",
+      "docs/evals/2026-05-10-memory-backend-baselines.json"
+    ]
+  },
+  {
+    "id": "q11-exact-backend-decision-wording",
+    "question": "What exact wording records the selected Memory v2 backend decision?",
+    "category": "decision",
+    "required_capabilities": ["verbatim_retrieval", "source_provenance"],
+    "evidence_paths": [
+      "docs/decisions/2026-05-10-memory-backend-eval.md"
+    ]
+  },
+  {
+    "id": "q12-canonical-durable-memory-writer",
+    "question": "How should a future agent write a durable Memory v2 claim without hand-editing JSONL?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["canonical_writer", "generated_brief", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-write.mjs",
+      "tests/memory-write.test.mjs",
+      "tests/memory-v2-e2e.test.mjs",
+      "references/memory-contract.md"
+    ]
+  },
+  {
+    "id": "q13-what-open-loops-remain",
+    "question": "How should a future agent find unfinished work, blockers, and concrete next actions at session start?",
+    "category": "open_loop",
+    "required_capabilities": ["open_loop_tracking", "source_provenance"],
+    "evidence_paths": [
+      "references/open-loops.md",
+      "scripts/open-loop.mjs",
+      "scripts/open-loop-brief.mjs",
+      "skills/build/SKILL.md"
+    ]
+  }
+]
