@@ -134,5 +134,93 @@
       "scripts/open-loop-brief.mjs",
       "skills/build/SKILL.md"
     ]
+  },
+  {
+    "id": "q14-single-memory-entrypoint",
+    "question": "Which command should normal agents use for preflight, recall, writes, open loops, maintenance, and evals?",
+    "category": "runtime_hardening",
+    "required_capabilities": ["unified_memory_api", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory.mjs",
+      "references/memory-contract.md",
+      "references/skill-memory-block.md"
+    ]
+  },
+  {
+    "id": "q15-concurrent-runtime-writes",
+    "question": "How does Memory v2 prevent multiple hooks or agents from silently losing concurrent memory writes?",
+    "category": "runtime_hardening",
+    "required_capabilities": ["locked_writes", "source_provenance"],
+    "evidence_paths": [
+      "scripts/lib/lock.mjs",
+      "tests/memory-runtime-hardening.test.mjs",
+      "references/memory-contract.md"
+    ]
+  },
+  {
+    "id": "q16-local-evidence-floor",
+    "question": "How does Memory v2 cite the workflow event behind a durable claim without committing generated runtime data to the repo?",
+    "category": "runtime_hardening",
+    "required_capabilities": ["evidence_floor", "source_provenance"],
+    "evidence_paths": [
+      "scripts/evidence.mjs",
+      "references/memory-contract.md",
+      "tests/memory-runtime-hardening.test.mjs"
+    ]
+  },
+  {
+    "id": "q17-compact-recall-expand",
+    "question": "How should an agent search Memory v2 without loading every raw record into context?",
+    "category": "runtime_hardening",
+    "required_capabilities": ["compact_recall", "expand_by_id", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-recall.mjs",
+      "scripts/memory.mjs",
+      "references/memory-contract.md"
+    ]
+  },
+  {
+    "id": "q18-out-of-band-head-drift",
+    "question": "What happens when HEAD changed since the last preflight because of a manual pull, merge, or PR landing outside the current agent?",
+    "category": "changed_code_behavior",
+    "required_capabilities": ["repo_drift_tracking", "repo_sync", "source_provenance"],
+    "evidence_paths": [
+      "scripts/session-preflight.mjs",
+      "scripts/repo-state.mjs",
+      "tests/memory-runtime-hardening.test.mjs"
+    ]
+  },
+  {
+    "id": "q19-memory-maintenance",
+    "question": "How does Memory v2 report stale, duplicate, orphaned, missing-source, and drifted state without destructive cleanup?",
+    "category": "stale_claim",
+    "required_capabilities": ["maintenance", "lifecycle_state", "source_provenance"],
+    "evidence_paths": [
+      "scripts/memory-maintain.mjs",
+      "references/memory-contract.md",
+      "tests/memory-runtime-hardening.test.mjs"
+    ]
+  },
+  {
+    "id": "q20-open-loop-audit-history",
+    "question": "How does Memory v2 distinguish blocked, dropped, completed, and reopened work across projects?",
+    "category": "open_loop",
+    "required_capabilities": ["open_loop_tracking", "open_loop_history", "source_provenance"],
+    "evidence_paths": [
+      "scripts/open-loop.mjs",
+      "tests/memory-runtime-hardening.test.mjs",
+      "references/open-loops.md"
+    ]
+  },
+  {
+    "id": "q21-public-benchmark-position",
+    "question": "Where does Memory v2 stand relative to public memory benchmarks such as LongMemEval, LoCoMo, BEAM, and AMB?",
+    "category": "benchmark_alignment",
+    "required_capabilities": ["benchmark_alignment", "executable_eval", "source_provenance"],
+    "evidence_paths": [
+      "docs/evals/2026-05-11-memory-public-benchmarks.md",
+      "scripts/memory-eval.mjs",
+      "tests/memory-runtime-hardening.test.mjs"
+    ]
   }
 ]

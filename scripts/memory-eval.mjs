@@ -89,6 +89,7 @@ function assertBaselines(baselines) {
   const requiredIds = new Set([
     "current_markdown_lookup",
     "thin_0th_local_layer",
+    "memory_v2_runtime_hardened",
     "gbrain_task_manager_pattern",
     "mempalace_verbatim_pattern",
     "agentmemory_lifecycle_profile_pattern",

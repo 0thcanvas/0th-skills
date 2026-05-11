@@ -5,8 +5,10 @@ import path from "node:path";
 import process from "node:process";
 import { runOpenLoopBriefGeneration } from "./open-loop-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
-import { resolveTaskPaths } from "./runtime-state.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
+import { resolveAllProjectStateDirs, resolveTaskPaths } from "./runtime-state.mjs";
 
 export const OPEN_LOOP_STATUSES = ["open", "blocked", "done", "dropped"];
 export const OPEN_LOOP_PRIORITIES = ["P0", "P1", "P2", "P3"];
@@ -74,6 +76,7 @@ export function normalizeOpenLoop(input, {
   const priority = maybeText(input.priority) || "P2";
   const nextAction = maybeText(input.next_action ?? input.nextAction);
   const evidencePath = maybeText(input.evidence_path ?? input.evidencePath);
+  const evidenceIds = normalizeList(input.evidence_ids ?? input.evidence_id ?? input.evidenceId);
   const sourcePaths = normalizeList(input.source_paths ?? input.source_path ?? input.sourcePath);
   const createdAt = input.created_at ?? now.toISOString();
   const updatedAt = input.updated_at ?? createdAt;
@@ -84,9 +87,27 @@ export function normalizeOpenLoop(input, {
   assertAllowed("scope", scope, OPEN_LOOP_SCOPES);
   assertAllowed("status", status, OPEN_LOOP_STATUSES);
   assertAllowed("priority", priority, OPEN_LOOP_PRIORITIES);
-  if (!evidencePath && sourcePaths.length === 0) {
-    throw new Error("evidence_path or at least one source_path is required");
+  if (!evidencePath && sourcePaths.length === 0 && evidenceIds.length === 0) {
+    throw new Error("evidence_path, evidence_id, or at least one source_path is required");
   }
+
+  // PR #21 review: open-loop records get the same secret-shape guard as
+  // memory claims and evidence records. The `next_action` and `blocked_reason`
+  // fields are the most common leak vector — a hurried agent jots
+  // "rotate ghp_… and rerun" instead of using a reference.
+  assertNoSecretLikeText([
+    input.id,
+    title,
+    nextAction,
+    evidencePath,
+    maybeText(input.project),
+    maybeText(input.repo),
+    maybeText(input.owner),
+    maybeText(input.blocked_reason ?? input.blockedReason),
+    maybeText(input.drop_reason ?? input.dropReason),
+    ...evidenceIds,
+    ...sourcePaths
+  ], "open loop contains secret-like content; redact it before writing");
 
   const loop = {
     id: uniqueId({
@@ -102,7 +123,15 @@ export function normalizeOpenLoop(input, {
     priority,
     next_action: nextAction,
     created_at: createdAt,
-    updated_at: updatedAt
+    updated_at: updatedAt,
+    history: [
+      {
+        at: createdAt,
+        event: "created",
+        status,
+        next_action: nextAction
+      }
+    ]
   };
 
   for (const [key, value] of [
@@ -120,6 +149,7 @@ export function normalizeOpenLoop(input, {
   }
 
   if (evidencePath) loop.evidence_path = evidencePath;
+  if (evidenceIds.length > 0) loop.evidence_ids = evidenceIds;
   if (sourcePaths.length > 0) loop.source_paths = sourcePaths;
 
   return loop;
@@ -128,6 +158,19 @@ export function normalizeOpenLoop(input, {
 function regenerateBrief({ cwd, taskFile, briefFile, updateBrief }) {
   if (!updateBrief) return null;
   return runOpenLoopBriefGeneration({ cwd, taskFile, outputFile: briefFile });
+}
+
+function regenerateBriefSafely({ cwd, taskFile, briefFile, updateBrief }) {
+  let brief = null;
+  let briefError = null;
+  if (updateBrief) {
+    try {
+      brief = regenerateBrief({ cwd, taskFile, briefFile, updateBrief });
+    } catch (err) {
+      briefError = err.message;
+    }
+  }
+  return { brief, briefError };
 }
 
 export function addOpenLoop({
@@ -143,25 +186,29 @@ export function addOpenLoop({
   const resolvedBriefFile = briefFile ?? (
     taskFile ? path.join(path.dirname(resolvedTaskFile), "brief.md") : defaults.briefFile
   );
-  const existingLoops = readJsonl(resolvedTaskFile);
-  const loop = normalizeOpenLoop(input, { existingLoops, now });
-  writeJsonlAtomic(resolvedTaskFile, [...existingLoops, loop]);
-  const brief = regenerateBrief({
-    cwd,
-    taskFile: resolvedTaskFile,
-    briefFile: resolvedBriefFile,
-    updateBrief
-  });
+  return withFileLock(resolvedTaskFile, (lockState) => {
+    const existingLoops = readJsonl(resolvedTaskFile);
+    const loop = normalizeOpenLoop(input, { existingLoops, now });
+    writeJsonlAtomic(resolvedTaskFile, [...existingLoops, loop]);
+    const { brief, briefError } = regenerateBriefSafely({
+      cwd,
+      taskFile: resolvedTaskFile,
+      briefFile: resolvedBriefFile,
+      updateBrief
+    });
 
-  return {
-    task_file: resolvedTaskFile,
-    brief_file: updateBrief ? resolvedBriefFile : null,
-    id: loop.id,
-    status: loop.status,
-    priority: loop.priority,
-    written: true,
-    brief_updated: Boolean(brief)
-  };
+    return {
+      task_file: resolvedTaskFile,
+      brief_file: updateBrief ? resolvedBriefFile : null,
+      id: loop.id,
+      status: loop.status,
+      priority: loop.priority,
+      written: true,
+      brief_updated: Boolean(brief),
+      brief_error: briefError,
+      lock: visibleLockState(lockState)
+    };
+  });
 }
 
 function sortLoops(left, right) {
@@ -179,16 +226,23 @@ export function listOpenLoops({
   cwd = process.cwd(),
   taskFile = null,
   includeClosed = false,
-  status = null
+  status = null,
+  allProjects = false
 } = {}) {
-  const resolvedTaskFile = taskFile ?? resolveTaskPaths({ cwd }).taskFile;
-  const loops = readJsonl(resolvedTaskFile)
+  const taskFiles = allProjects
+    ? resolveAllProjectStateDirs().projectDirs
+      .map((projectDir) => path.join(projectDir, "tasks", "open-loops.jsonl"))
+      .filter((filePath) => fs.existsSync(filePath))
+    : [taskFile ?? resolveTaskPaths({ cwd }).taskFile];
+  const loops = taskFiles
+    .flatMap((filePath) => readJsonl(filePath).map((loop) => ({ ...loop, task_file: filePath })))
     .filter((loop) => includeClosed || loop.status === "open" || loop.status === "blocked")
     .filter((loop) => !status || loop.status === status)
     .sort(sortLoops);
 
   return {
-    task_file: resolvedTaskFile,
+    task_file: allProjects ? null : taskFiles[0],
+    task_files: taskFiles,
     loop_count: loops.length,
     loops
   };
@@ -208,6 +262,7 @@ export function updateOpenLoopStatus({
   dropReason = null,
   nextAction = null,
   evidencePath = null,
+  evidenceIds = [],
   sourcePaths = [],
   now = new Date(),
   updateBrief = true
@@ -220,76 +275,113 @@ export function updateOpenLoopStatus({
   const resolvedBriefFile = briefFile ?? (
     taskFile ? path.join(path.dirname(resolvedTaskFile), "brief.md") : defaults.briefFile
   );
-  const loops = readJsonl(resolvedTaskFile);
-  const index = loops.findIndex((loop) => loop.id === id);
-  if (index === -1) throw new Error(`open loop not found: ${id}`);
+  return withFileLock(resolvedTaskFile, (lockState) => {
+    const loops = readJsonl(resolvedTaskFile);
+    const index = loops.findIndex((loop) => loop.id === id);
+    if (index === -1) throw new Error(`open loop not found: ${id}`);
 
-  const updatedAt = now.toISOString();
-  const current = loops[index];
-  const next = {
-    ...current,
-    status,
-    updated_at: updatedAt
-  };
+    // PR #21 review verifier finding C-partial: pre-fix, only the
+    // `add` path scanned for secret shapes. Status updates (`block`, `close`,
+    // `drop`, `reopen`) accepted `blocked_reason` / `drop_reason` /
+    // `next_action` / `evidence_path` / `source_paths` from the caller and
+    // wrote them straight into the loop record + history without the
+    // redaction guard. The most common leak vector is a hurried `block`
+    // reason like "rotate ghp_… and rerun".
+    assertNoSecretLikeText([
+      maybeText(blockedReason),
+      maybeText(dropReason),
+      maybeText(nextAction),
+      maybeText(evidencePath),
+      ...normalizeList(evidenceIds),
+      ...normalizeList(sourcePaths)
+    ], "open-loop status update contains secret-like content; redact it before writing");
 
-  const nextActionText = maybeText(nextAction);
-  if (nextActionText) next.next_action = nextActionText;
+    const updatedAt = now.toISOString();
+    const current = loops[index];
+    const next = {
+      ...current,
+      status,
+      updated_at: updatedAt
+    };
 
-  const blockedReasonText = maybeText(blockedReason);
-  if (status === "blocked") {
-    if (!blockedReasonText && !next.blocked_reason) {
-      throw new Error("blocked_reason is required when blocking an open loop");
+    const nextActionText = maybeText(nextAction);
+    if (nextActionText) next.next_action = nextActionText;
+
+    const blockedReasonText = maybeText(blockedReason);
+    if (status === "blocked") {
+      if (!blockedReasonText && !next.blocked_reason) {
+        throw new Error("blocked_reason is required when blocking an open loop");
+      }
+      if (blockedReasonText) next.blocked_reason = blockedReasonText;
+    } else if (status === "open") {
+      delete next.blocked_reason;
+      delete next.closed_at;
+      delete next.dropped_at;
+      delete next.drop_reason;
     }
-    if (blockedReasonText) next.blocked_reason = blockedReasonText;
-  } else if (status === "open") {
-    delete next.blocked_reason;
-  }
 
-  if (status === "done") {
-    next.closed_at = updatedAt;
-    delete next.blocked_reason;
-  }
-
-  const dropReasonText = maybeText(dropReason);
-  if (status === "dropped") {
-    if (!dropReasonText && !next.drop_reason) {
-      throw new Error("drop_reason is required when dropping an open loop");
+    if (status === "done") {
+      next.closed_at = updatedAt;
+      delete next.blocked_reason;
     }
-    if (dropReasonText) next.drop_reason = dropReasonText;
-    next.dropped_at = updatedAt;
-    delete next.blocked_reason;
-  }
 
-  const evidencePathText = maybeText(evidencePath);
-  if (evidencePathText) next.evidence_path = evidencePathText;
-  const mergedSourcePaths = mergeSourcePaths(next.source_paths, sourcePaths);
-  if (mergedSourcePaths.length > 0) next.source_paths = mergedSourcePaths;
+    const dropReasonText = maybeText(dropReason);
+    if (status === "dropped") {
+      if (!dropReasonText && !next.drop_reason) {
+        throw new Error("drop_reason is required when dropping an open loop");
+      }
+      if (dropReasonText) next.drop_reason = dropReasonText;
+      next.dropped_at = updatedAt;
+      delete next.blocked_reason;
+    }
 
-  loops[index] = next;
-  writeJsonlAtomic(resolvedTaskFile, loops);
-  const brief = regenerateBrief({
-    cwd,
-    taskFile: resolvedTaskFile,
-    briefFile: resolvedBriefFile,
-    updateBrief
+    const evidencePathText = maybeText(evidencePath);
+    if (evidencePathText) next.evidence_path = evidencePathText;
+    const mergedEvidenceIds = mergeSourcePaths(next.evidence_ids, evidenceIds);
+    if (mergedEvidenceIds.length > 0) next.evidence_ids = mergedEvidenceIds;
+    const mergedSourcePaths = mergeSourcePaths(next.source_paths, sourcePaths);
+    if (mergedSourcePaths.length > 0) next.source_paths = mergedSourcePaths;
+
+    next.history = [
+      ...(Array.isArray(current.history) ? current.history : []),
+      {
+        at: updatedAt,
+        event: status === "open" ? "reopened" : status,
+        status,
+        blocked_reason: next.blocked_reason,
+        drop_reason: next.drop_reason,
+        next_action: next.next_action
+      }
+    ];
+
+    loops[index] = next;
+    writeJsonlAtomic(resolvedTaskFile, loops);
+    const { brief, briefError } = regenerateBriefSafely({
+      cwd,
+      taskFile: resolvedTaskFile,
+      briefFile: resolvedBriefFile,
+      updateBrief
+    });
+
+    // Echo back the lifecycle-relevant reason/action fields so the CLI's JSON
+    // output self-documents what was recorded; previously the user had to
+    // re-read the JSONL to confirm their --blocked-reason / --drop-reason
+    // actually landed. This also makes --json-driven invocations testable
+    // without coupling tests to the on-disk format.
+    return {
+      task_file: resolvedTaskFile,
+      brief_file: updateBrief ? resolvedBriefFile : null,
+      id: next.id,
+      status: next.status,
+      updated: true,
+      brief_updated: Boolean(brief),
+      brief_error: briefError,
+      blocked_reason: next.blocked_reason ?? null,
+      drop_reason: next.drop_reason ?? null,
+      next_action: next.next_action ?? null,
+      lock: visibleLockState(lockState)
+    };
   });
-
-  // Echo back the lifecycle-relevant reason/action fields so the CLI's JSON
-  // output self-documents what was recorded; previously the user had to
-  // re-read the JSONL to confirm their --blocked-reason / --drop-reason
-  // actually landed. This also makes --json-driven invocations testable
-  // without coupling tests to the on-disk format.
-  return {
-    task_file: resolvedTaskFile,
-    brief_file: updateBrief ? resolvedBriefFile : null,
-    id: next.id,
-    status: next.status,
-    updated: true,
-    brief_updated: Boolean(brief),
-    blocked_reason: next.blocked_reason ?? null,
-    drop_reason: next.drop_reason ?? null,
-    next_action: next.next_action ?? null
-  };
 }
 
 function readJsonArg(filePath) {
@@ -335,6 +427,10 @@ function parseArgs(argv) {
     }
     if (token === "--all") {
       options.includeClosed = true;
+      continue;
+    }
+    if (token === "--all-projects") {
+      options.allProjects = true;
       continue;
     }
     if (token === "--status") {
@@ -384,6 +480,11 @@ function parseArgs(argv) {
       options.evidencePath = options.explicitInput.evidence_path;
       continue;
     }
+    if (token === "--evidence-id") {
+      pushListOption(options.explicitInput, "evidence_ids", rest[++index]);
+      options.evidenceIds = options.explicitInput.evidence_ids;
+      continue;
+    }
     if (token === "--source-path") {
       pushListOption(options.explicitInput, "source_paths", rest[++index]);
       options.sourcePaths = options.explicitInput.source_paths;
@@ -409,9 +510,9 @@ function parseArgs(argv) {
 
 function helpText() {
   return [
-    "Usage: node scripts/open-loop.mjs <add|list|block|close|drop> [options]",
+    "Usage: node scripts/open-loop.mjs <add|list|block|close|drop|reopen> [options]",
     "",
-    "add requires --title, --scope, --next-action, and --evidence-path or --source-path.",
+    "add requires --title, --scope, --next-action, and --evidence-path, --source-path, or --evidence-id.",
     "block requires --id and --blocked-reason. drop requires --id and --drop-reason.",
     "The generated task brief in the user-level runtime state directory is updated unless --no-brief is passed.",
     ""
@@ -436,7 +537,8 @@ function main() {
       cwd: process.cwd(),
       taskFile: options.taskFile,
       includeClosed: options.includeClosed,
-      status: options.status
+      status: options.status,
+      allProjects: options.allProjects
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -459,6 +561,7 @@ function main() {
   const dropReason = options.dropReason ?? fromInput.drop_reason;
   const nextAction = options.nextAction ?? fromInput.next_action;
   const evidencePath = options.evidencePath ?? fromInput.evidence_path;
+  const evidenceIds = options.evidenceIds ?? fromInput.evidence_ids;
   const sourcePaths = options.sourcePaths ?? fromInput.source_paths;
 
   if (options.command === "block") {
@@ -470,6 +573,7 @@ function main() {
       blockedReason,
       nextAction,
       evidencePath,
+      evidenceIds,
       sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -483,6 +587,7 @@ function main() {
       id,
       status: "done",
       evidencePath,
+      evidenceIds,
       sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -497,6 +602,22 @@ function main() {
       status: "dropped",
       dropReason,
       evidencePath,
+      evidenceIds,
+      sourcePaths
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    return;
+  }
+
+  if (options.command === "reopen") {
+    const result = updateOpenLoopStatus({
+      cwd: process.cwd(),
+      ...options,
+      id,
+      status: "open",
+      nextAction,
+      evidencePath,
+      evidenceIds,
       sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

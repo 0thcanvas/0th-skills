@@ -5,7 +5,9 @@ import path from "node:path";
 import process from "node:process";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 export const MEMORY_TYPES = [
@@ -79,6 +81,7 @@ export function normalizeMemoryClaim(input, {
   const scope = input.scope ?? "repo";
   const sourcePaths = normalizeList(input.source_paths ?? input.source_path);
   const sourceSymbols = normalizeList(input.source_symbols ?? input.source_symbol);
+  const evidenceIds = normalizeList(input.evidence_ids ?? input.evidence_id);
   const supersedes = normalizeList(input.supersedes);
   const supersededBy = normalizeList(input.superseded_by);
   const evidencePath = input.evidence_path ? String(input.evidence_path).trim() : "";
@@ -94,12 +97,30 @@ export function normalizeMemoryClaim(input, {
   assertAllowed("lifecycle_state", lifecycleState, LIFECYCLE_STATES);
   assertAllowed("scope", scope, SCOPES);
 
-  if (!evidencePath && sourcePaths.length === 0) {
-    throw new Error("evidence_path or at least one source_path is required");
+  if (!evidencePath && sourcePaths.length === 0 && evidenceIds.length === 0) {
+    throw new Error("evidence_path, evidence_id, or at least one source_path is required");
   }
   if (!confidence && !reviewCaveat) {
     throw new Error("confidence or review_caveat is required");
   }
+
+  // PR #21 review: every JSONL writer must enforce the same secret-shape
+  // guard before the value lands on disk. Pre-fix, only `evidence.mjs` did —
+  // an agent could write `evidence_path: https://user:s3cr3t@host/x` to a
+  // memory claim and the value would be re-emitted by `memory-brief.mjs` into
+  // the agent-readable startup brief. See `scripts/lib/redaction.mjs` for the
+  // pattern set and `tests/redaction.test.mjs` for adversarial coverage.
+  assertNoSecretLikeText([
+    input.id,
+    String(input.claim),
+    evidencePath,
+    reviewCaveat,
+    ...evidenceIds,
+    ...sourcePaths,
+    ...sourceSymbols,
+    ...supersedes,
+    ...supersededBy
+  ], "memory claim contains secret-like content; redact it before writing");
 
   const claim = {
     id: uniqueId({
@@ -120,6 +141,7 @@ export function normalizeMemoryClaim(input, {
   if (confidence) claim.confidence = confidence;
   if (reviewCaveat) claim.review_caveat = reviewCaveat;
   if (evidencePath) claim.evidence_path = evidencePath;
+  if (evidenceIds.length > 0) claim.evidence_ids = evidenceIds;
   if (sourcePaths.length > 0) claim.source_paths = sourcePaths;
   if (sourceSymbols.length > 0) claim.source_symbols = sourceSymbols;
   if (supersedes.length > 0) claim.supersedes = supersedes;
@@ -145,37 +167,40 @@ export function appendMemoryClaim({
   const resolvedBriefFile = briefFile ?? (
     memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
   );
-  const existingClaims = readJsonl(resolvedMemoryFile);
-  const claim = normalizeMemoryClaim(input, { existingClaims, now });
-  const nextClaims = [...existingClaims, claim];
-  writeJsonlAtomic(resolvedMemoryFile, nextClaims);
+  return withFileLock(resolvedMemoryFile, (lockState) => {
+    const existingClaims = readJsonl(resolvedMemoryFile);
+    const claim = normalizeMemoryClaim(input, { existingClaims, now });
+    const nextClaims = [...existingClaims, claim];
+    writeJsonlAtomic(resolvedMemoryFile, nextClaims);
 
-  // The claim is already on disk by this point. If runBriefGeneration throws
-  // (permissions, disk full, brief target is a directory), we must NOT lose
-  // the fact that the write succeeded — otherwise the caller treats the
-  // whole operation as a failure and a retry hits uniqueId-collision
-  // ("memory id already exists"), trapping the user. Capture the brief
-  // error and surface it as a non-fatal field on the success record.
-  let brief = null;
-  let briefError = null;
-  if (updateBrief) {
-    try {
-      brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
-    } catch (err) {
-      briefError = err.message;
+    // The claim is already on disk by this point. If runBriefGeneration throws
+    // (permissions, disk full, brief target is a directory), we must NOT lose
+    // the fact that the write succeeded — otherwise the caller treats the
+    // whole operation as a failure and a retry hits uniqueId-collision
+    // ("memory id already exists"), trapping the user. Capture the brief
+    // error and surface it as a non-fatal field on the success record.
+    let brief = null;
+    let briefError = null;
+    if (updateBrief) {
+      try {
+        brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+      } catch (err) {
+        briefError = err.message;
+      }
     }
-  }
 
-  return {
-    memory_file: resolvedMemoryFile,
-    brief_file: updateBrief ? resolvedBriefFile : null,
-    id: claim.id,
-    type: claim.type,
-    lifecycle_state: claim.lifecycle_state,
-    written: true,
-    brief_updated: Boolean(brief),
-    brief_error: briefError
-  };
+    return {
+      memory_file: resolvedMemoryFile,
+      brief_file: updateBrief ? resolvedBriefFile : null,
+      id: claim.id,
+      type: claim.type,
+      lifecycle_state: claim.lifecycle_state,
+      written: true,
+      brief_updated: Boolean(brief),
+      brief_error: briefError,
+      lock: visibleLockState(lockState)
+    };
+  });
 }
 
 function readJsonArg(filePath) {
@@ -255,6 +280,10 @@ function parseArgs(argv) {
       options.input.evidence_path = argv[++index];
       continue;
     }
+    if (token === "--evidence-id") {
+      pushListOption(options.input, "evidence_ids", argv[++index]);
+      continue;
+    }
     if (token === "--source-path") {
       pushListOption(options.input, "source_paths", argv[++index]);
       continue;
@@ -284,7 +313,8 @@ function main() {
     process.stdout.write([
       "Usage: node scripts/memory-write.mjs --type TYPE --claim TEXT --evidence-path PATH --confidence LEVEL [options]",
       "",
-      "Required for durable writes: --type, --claim, --scope, evidence/source path, and --confidence or --review-caveat.",
+      "Required for durable writes: --type, --claim, evidence/source path, and --confidence or --review-caveat.",
+      "Optional: --scope SCOPE (defaults to 'repo'; one of repo/project/domain/user/global).",
       "Use --json FILE for richer inputs. The generated brief is updated unless --no-brief is passed.",
       ""
     ].join("\n"));

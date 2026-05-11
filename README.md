@@ -154,8 +154,11 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
-### Unreleased
+### 0.3.0
 
+- Added Memory v2 runtime hardening: a unified `scripts/memory.mjs` surface for recall, expand, write, preflight, repo-state, evidence, open-loop, maintenance, and runtime eval workflows.
+- Moved generated Memory v2 state toward agent-first local runtime files with evidence pointers, lifecycle metadata, generated startup briefs, first-class open loops, and explicit maintenance reports.
+- Hardened Memory v2 runtime safety with locked JSONL writes, stale/release-failed lock recovery, atomic brief/repo-state writes, repo drift reconciliation, shared redaction guards, and regression tests for concurrent writes, stale state, and secret-like inputs.
 - Added the Product Acceptance Loop to `/build`: completed features now produce `verification-report/product-acceptance.json`, run an experience reviewer for complex/UI/content-heavy work, move code/diff counterpart review into build evidence, and leave `/ship` as a lightweight evidence and PR hygiene gate.
 - Added visual invariant guardrails: frontend work must name what could visually fail and verify the claim with screenshot or pixel evidence instead of treating DOM tests as visual proof.
 - Added mirrored Claude/Codex `experience-reviewer` agents plus parity and workflow tests so product, UX, learner-fit, and copy-quality review stay available on both hosts.
@@ -276,8 +279,19 @@ Review state is stored at:
 
 Use `--state-dir` for a one-off override.
 
-Memory v2 runtime state is also local user state, not project-repo content. By default the memory
-and open-loop scripts store generated JSONL/brief files at:
+Memory v2 runtime state is also local user state, not project-repo content. Normal agents should
+use the unified command surface:
+
+```bash
+node scripts/memory.mjs preflight
+node scripts/memory.mjs brief
+node scripts/memory.mjs task-brief
+node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs runtime-eval
+```
+
+By default the memory, evidence, repo-state, and open-loop commands store generated JSONL/brief
+files at:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` if set
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` if `XDG_STATE_HOME` is set
@@ -285,7 +299,10 @@ and open-loop scripts store generated JSONL/brief files at:
 
 The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
 the same repo share one local Memory v2 state directory. Each command prints the concrete file path
-it read or wrote in its JSON result. Use explicit path flags only for tests or migration work.
+it read or wrote in its JSON result. `memory.mjs` is the unified entrypoint; the per-command
+scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold the canonical
+implementation. Direct invocation is supported for tests and migration work; explicit path flags
+only matter when you need to override the default project-keyed runtime location.
 
 ## Verification
 

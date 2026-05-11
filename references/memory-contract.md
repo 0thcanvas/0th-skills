@@ -3,8 +3,8 @@
 This contract defines how 0th skills decide whether new knowledge should become memory.
 
 Memory is workflow-integrated: capture happens at meaningful events, not only at session end.
-Markdown artifacts remain the evidence layer; generated briefs and indexes are the machine-facing
-recall layer.
+Markdown artifacts remain the human-review evidence layer; generated briefs, local evidence
+records, compact recall, and expand-by-id are the machine-facing recall layer.
 
 ## Runtime State
 
@@ -43,10 +43,43 @@ or deliberate migration work.
 Open loops are unfinished actions, blockers, and handoff items. They are not durable memory
 claims; do not store TODOs as memory claims.
 
-Track open loops through `scripts/open-loop.mjs`, then generate the open-loop brief with
-`scripts/open-loop-brief.mjs` at session start after the memory brief. Use `repo` scope for work
+Track open loops through `scripts/memory.mjs open-loop`, then generate the open-loop brief with
+`scripts/memory.mjs task-brief` at session start after the memory brief. Use `repo` scope for work
 tied to one checkout, `project` scope for work spanning repos in the same product, and `global`
-scope only for cross-project operating concerns.
+scope only for cross-project operating concerns. `memory.mjs` is the unified entrypoint; the
+named per-command scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold
+the canonical implementation and remain usable directly for tests and migration work.
+
+Normal agents should use the unified entrypoint:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop list
+```
+
+The per-command scripts hold the canonical implementation; `memory.mjs` only routes. Direct
+invocation of `scripts/memory-write.mjs`, `scripts/open-loop.mjs`, etc. is supported for tests
+and migration tooling.
+
+## Evidence Records
+
+Evidence records are local provenance events under the same user/runtime state root as claims and
+open loops. They capture the workflow event that produced a claim or action without committing
+generated state to the product repo.
+
+Evidence records include:
+
+- `id`
+- `event_type`: decision, exploration, repo_update, test, ship, research, user_correction,
+  open_loop, or maintenance
+- `scope`: repo, project, domain, user, or global
+- `summary`
+- `observed_at`
+- `redaction_status`: no_secrets_observed, redacted, or secret_reference_only
+- optional `source_paths`, `evidence_paths`, and `related_ids`
+
+Secret-bearing values must never be written to evidence records. The evidence writer rejects
+obvious token/API-key shapes, but the workflow still depends on agents recording source pointers
+and redacted summaries rather than raw transcript dumps.
 
 ## Memory Write Gate
 
@@ -79,13 +112,15 @@ If the outcome is `nothing durable`, write nothing and say so only when the user
 
 ## Canonical Writer
 
-Durable memory claims must be written through `scripts/memory-write.mjs`; do not hand-edit
-the runtime `claims.jsonl`.
+Durable memory claims must be written through `scripts/memory.mjs remember`; do not hand-edit
+the runtime `claims.jsonl`. The canonical implementation lives in `scripts/memory-write.mjs`;
+`scripts/memory.mjs` is a routing dispatcher and direct invocation of `scripts/memory-write.mjs`
+is supported for tests and migration tooling.
 
 Minimum command shape:
 
 ```bash
-node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory-write.mjs" \
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember \
   --type decision \
   --claim "Use write-through memory events instead of session-end hooks." \
   --scope repo \
@@ -94,33 +129,28 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --confidence high
 ```
 
-The writer validates required fields, appends one JSONL claim, rejects duplicate explicit ids,
-and regenerates the memory brief unless `--no-brief` is passed. `scripts/memory-sync.mjs` and
-`scripts/read-set-reconcile.mjs` also refresh the brief whenever they update any claim, so the
-brief never lags lifecycle-state changes. If brief regeneration fails (filesystem error, disk
-full, brief target is a directory), the claim or lifecycle update is preserved and the failure
-surfaces on the result as `brief_error` — the writer never silently drops a successful claim
-because the brief refresh threw.
+The writer validates required fields, appends one JSONL claim under a local file lock, rejects
+duplicate explicit ids, and regenerates the memory brief unless `--no-brief` is passed.
+`memory sync`, `memory reconcile`, and `memory maintain --apply` also refresh the brief whenever
+they update any claim, so the brief never lags lifecycle-state changes. If brief regeneration
+fails (filesystem error, disk full, brief target is a directory), the claim or lifecycle update is
+preserved and the failure surfaces on the result as `brief_error` — the writer never silently
+drops a successful claim because the brief refresh threw.
 
-`evidence_path` vs `source_paths`: `evidence_path` is a single path to the proof artifact that
-justifies the claim (the decision record, dossier, or doc you would point a human at to defend
-the claim). `source_paths` is the list of code or document paths the claim is *about* — the
-files that, if they change, should mark the claim `needs_review`. A claim can have one
-`evidence_path` and zero or more `source_paths`; supplying neither is a validation error.
+`evidence_path` vs `evidence_ids` vs `source_paths`: `evidence_path` is a single path to the
+proof artifact that justifies the claim (the decision record, dossier, or doc you would point a
+human at to defend the claim). `evidence_ids` cite local evidence records. `source_paths` is the
+list of code or document paths the claim is *about* — the files that, if they change, should mark
+the claim `needs_review`. A claim can have one `evidence_path`, one or more `evidence_ids`, and
+zero or more `source_paths`; supplying none of these is a validation error.
 
 ## Concurrency
 
-The canonical writer and the open-loop writer both use a read-modify-write cycle with an atomic
-`tmp + rename`. That guards against torn writes from a single process, but it does **not**
-guard against lost updates under concurrent writers: if two processes (e.g., two `/build`
-sessions on the same checkout, or `memory-write` overlapping with the auto-sync inside
-`session-preflight`) both read the JSONL at time T, both append their own claim, and both
-rename, whichever renames last wins and the other claim is silently lost.
-
-Memory v2 assumes a **single writer per project runtime directory**. If you run multiple agents or
-shells against the same generated memory/task files, serialize the writes yourself (one CLI at a
-time, or a wrapper that takes an exclusive lock). A future revision may add `flock`-style locking;
-until then the contract is documented above so silent loss does not surprise anyone.
+Memory, evidence, repo-state, and open-loop mutations take a local file lock before the
+read-modify-write cycle. The lock prevents silent lost updates when multiple hooks or agents write
+the same project runtime directory. If a lock is stale, the command removes it deterministically
+and reports `lock.stale_removed: true`; if a live lock cannot be acquired before timeout, the
+command fails visibly rather than racing.
 
 ## Sync Granularity
 
@@ -143,5 +173,24 @@ Each claim in the runtime `claims.jsonl` is one JSON object with:
 - `lifecycle_state` — one of the Lifecycle States above.
 - `created_at` and `last_confirmed_at` — ISO timestamps.
 - `confidence` or `review_caveat`.
-- `evidence_path` or at least one `source_paths` entry.
+- `evidence_path`, at least one `evidence_ids` entry, or at least one `source_paths` entry.
 - Optional `source_symbols`, `supersedes`, and `superseded_by`.
+
+## Recall and Maintenance
+
+Use compact recall before expanding detail:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" recall \
+  --query "repo preflight stale memory" \
+  --limit 5
+```
+
+Recall returns ranked compact records with `id`, kind/type, lifecycle state, confidence or caveat,
+timestamps, snippets, and source pointers. Use `memory expand --id <id>` to fetch the full record.
+If no record matches, recall/expand returns an abstention-shaped result instead of inventing.
+
+Use `memory maintain` to report stale claims, duplicate candidates, missing sources, orphan open
+loops, supersession candidates, and repo drift. `memory maintain --apply` may perform conservative
+source-backed lifecycle changes, such as marking duplicate candidates `needs_review`; it does not
+destructively delete memory.

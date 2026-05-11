@@ -37,7 +37,7 @@ function readJsonl(filePath) {
 test("normalizeMemoryClaim validates required memory contract fields", () => {
   assert.throws(
     () => normalizeMemoryClaim({ type: "decision", claim: "x", confidence: "high" }),
-    /evidence_path or at least one source_path/
+    /evidence_path, evidence_id, or at least one source_path/
   );
   assert.throws(
     () => normalizeMemoryClaim({

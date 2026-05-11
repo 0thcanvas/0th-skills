@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -97,6 +98,28 @@ export function resolveMemoryPaths({
   };
 }
 
+export function resolveEvidencePaths({
+  cwd = process.cwd(),
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const projectDir = resolveProjectStateDir({ cwd, env, homeDir });
+  return {
+    evidenceFile: path.join(projectDir, "evidence", "events.jsonl")
+  };
+}
+
+export function resolveRepoStatePaths({
+  cwd = process.cwd(),
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const projectDir = resolveProjectStateDir({ cwd, env, homeDir });
+  return {
+    repoStateFile: path.join(projectDir, "repo", "state.json")
+  };
+}
+
 export function resolveTaskPaths({
   cwd = process.cwd(),
   env = process.env,
@@ -106,5 +129,22 @@ export function resolveTaskPaths({
   return {
     taskFile: path.join(projectDir, "tasks", "open-loops.jsonl"),
     briefFile: path.join(projectDir, "tasks", "brief.md")
+  };
+}
+
+export function resolveAllProjectStateDirs({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const projectsRoot = path.join(resolveStateRoot({ env, homeDir }), "projects");
+  const projectDirs = fs.existsSync(projectsRoot)
+    ? fs.readdirSync(projectsRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => path.join(projectsRoot, entry.name))
+      .sort()
+    : [];
+  return {
+    projectsRoot,
+    projectDirs
   };
 }

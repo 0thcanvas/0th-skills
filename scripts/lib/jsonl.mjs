@@ -65,3 +65,17 @@ export function writeJsonlAtomic(filePath, entries) {
   fs.writeFileSync(tmpPath, body);
   fs.renameSync(tmpPath, filePath);
 }
+
+/**
+ * Write arbitrary text to `filePath` atomically (tmp + rename). Used by the
+ * memory and open-loop brief generators (PR #21 review NEW4). Pre-fix, the
+ * briefs were written via direct `fs.writeFileSync`, so a crash mid-write
+ * truncated the agent's startup brief and a concurrent reader saw a
+ * partial file.
+ */
+export function writeTextAtomic(filePath, body) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const tmpPath = `${filePath}.${process.pid}.tmp`;
+  fs.writeFileSync(tmpPath, body);
+  fs.renameSync(tmpPath, filePath);
+}
