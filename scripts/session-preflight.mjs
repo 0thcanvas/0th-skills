@@ -3,6 +3,7 @@
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { runMemorySync } from "./memory-sync.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 function runGit(cwd, args, { allowFailure = false } = {}) {
   try {
@@ -74,8 +75,17 @@ export function runPreflight({
     action = "blocked_dirty_behind";
     warnings.push("branch is behind upstream but working tree is dirty; refusing to auto-pull");
   } else if (behind > 0 && allowPull) {
-    runGit(repoRoot, ["pull", "--ff-only"]);
-    action = "fast_forward_pulled";
+    // Pull with allowFailure so a failed --ff-only (ref-lock contention,
+    // remote moved between fetch and pull, hook rejection) doesn't erase
+    // the structured preflight result. The agent gets a named action +
+    // warning instead of a raw git stack trace.
+    const pullResult = runGit(repoRoot, ["pull", "--ff-only"], { allowFailure: true });
+    if (pullResult === null) {
+      action = "fast_forward_failed";
+      warnings.push("git pull --ff-only failed after a successful fetch; HEAD is unchanged");
+    } else {
+      action = "fast_forward_pulled";
+    }
   } else if (behind > 0) {
     action = "fast_forward_available";
   } else if (ahead > 0) {
@@ -84,12 +94,21 @@ export function runPreflight({
 
   const afterHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
   if (action === "fast_forward_pulled") {
-    memorySync = runMemorySync({
-      cwd: repoRoot,
-      from: beforeHead,
-      to: afterHead,
-      ...(memoryFile ? { memoryFile } : {})
-    });
+    // Capture memory-sync failure (e.g., corrupt claims.jsonl) into the
+    // warnings array so the fast-forward result survives the failure. The
+    // pull already moved HEAD; throwing here would erase that structured
+    // signal and the user would have no idea what state the repo is in
+    // (caught by PR #19 counterpart review as N2).
+    try {
+      memorySync = runMemorySync({
+        cwd: repoRoot,
+        from: beforeHead,
+        to: afterHead,
+        ...(memoryFile ? { memoryFile } : {})
+      });
+    } catch (err) {
+      warnings.push(`memory-sync failed after fast-forward: ${err.message}`);
+    }
   }
 
   const result = {
@@ -124,7 +143,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

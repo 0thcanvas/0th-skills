@@ -24,18 +24,21 @@ const WEB_FRAMEWORK_CONFIGS = [
 
 const REAL_SESSION_PATTERN = /real[- ]session|logged[- ]in|shared[- ]tab|user'?s chrome/i;
 
+// Lookbehind `(?<![A-Za-z0-9])` rejects URL-embedded matches like
+// `https://example.com/Users/alice/...` while still accepting boundary-led
+// real home paths (preceded by whitespace, quote, comma, etc.).
 export const LOCAL_PATH_DENYLIST = [
   {
     label: "macOS user home path",
-    pattern: /\/Users\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
+    pattern: /(?<![A-Za-z0-9])\/Users\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
   },
   {
     label: "Linux user home path",
-    pattern: /\/home\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
+    pattern: /(?<![A-Za-z0-9])\/home\/[A-Za-z0-9._-]+\/[^\s`"')\]<>{}]+/
   },
   {
     label: "Windows user profile path",
-    pattern: /[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\[^\s`"')\]<>{}]+/
+    pattern: /(?<![A-Za-z0-9])[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\[^\s`"')\]<>{}]+/
   },
   {
     label: "0th Canvas checkout fallback",
@@ -43,11 +46,15 @@ export const LOCAL_PATH_DENYLIST = [
   }
 ];
 
+// readJson distinguishes "missing file" (returns null) from "exists but
+// malformed" (throws). Ship-gate must FAIL CLOSED on malformed JSON: a
+// truncated package.json must not silently empty the detected-stack set.
 function readJson(filePath) {
+  if (!existsSync(filePath)) return null;
   try {
     return JSON.parse(readFileSync(filePath, "utf8"));
-  } catch {
-    return null;
+  } catch (err) {
+    throw new Error(`ship-gate: ${filePath} exists but is not valid JSON: ${err.message}`);
   }
 }
 
@@ -178,6 +185,10 @@ export function findLocalPathLeaksInText(filePath, text, denylist = LOCAL_PATH_D
   const leaks = [];
   const lines = text.split(/\r?\n/);
 
+  // Leak records intentionally omit `snippet`/full-line content. The matched
+  // path (`match`) plus file:line is sufficient diagnostic context; echoing
+  // arbitrary line content can re-expose secrets that share a line with the
+  // local path (defense-in-depth for accidental secret commits).
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
     for (const entry of denylist) {
@@ -187,8 +198,7 @@ export function findLocalPathLeaksInText(filePath, text, denylist = LOCAL_PATH_D
         file: filePath,
         line: index + 1,
         label: entry.label,
-        match: match[0],
-        snippet: line.trim().slice(0, 180)
+        match: match[0]
       });
     }
   }
@@ -197,15 +207,24 @@ export function findLocalPathLeaksInText(filePath, text, denylist = LOCAL_PATH_D
 }
 
 export function scanTrackedFilesForLocalPathLeaks(repoPath) {
+  // Distinguish "not a git repo" (legitimately nothing tracked to scan) from
+  // "git command failed for some other reason inside a real repo" (must fail
+  // closed, never silently return [] and let leaks slip through).
+  if (!existsSync(join(repoPath, ".git"))) {
+    return [];
+  }
+
   let output;
   try {
     output = execFileSync("git", ["ls-files", "-z"], {
       cwd: repoPath,
-      stdio: ["ignore", "pipe", "ignore"],
+      stdio: ["ignore", "pipe", "pipe"],
       encoding: "utf8"
     });
-  } catch {
-    return [];
+  } catch (err) {
+    throw new Error(
+      `ship-gate: git ls-files failed inside ${repoPath}: ${err.stderr?.toString().trim() || err.message}`
+    );
   }
 
   const leaks = [];
@@ -280,6 +299,13 @@ function main() {
   process.exit(0);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+import { isInvokedAsCli } from "./lib/cli.mjs";
+
+if (isInvokedAsCli(import.meta.url)) {
+  try {
+    main();
+  } catch (err) {
+    process.stderr.write(`${err.message}\n`);
+    process.exit(1);
+  }
 }

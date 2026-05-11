@@ -93,3 +93,49 @@ test("memory sync is a no-op when the memory file does not exist", () => {
   assert.deepEqual(result.affected_claim_ids, []);
   assert.equal(result.memory_file_exists, false);
 });
+
+test("memory sync regenerates the brief after flipping lifecycle_state to needs_review", () => {
+  // PR #19 review fix: mutators that flip lifecycle_state must refresh the
+  // brief so it doesn't keep saying "active" for claims memory-sync just
+  // demoted to "needs_review". Previously brief.md stayed stale until the
+  // next memory-write.
+  const repo = tempRepo();
+  const from = sh(repo, ["git", "rev-parse", "HEAD"]);
+  fs.writeFileSync(path.join(repo, "src", "cart.js"), "export const cart = 2;\n");
+  sh(repo, ["git", "add", "src/cart.js"]);
+  sh(repo, ["git", "commit", "-m", "update cart"]);
+  const to = sh(repo, ["git", "rev-parse", "HEAD"]);
+
+  const memoryFile = path.join(repo, ".0th", "memory", "claims.jsonl");
+  fs.mkdirSync(path.dirname(memoryFile), { recursive: true });
+  fs.writeFileSync(memoryFile, JSON.stringify({
+    id: "cart-claim",
+    type: "decision",
+    claim: "Cart logic is single-line export.",
+    scope: "repo",
+    lifecycle_state: "active",
+    confidence: "high",
+    source_paths: ["src/cart.js"],
+    evidence_path: "docs/cart.md",
+    created_at: "2026-05-09T00:00:00.000Z",
+    last_confirmed_at: "2026-05-09T00:00:00.000Z"
+  }) + "\n");
+
+  const briefFile = path.join(repo, ".0th", "memory", "brief.md");
+  // Pre-populate a stale brief so we can detect whether sync refreshed it
+  fs.writeFileSync(briefFile, "STALE BRIEF\n");
+
+  const result = runMemorySync({ cwd: repo, from, to, memoryFile, briefFile });
+
+  assert.deepEqual(result.affected_claim_ids, ["cart-claim"]);
+  assert.equal(result.brief_updated, true, "brief must be regenerated when claims are mutated");
+  assert.equal(result.brief_error, null);
+
+  const brief = fs.readFileSync(briefFile, "utf8");
+  assert.ok(!brief.includes("STALE BRIEF"), "old brief content must be replaced");
+  assert.match(
+    brief,
+    /needs[ _-]?review|Repo State Warnings|cart-claim/i,
+    `brief should reflect the needs_review claim, got: ${brief.slice(0, 200)}`
+  );
+});

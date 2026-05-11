@@ -4,6 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { runBriefGeneration } from "./memory-brief.mjs";
+import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 export const MEMORY_TYPES = [
   "decision",
@@ -24,20 +26,6 @@ export const LIFECYCLE_STATES = [
 ];
 
 export const SCOPES = ["repo", "project", "domain", "user", "global"];
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
-
-function writeJsonlAtomic(filePath, entries) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.${process.pid}.tmp`;
-  fs.writeFileSync(tmpPath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-  fs.renameSync(tmpPath, filePath);
-}
 
 function normalizeList(value) {
   if (value == null) return [];
@@ -156,9 +144,20 @@ export function appendMemoryClaim({
   const nextClaims = [...existingClaims, claim];
   writeJsonlAtomic(memoryFile, nextClaims);
 
+  // The claim is already on disk by this point. If runBriefGeneration throws
+  // (permissions, disk full, brief target is a directory), we must NOT lose
+  // the fact that the write succeeded — otherwise the caller treats the
+  // whole operation as a failure and a retry hits uniqueId-collision
+  // ("memory id already exists"), trapping the user. Capture the brief
+  // error and surface it as a non-fatal field on the success record.
   let brief = null;
+  let briefError = null;
   if (updateBrief) {
-    brief = runBriefGeneration({ cwd, memoryFile, outputFile: briefFile });
+    try {
+      brief = runBriefGeneration({ cwd, memoryFile, outputFile: briefFile });
+    } catch (err) {
+      briefError = err.message;
+    }
   }
 
   return {
@@ -168,7 +167,8 @@ export function appendMemoryClaim({
     type: claim.type,
     lifecycle_state: claim.lifecycle_state,
     written: true,
-    brief_updated: Boolean(brief)
+    brief_updated: Boolean(brief),
+    brief_error: briefError
   };
 }
 
@@ -288,7 +288,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

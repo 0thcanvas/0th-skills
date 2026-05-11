@@ -104,3 +104,45 @@ test("read-set reconciliation can confirm an in-scope claim without touching unr
   assert.equal(cartClaim.review, undefined);
   assert.equal(profileClaim.last_confirmed_at, undefined);
 });
+
+test("reconcileReadSet regenerates the brief when claims are updated", () => {
+  // PR #19 review fix: reconcileReadSet flips lifecycle_state on
+  // confirmed/contradicted claims. The brief must reflect those flips
+  // immediately so agents don't read a stale view until the next
+  // memory-write.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "read-set-brief-"));
+  const memoryFile = path.join(dir, "claims.jsonl");
+  fs.writeFileSync(memoryFile, JSON.stringify({
+    id: "claim-1",
+    type: "decision",
+    claim: "Some durable claim.",
+    scope: "repo",
+    lifecycle_state: "needs_review",
+    confidence: "high",
+    source_paths: ["src/x.ts"],
+    evidence_path: "docs/x.md",
+    created_at: "2026-05-09T00:00:00.000Z"
+  }) + "\n");
+
+  const briefFile = path.join(dir, "brief.md");
+  fs.writeFileSync(briefFile, "STALE\n");
+
+  const result = reconcileReadSet({
+    cwd: dir,
+    memoryFile,
+    briefFile,
+    confirmedAt: "2026-05-10T00:00:00.000Z",
+    readSet: {
+      files: ["src/x.ts"],
+      symbols: [],
+      tests: [],
+      verified_claims: [{ id: "claim-1", outcome: "confirmed" }]
+    }
+  });
+
+  assert.deepEqual(result.updated_claim_ids, ["claim-1"]);
+  assert.equal(result.brief_updated, true, "brief must regenerate on claim update");
+  assert.equal(result.brief_error, null);
+  const brief = fs.readFileSync(briefFile, "utf8");
+  assert.ok(!brief.includes("STALE"), "stale brief content must be replaced");
+});

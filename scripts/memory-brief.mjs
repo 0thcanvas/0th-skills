@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { readJsonl } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 const SECTIONS = [
   ["Active Decisions", (claim) => claim.type === "decision" && claim.lifecycle_state !== "archived"],
@@ -13,13 +15,6 @@ const SECTIONS = [
   ["External Research", (claim) => claim.type === "external_research" && claim.lifecycle_state !== "archived"],
   ["Observations", (claim) => claim.type === "observation" && claim.lifecycle_state !== "archived"]
 ];
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
 
 function evidenceFor(claim) {
   if (claim.evidence_path) return claim.evidence_path;
@@ -94,7 +89,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

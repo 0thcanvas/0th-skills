@@ -133,3 +133,62 @@ test("preflight does not merge or pull a divergent branch", () => {
   assert.equal(result.after_head, beforeHead);
   assert.match(result.warnings.join("\n"), /divergent/i);
 });
+
+// -----------------------------------------------------------------------------
+// PR #19 review — session-preflight robustness (D2 + N2)
+// -----------------------------------------------------------------------------
+
+test("preflight returns no_upstream action when current branch has no tracking ref", () => {
+  // Plain init without a remote — runGit "@{u}" returns null and preflight
+  // must mark action = no_upstream with a warning, not silently fall through
+  // to up_to_date.
+  const dir = tempDir("0th-preflight-no-upstream-");
+  sh(dir, ["git", "init", "-b", "feature"]);
+  sh(dir, ["git", "config", "user.email", "x@y"]);
+  sh(dir, ["git", "config", "user.name", "x"]);
+  writeFile(dir, "f.txt", "x\n");
+  commit(dir, "init");
+
+  const result = runPreflight({ cwd: dir });
+
+  assert.equal(result.action, "no_upstream");
+  assert.equal(result.upstream, null);
+  assert.match(result.warnings.join("\n"), /upstream/i);
+});
+
+test("preflight returns fast_forward_available (not pulled) when allowPull=false", () => {
+  const { remote, local } = initRepoWithRemote();
+  pushRemoteCommit(remote, "remote upd", "remote-content\n");
+  const beforeHead = sh(local, ["git", "rev-parse", "HEAD"]);
+
+  const result = runPreflight({ cwd: local, allowPull: false });
+
+  assert.equal(result.action, "fast_forward_available");
+  assert.equal(result.behind, 1);
+  // Critical: HEAD must not have moved because allowPull was false
+  assert.equal(result.after_head, beforeHead);
+});
+
+test("preflight captures a memory-sync failure into warnings, doesn't reverse the fast-forward", () => {
+  // PR #19 review N2: after a successful fast-forward, if runMemorySync
+  // throws (corrupt claims.jsonl), the throw used to bubble out and erase
+  // the structured preflight result entirely. Now the failure is captured
+  // into result.warnings and the rest of the result is preserved.
+  const { root, remote, local } = initRepoWithRemote();
+  pushRemoteCommit(remote, "trigger pull", "after\n");
+
+  // Corrupt claims.jsonl so memory-sync's readJsonl throws
+  const memoryFile = path.join(root, "claims.jsonl");
+  fs.writeFileSync(memoryFile, "{NOT JSON\n");
+
+  const result = runPreflight({ cwd: local, memoryFile });
+
+  // Pull DID happen — gate must not undo that
+  assert.equal(result.action, "fast_forward_pulled");
+  assert.notEqual(result.after_head, result.before_head);
+
+  // Sync failure surfaced as a warning, not a crash
+  const joined = result.warnings.join("\n");
+  assert.match(joined, /memory[ _-]?sync/i, `expected memory-sync warning, got: ${joined}`);
+  assert.match(joined, /corrupt|JSONL|claims\.jsonl/i);
+});

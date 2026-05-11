@@ -3,19 +3,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
-
-function writeJsonlAtomic(filePath, entries) {
-  const tmpPath = `${filePath}.${process.pid}.tmp`;
-  fs.writeFileSync(tmpPath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-  fs.renameSync(tmpPath, filePath);
-}
+import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
+import { runBriefGeneration } from "./memory-brief.mjs";
 
 function normalizedArray(value) {
   return [...new Set(value ?? [])].sort();
@@ -45,13 +35,21 @@ function inReadSet(claim, readSet) {
 export function reconcileReadSet({
   memoryFile,
   readSet,
-  confirmedAt = new Date().toISOString()
+  briefFile,
+  confirmedAt = new Date().toISOString(),
+  updateBrief = true,
+  cwd = process.cwd()
 }) {
-  if (!memoryFile) throw new Error("memoryFile is required");
   if (!readSet) throw new Error("readSet is required");
+  // Default memoryFile + briefFile to the canonical .0th/memory/ locations
+  // so the CLI can be invoked as documented in skills/build/SKILL.md:
+  //   `node read-set-reconcile.mjs --read-set <path>`
+  // without forcing every caller to thread --memory-file through.
+  const resolvedMemoryFile = memoryFile ?? path.join(cwd, ".0th", "memory", "claims.jsonl");
+  const resolvedBriefFile = briefFile ?? path.join(cwd, ".0th", "memory", "brief.md");
 
   const normalizedReadSet = normalizeReadSet(readSet);
-  const claims = readJsonl(memoryFile);
+  const claims = readJsonl(resolvedMemoryFile);
   const verifiedById = new Map(normalizedReadSet.verified_claims.map((claim) => [claim.id, claim]));
   const checked = [];
   const updated = [];
@@ -93,13 +91,29 @@ export function reconcileReadSet({
     return claim;
   });
 
-  writeJsonlAtomic(memoryFile, nextClaims);
+  writeJsonlAtomic(resolvedMemoryFile, nextClaims);
+
+  // Same brief-staleness guard as memory-sync: lifecycle-state mutations
+  // here can flip claims from needs_review -> active (on "confirmed") or
+  // active -> needs_review (on "contradicted"). Regenerate the brief so
+  // it doesn't show a stale lifecycle until the next memory-write.
+  let brief = null;
+  let briefError = null;
+  if (updateBrief && updated.length > 0) {
+    try {
+      brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+    } catch (err) {
+      briefError = err.message;
+    }
+  }
 
   return {
-    memory_file: memoryFile,
+    memory_file: resolvedMemoryFile,
     read_set: normalizedReadSet,
     checked_claim_ids: checked,
-    updated_claim_ids: updated
+    updated_claim_ids: updated,
+    brief_updated: Boolean(brief),
+    brief_error: briefError
   };
 }
 
@@ -128,7 +142,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

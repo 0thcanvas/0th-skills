@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -234,6 +235,14 @@ function main() {
   console.log(JSON.stringify(report, null, 2));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+// Match the try/catch + exit-1 pattern of every other workflow CLI; without
+// this the script dumped raw stack traces on validation errors instead of
+// the clean one-line stderr message every sibling produces.
+if (isInvokedAsCli(import.meta.url)) {
+  try {
+    main();
+  } catch (err) {
+    process.stderr.write(`${err.message}\n`);
+    process.exit(1);
+  }
 }

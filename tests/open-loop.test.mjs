@@ -248,3 +248,196 @@ test("open-loop CLI adds, lists, and closes loops with JSON output", () => {
   );
   assert.equal(JSON.parse(closeStdout).status, "done");
 });
+
+// -----------------------------------------------------------------------------
+// PR #19 review — open-loop block/close/drop must honor --json input
+// -----------------------------------------------------------------------------
+
+test("open-loop block honors --json input for id and blocked_reason", () => {
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  const script = path.join(repoRoot, "scripts/open-loop.mjs");
+
+  // First add a loop
+  execFileSync(
+    process.execPath,
+    [
+      script, "add", "--task-file", taskFile, "--no-brief",
+      "--id", "json-loop",
+      "--title", "Loop blocked via JSON",
+      "--scope", "repo",
+      "--next-action", "Resume after dep update",
+      "--evidence-path", "docs/x.md"
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  // Block it using --json input (this used to fail with "id is required")
+  const blockInput = path.join(repo, "block.json");
+  fs.writeFileSync(blockInput, JSON.stringify({
+    id: "json-loop",
+    blocked_reason: "waiting on upstream"
+  }));
+
+  const blockStdout = execFileSync(
+    process.execPath,
+    [script, "block", "--task-file", taskFile, "--no-brief", "--json", blockInput],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const blocked = JSON.parse(blockStdout);
+  assert.equal(blocked.id, "json-loop");
+  assert.equal(blocked.status, "blocked");
+  assert.equal(blocked.blocked_reason, "waiting on upstream");
+});
+
+test("open-loop close honors --json input for id", () => {
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  const script = path.join(repoRoot, "scripts/open-loop.mjs");
+
+  execFileSync(
+    process.execPath,
+    [
+      script, "add", "--task-file", taskFile, "--no-brief",
+      "--id", "json-close",
+      "--title", "Loop closed via JSON",
+      "--scope", "repo",
+      "--next-action", "x",
+      "--evidence-path", "docs/x.md"
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const closeInput = path.join(repo, "close.json");
+  fs.writeFileSync(closeInput, JSON.stringify({ id: "json-close" }));
+
+  const closeStdout = execFileSync(
+    process.execPath,
+    [script, "close", "--task-file", taskFile, "--no-brief", "--json", closeInput],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const closed = JSON.parse(closeStdout);
+  assert.equal(closed.id, "json-close");
+  assert.equal(closed.status, "done");
+});
+
+test("open-loop drop honors --json input for id and drop_reason", () => {
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  const script = path.join(repoRoot, "scripts/open-loop.mjs");
+
+  execFileSync(
+    process.execPath,
+    [
+      script, "add", "--task-file", taskFile, "--no-brief",
+      "--id", "json-drop",
+      "--title", "Loop dropped via JSON",
+      "--scope", "repo",
+      "--next-action", "x",
+      "--evidence-path", "docs/x.md"
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const dropInput = path.join(repo, "drop.json");
+  fs.writeFileSync(dropInput, JSON.stringify({
+    id: "json-drop",
+    drop_reason: "scope cut"
+  }));
+
+  const dropStdout = execFileSync(
+    process.execPath,
+    [script, "drop", "--task-file", taskFile, "--no-brief", "--json", dropInput],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const dropped = JSON.parse(dropStdout);
+  assert.equal(dropped.id, "json-drop");
+  assert.equal(dropped.status, "dropped");
+  assert.equal(dropped.drop_reason, "scope cut");
+});
+
+test("open-loop block prefers explicit --blocked-reason over --json value", () => {
+  // Mixed input: --json supplies id, --blocked-reason supplies reason.
+  // Both should be honored; the explicit flag should win on conflict.
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  const script = path.join(repoRoot, "scripts/open-loop.mjs");
+
+  execFileSync(
+    process.execPath,
+    [
+      script, "add", "--task-file", taskFile, "--no-brief",
+      "--id", "mixed-loop",
+      "--title", "Mixed input",
+      "--scope", "repo",
+      "--next-action", "x",
+      "--evidence-path", "docs/x.md"
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const blockInput = path.join(repo, "block.json");
+  fs.writeFileSync(blockInput, JSON.stringify({
+    id: "mixed-loop",
+    blocked_reason: "from json"
+  }));
+
+  // --blocked-reason appears AFTER --json. Explicit flags always win over
+  // --json values regardless of argv order; this test pins that contract.
+  const blockStdout = execFileSync(
+    process.execPath,
+    [
+      script, "block", "--task-file", taskFile, "--no-brief",
+      "--json", blockInput,
+      "--blocked-reason", "from flag"
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const blocked = JSON.parse(blockStdout);
+  assert.equal(blocked.id, "mixed-loop");
+  assert.equal(blocked.blocked_reason, "from flag");
+});
+
+test("open-loop add prefers explicit flags over --json values", () => {
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  const script = path.join(repoRoot, "scripts/open-loop.mjs");
+  const input = path.join(repo, "add.json");
+  fs.writeFileSync(input, JSON.stringify({
+    id: "json-id",
+    title: "Title from JSON",
+    scope: "project",
+    priority: "P3",
+    next_action: "Next action from JSON",
+    evidence_path: "docs/json.md"
+  }));
+
+  const addStdout = execFileSync(
+    process.execPath,
+    [
+      script, "add", "--task-file", taskFile, "--no-brief",
+      "--id", "flag-id",
+      "--title", "Title from flag",
+      "--scope", "repo",
+      "--priority", "P1",
+      "--next-action", "Next action from flag",
+      "--evidence-path", "docs/flag.md",
+      "--json", input
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  const added = JSON.parse(addStdout);
+  const [loop] = readJsonl(taskFile);
+  assert.equal(added.id, "flag-id");
+  assert.equal(loop.id, "flag-id");
+  assert.equal(loop.title, "Title from flag");
+  assert.equal(loop.scope, "repo");
+  assert.equal(loop.priority, "P1");
+  assert.equal(loop.next_action, "Next action from flag");
+  assert.equal(loop.evidence_path, "docs/flag.md");
+});

@@ -373,3 +373,105 @@ test("validateReport: empty expected list passes regardless of report shape", ()
   const result = validateReport({}, []);
   assert.equal(result.ok, true);
 });
+
+// -----------------------------------------------------------------------------
+// Slice 1 — ship-gate safety fixes (PR #19 review)
+// -----------------------------------------------------------------------------
+
+test("ship-gate fails closed on malformed package.json (no silent stack-empty exit 0)", () => {
+  const repo = makeTempGitRepo();
+  // Malformed JSON that JSON.parse rejects
+  fs.writeFileSync(path.join(repo, "package.json"), "{ broken json");
+  execFileSync("git", ["add", "package.json"], { cwd: repo, stdio: "ignore" });
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out = "";
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+
+  assert.notEqual(exitCode, 0, "malformed package.json must NOT exit 0");
+  assert.match(out, /package\.json/);
+  assert.match(out, /not valid JSON|malformed|invalid/i);
+});
+
+test("ship-gate fails closed when git ls-files fails inside a git repo (not a no-op)", () => {
+  // Simulate by passing a non-existent dir as repoPath after pre-asserting .git presence —
+  // here we exercise the function directly with a path that has .git but git can't read.
+  const dir = makeTempRepo();
+  // Create a .git that is NOT a valid repository (file, not directory, with junk content)
+  fs.writeFileSync(path.join(dir, ".git"), "not-a-real-gitdir");
+
+  assert.throws(
+    () => scanTrackedFilesForLocalPathLeaks(dir),
+    /git ls-files|not a git repository|ship-gate/i,
+    "must throw when .git exists but git command fails (fail closed)"
+  );
+});
+
+test("scanTrackedFilesForLocalPathLeaks: returns [] for non-git directories (no .git present)", () => {
+  const dir = makeTempRepo();
+  // No .git anywhere — function should treat this as "nothing tracked to scan", not fail
+  assert.deepEqual(scanTrackedFilesForLocalPathLeaks(dir), []);
+});
+
+test("findLocalPathLeaksInText: does NOT flag URLs that happen to contain /Users or /home", () => {
+  // Build URL test fixtures from parts so the ship-gate's own tracked-file
+  // scanner doesn't flag THIS test file as a leak source. (Same convention
+  // as the bad-paths test below — fake paths must be assembled at runtime.)
+  const usersAlice = "/" + ["Users", "alice", "orders"].join("/");
+  const homeV1 = "/" + ["home", "v1", "data"].join("/");
+  const usersProfile = "/" + ["Users", "profile", "avatar"].join("/");
+  const source = [
+    `GET https://example.com${usersAlice}`,
+    `API_BASE_URL=https://api.example.com${homeV1}`,
+    `fetch("https://service.io${usersProfile}")`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("config.json", source);
+  assert.deepEqual(leaks, [], `URL paths must not be flagged as home paths, got ${JSON.stringify(leaks)}`);
+});
+
+test("findLocalPathLeaksInText: still flags actual home paths in JSON/quoted contexts", () => {
+  // Construct the bad paths from parts so the ship-gate's own scanner
+  // doesn't catch THIS test file as containing real leaks.
+  const macPath = "/" + ["Users", "alice", "project"].join("/");
+  const linuxPath = "/" + ["home", "bob", "data"].join("/");
+  const macComment = "/" + ["Users", "eve", "scratch"].join("/");
+  const source = [
+    `"workspace":"${macPath}"`,
+    `cache_dir = ${linuxPath}`,
+    `// ${macComment}`
+  ].join("\n");
+
+  const leaks = findLocalPathLeaksInText("file.json", source);
+  assert.equal(leaks.length, 3, `expected 3 real leaks, got ${JSON.stringify(leaks)}`);
+});
+
+test("findLocalPathLeaksInText: leak records do NOT echo full line content (secret-leak defense)", () => {
+  // A line where a local path shares a line with a token-shaped secret.
+  // The leak record must not echo the secret.
+  const fakeSecret = "sk-" + "FAKE" + "1234567890abcdefghij";
+  const buildOutput = "/" + ["Users", "alice", "builds", "output.log"].join("/");
+  const source = `API_KEY=${fakeSecret} build_output=${buildOutput}`;
+
+  const leaks = findLocalPathLeaksInText("note.md", source);
+  assert.equal(leaks.length, 1);
+  const serialized = JSON.stringify(leaks[0]);
+  assert.ok(
+    !serialized.includes(fakeSecret),
+    `leak record must not echo the secret '${fakeSecret}': ${serialized}`
+  );
+  assert.ok(
+    !serialized.includes("API_KEY"),
+    `leak record must not echo arbitrary line content; got ${serialized}`
+  );
+});

@@ -4,6 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
+import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
+import { runBriefGeneration } from "./memory-brief.mjs";
 
 function runGit(cwd, args) {
   return execFileSync("git", args, {
@@ -26,18 +29,11 @@ function normalizeSourcePath(sourcePath) {
     .replace(/:\d+(?::\d+)?$/, "");
 }
 
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return null;
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
-
-function writeJsonlAtomic(filePath, entries) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.${process.pid}.tmp`;
-  fs.writeFileSync(tmpPath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-  fs.renameSync(tmpPath, filePath);
+function readMemoryClaims(filePath) {
+  // memory-sync wants to distinguish "no memory file yet" (null = nothing to
+  // do) from "memory file is present but currently empty" ([]). Pass the
+  // missingValue knob so the shared helper preserves that signal.
+  return readJsonl(filePath, { missingValue: null });
 }
 
 function matchingSources(claim, changed) {
@@ -52,13 +48,15 @@ export function runMemorySync({
   from,
   to,
   memoryFile = path.join(cwd, ".0th", "memory", "claims.jsonl"),
-  syncedAt = new Date().toISOString()
+  briefFile = path.join(cwd, ".0th", "memory", "brief.md"),
+  syncedAt = new Date().toISOString(),
+  updateBrief = true
 } = {}) {
   if (!from) throw new Error("--from is required");
   if (!to) throw new Error("--to is required");
 
   const changed = changedSources(cwd, from, to);
-  const claims = readJsonl(memoryFile);
+  const claims = readMemoryClaims(memoryFile);
   if (claims === null) {
     return {
       memory_file: memoryFile,
@@ -66,7 +64,9 @@ export function runMemorySync({
       from_revision: from,
       to_revision: to,
       changed_sources: changed,
-      affected_claim_ids: []
+      affected_claim_ids: [],
+      brief_updated: false,
+      brief_error: null
     };
   }
 
@@ -91,13 +91,32 @@ export function runMemorySync({
 
   writeJsonlAtomic(memoryFile, updatedClaims);
 
+  // Regenerate the machine-facing brief after lifecycle-state flips so
+  // .0th/memory/brief.md doesn't keep claiming "active" for claims that
+  // memory-sync just demoted to "needs_review". The decision record names
+  // the brief as "the primary machine-facing memory layer" — if we mutate
+  // claims without refreshing the brief, agents read a lying view until
+  // the next memory-write. Brief failure is non-fatal: surface it on the
+  // returned record but don't undo the claim updates.
+  let brief = null;
+  let briefError = null;
+  if (updateBrief && affected.length > 0) {
+    try {
+      brief = runBriefGeneration({ cwd, memoryFile, outputFile: briefFile });
+    } catch (err) {
+      briefError = err.message;
+    }
+  }
+
   return {
     memory_file: memoryFile,
     memory_file_exists: true,
     from_revision: from,
     to_revision: to,
     changed_sources: changed,
-    affected_claim_ids: affected
+    affected_claim_ids: affected,
+    brief_updated: Boolean(brief),
+    brief_error: briefError
   };
 }
 
@@ -127,7 +146,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

@@ -3,6 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { readJsonl } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 const PRIORITY_ORDER = new Map([
   ["P0", 0],
@@ -10,13 +12,6 @@ const PRIORITY_ORDER = new Map([
   ["P2", 2],
   ["P3", 3]
 ]);
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
 
 function evidenceFor(loop) {
   if (loop.evidence_path) return loop.evidence_path;
@@ -156,7 +151,7 @@ function main() {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

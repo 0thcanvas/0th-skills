@@ -4,26 +4,14 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { runOpenLoopBriefGeneration } from "./open-loop-brief.mjs";
+import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { isInvokedAsCli } from "./lib/cli.mjs";
 
 export const OPEN_LOOP_STATUSES = ["open", "blocked", "done", "dropped"];
 export const OPEN_LOOP_PRIORITIES = ["P0", "P1", "P2", "P3"];
 export const OPEN_LOOP_SCOPES = ["repo", "project", "global"];
 
 const PRIORITY_ORDER = new Map(OPEN_LOOP_PRIORITIES.map((priority, index) => [priority, index]));
-
-function readJsonl(filePath) {
-  if (!fs.existsSync(filePath)) return [];
-  const source = fs.readFileSync(filePath, "utf8").trim();
-  if (!source) return [];
-  return source.split("\n").map((line) => JSON.parse(line));
-}
-
-function writeJsonlAtomic(filePath, entries) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const tmpPath = `${filePath}.${process.pid}.tmp`;
-  fs.writeFileSync(tmpPath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-  fs.renameSync(tmpPath, filePath);
-}
 
 function normalizeList(value) {
   if (value == null) return [];
@@ -264,13 +252,21 @@ export function updateOpenLoopStatus({
   writeJsonlAtomic(taskFile, loops);
   const brief = regenerateBrief({ cwd, taskFile, briefFile, updateBrief });
 
+  // Echo back the lifecycle-relevant reason/action fields so the CLI's JSON
+  // output self-documents what was recorded; previously the user had to
+  // re-read the JSONL to confirm their --blocked-reason / --drop-reason
+  // actually landed. This also makes --json-driven invocations testable
+  // without coupling tests to the on-disk format.
   return {
     task_file: taskFile,
     brief_file: updateBrief ? briefFile : null,
     id: next.id,
     status: next.status,
     updated: true,
-    brief_updated: Boolean(brief)
+    brief_updated: Boolean(brief),
+    blocked_reason: next.blocked_reason ?? null,
+    drop_reason: next.drop_reason ?? null,
+    next_action: next.next_action ?? null
   };
 }
 
@@ -287,6 +283,7 @@ function parseArgs(argv) {
   const options = {
     command,
     input: {},
+    explicitInput: {},
     updateBrief: true,
     includeClosed: false
   };
@@ -323,67 +320,68 @@ function parseArgs(argv) {
       continue;
     }
     if (token === "--id") {
-      options.input.id = rest[++index];
-      options.id = options.input.id;
+      options.explicitInput.id = rest[++index];
+      options.id = options.explicitInput.id;
       continue;
     }
     if (token === "--title") {
-      options.input.title = rest[++index];
+      options.explicitInput.title = rest[++index];
       continue;
     }
     if (token === "--scope") {
-      options.input.scope = rest[++index];
+      options.explicitInput.scope = rest[++index];
       continue;
     }
     if (token === "--project") {
-      options.input.project = rest[++index];
+      options.explicitInput.project = rest[++index];
       continue;
     }
     if (token === "--repo") {
-      options.input.repo = rest[++index];
+      options.explicitInput.repo = rest[++index];
       continue;
     }
     if (token === "--owner") {
-      options.input.owner = rest[++index];
+      options.explicitInput.owner = rest[++index];
       continue;
     }
     if (token === "--priority") {
-      options.input.priority = rest[++index];
+      options.explicitInput.priority = rest[++index];
       continue;
     }
     if (token === "--next-action") {
-      options.input.next_action = rest[++index];
-      options.nextAction = options.input.next_action;
+      options.explicitInput.next_action = rest[++index];
+      options.nextAction = options.explicitInput.next_action;
       continue;
     }
     if (token === "--due-at") {
-      options.input.due_at = rest[++index];
+      options.explicitInput.due_at = rest[++index];
       continue;
     }
     if (token === "--evidence-path") {
-      options.input.evidence_path = rest[++index];
-      options.evidencePath = options.input.evidence_path;
+      options.explicitInput.evidence_path = rest[++index];
+      options.evidencePath = options.explicitInput.evidence_path;
       continue;
     }
     if (token === "--source-path") {
-      pushListOption(options.input, "source_paths", rest[++index]);
-      options.sourcePaths = options.input.source_paths;
+      pushListOption(options.explicitInput, "source_paths", rest[++index]);
+      options.sourcePaths = options.explicitInput.source_paths;
       continue;
     }
     if (token === "--blocked-reason") {
-      options.input.blocked_reason = rest[++index];
-      options.blockedReason = options.input.blocked_reason;
+      options.explicitInput.blocked_reason = rest[++index];
+      options.blockedReason = options.explicitInput.blocked_reason;
       continue;
     }
     if (token === "--drop-reason") {
-      options.input.drop_reason = rest[++index];
-      options.dropReason = options.input.drop_reason;
+      options.explicitInput.drop_reason = rest[++index];
+      options.dropReason = options.explicitInput.drop_reason;
       continue;
     }
 
     throw new Error(`Unknown option: ${token}`);
   }
 
+  options.input = { ...options.input, ...options.explicitInput };
   return options;
 }
 
@@ -422,16 +420,35 @@ function main() {
     return;
   }
 
+  // For status-change subcommands, accept fields from either the explicit
+  // --<flag> (which sets options.<key>) OR from the --json payload (which
+  // populates options.input.<snake_case>). Explicit flags ALWAYS win on
+  // conflict, regardless of argv order: an explicit flag sets both
+  // options.<key> and options.input.<key>, while --json only updates
+  // options.input.<key>. The coalesce below preserves the "explicit
+  // beats JSON" rule. If you want JSON to win, omit the explicit flag.
+  //
+  // The previous version only looked at options.<key>, so `open-loop block
+  // --json blk.json` failed with "id is required" even when blk.json
+  // contained the id — the JSON value never reached updateOpenLoopStatus.
+  const fromInput = options.input ?? {};
+  const id = options.id ?? fromInput.id;
+  const blockedReason = options.blockedReason ?? fromInput.blocked_reason;
+  const dropReason = options.dropReason ?? fromInput.drop_reason;
+  const nextAction = options.nextAction ?? fromInput.next_action;
+  const evidencePath = options.evidencePath ?? fromInput.evidence_path;
+  const sourcePaths = options.sourcePaths ?? fromInput.source_paths;
+
   if (options.command === "block") {
     const result = updateOpenLoopStatus({
       cwd: process.cwd(),
       ...options,
-      id: options.id,
+      id,
       status: "blocked",
-      blockedReason: options.blockedReason,
-      nextAction: options.nextAction,
-      evidencePath: options.evidencePath,
-      sourcePaths: options.sourcePaths
+      blockedReason,
+      nextAction,
+      evidencePath,
+      sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -441,10 +458,10 @@ function main() {
     const result = updateOpenLoopStatus({
       cwd: process.cwd(),
       ...options,
-      id: options.id,
+      id,
       status: "done",
-      evidencePath: options.evidencePath,
-      sourcePaths: options.sourcePaths
+      evidencePath,
+      sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -454,11 +471,11 @@ function main() {
     const result = updateOpenLoopStatus({
       cwd: process.cwd(),
       ...options,
-      id: options.id,
+      id,
       status: "dropped",
-      dropReason: options.dropReason,
-      evidencePath: options.evidencePath,
-      sourcePaths: options.sourcePaths
+      dropReason,
+      evidencePath,
+      sourcePaths
     });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     return;
@@ -467,7 +484,7 @@ function main() {
   throw new Error(`Unknown command: ${options.command}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isInvokedAsCli(import.meta.url)) {
   try {
     main();
   } catch (err) {

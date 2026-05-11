@@ -125,3 +125,39 @@ test("memory write CLI appends a claim and writes JSON output", () => {
   assert.equal(result.type, "root_cause");
   assert.equal(claim.claim, "Failure came from stale repo state.");
 });
+
+test("appendMemoryClaim persists the claim even when brief generation fails (no duplicate-id trap)", () => {
+  // Defense-in-depth for the PR #19 silent-failure: runBriefGeneration runs
+  // AFTER the JSONL append. If it threw, the previous version dumped a stack
+  // trace and exited 1 — the caller saw "failed" but the claim was already
+  // on disk. Retrying then collided on uniqueId. Now we capture the brief
+  // error and report success on the claim, with brief_error on the record.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "memory-write-brief-fail-"));
+  const memoryFile = path.join(dir, "claims.jsonl");
+
+  // Force brief generation to fail by pointing briefFile at a path whose
+  // parent is a non-directory (a file we create with the same name).
+  fs.writeFileSync(path.join(dir, "brief-blocker"), "");
+  const briefFile = path.join(dir, "brief-blocker", "brief.md"); // parent is a file
+
+  const result = appendMemoryClaim({
+    cwd: dir,
+    memoryFile,
+    briefFile,
+    input: {
+      type: "decision",
+      claim: "Brief regeneration failure must not trap the user.",
+      scope: "repo",
+      evidence_path: "docs/pr19.md",
+      confidence: "high"
+    }
+  });
+
+  assert.equal(result.written, true, "claim must persist even when brief fails");
+  assert.equal(result.brief_updated, false, "brief_updated must be false on failure");
+  assert.ok(result.brief_error, "brief_error must be populated, not swallowed");
+  assert.ok(
+    fs.existsSync(memoryFile),
+    "claims.jsonl must exist after partial-success path"
+  );
+});
