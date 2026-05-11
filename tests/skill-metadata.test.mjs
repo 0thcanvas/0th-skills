@@ -14,6 +14,7 @@ const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates"
 const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
 const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
 const memoryContractPath = path.join(repoRoot, "references", "memory-contract.md");
+const workingArtifactsContractPath = path.join(repoRoot, "references", "working-artifacts.md");
 
 // `zoom-out` is intentionally excluded: its `disable-model-invocation: true` (and
 // matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
@@ -216,6 +217,31 @@ test("shared memory contract separates open loops from durable memory claims", (
   assert.match(source, /Open Loops/);
   assert.match(source, /user\/runtime data|user-level/i);
   assert.match(source, /do not store TODOs as memory claims/i);
+});
+
+test("shared working-artifacts contract defines lanes and lifecycle choices", () => {
+  assert.equal(
+    fs.existsSync(workingArtifactsContractPath),
+    true,
+    "working artifacts contract should exist"
+  );
+
+  const source = read(workingArtifactsContractPath);
+  for (const fragment of [
+    "Memory v2",
+    "repo docs",
+    "working artifacts",
+    "state root",
+    "verification-report",
+    "current",
+    "compact",
+    "supersede",
+    "delete",
+    "not agent truth",
+    "aligned `/think` decision records"
+  ]) {
+    assert.ok(source.includes(fragment), `working artifacts contract should include "${fragment}"`);
+  }
 });
 
 test("core skills require the shared memory write gate", () => {
