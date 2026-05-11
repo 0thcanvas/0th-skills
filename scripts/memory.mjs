@@ -27,7 +27,8 @@ const COMMANDS = new Map([
   ["task-brief", ["open-loop-brief.mjs"]],
   ["evidence", ["evidence.mjs"]],
   ["source-pack", ["source-pack.mjs"]],
-  ["doctor", ["memory-doctor.mjs"]]
+  ["doctor", ["memory-doctor.mjs"]],
+  ["migrate", ["memory-migrate.mjs"]]
 ]);
 
 function helpText() {
@@ -48,6 +49,7 @@ function helpText() {
     "  evidence         Add/list local provenance events.",
     "  source-pack      Ingest/list/expand global source packs.",
     "  doctor           Report project/global runtime paths and install versions.",
+    "  migrate          Dry-run legacy KB migration and generated human exports.",
     "  maintain         Report stale, duplicate, orphaned, and drifted memory.",
     "  eval             Run memory evaluation reports.",
     "  runtime-eval     Run executable Memory v2 runtime fixtures.",

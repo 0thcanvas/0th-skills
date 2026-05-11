@@ -74,7 +74,7 @@ Protect the design with executable behavior checks before calling the global lay
 
 ### 9. Obsidian Migration Off-Ramp
 Replace the old KB only after evaluation proves Memory v2 can stand alone.
-- [ ] Migration first produces a dry-run manifest with content hashes, candidate actions, reasons, skip reasons, and replay/rollback instructions.
-- [ ] Candidate actions are source pack, durable claim, open loop, needs review, archive, or skip.
-- [ ] Only high-confidence cross-project material becomes global memory; stale or speculative notes become source-pack evidence or are skipped.
-- [ ] Obsidian output, if needed, is generated from Memory v2 state rather than edited as canonical storage.
+- [x] Migration first produces a dry-run manifest with content hashes, candidate actions, reasons, skip reasons, and replay/rollback instructions.
+- [x] Candidate actions are source pack, durable claim, open loop, needs review, archive, or skip.
+- [x] Only high-confidence cross-project material becomes global memory; stale or speculative notes become source-pack evidence or are skipped.
+- [x] Obsidian output, if needed, is generated from Memory v2 state rather than edited as canonical storage.
