@@ -158,6 +158,12 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### 0.3.1
+
+- Added the global Memory v2 runtime layer: project/global brain routing, source namespaces, source-pack ingestion, scoped recall, conflict surfacing, global maintenance, and no-Obsidian runtime evaluation.
+- Hardened Memory v2 review edges from counterpart feedback: source-aware recall degradation, structured preflight unreadable-state flags, stderr markers for degraded preflight and brief regeneration failures, path-aware JSON argument parse errors, and visible git fallback warnings.
+- Clarified Memory v2 contracts and prompts: evidence records require at least one source pointer, `memory remember` / `memory open-loop` are shorthand for full node commands, and repo-root `FEEDBACK.md` / `CLAUDE.md` references are named correctly.
+
 ### 0.3.0
 
 - Added Memory v2 runtime hardening: a unified `scripts/memory.mjs` surface for recall, expand, write, preflight, repo-state, evidence, open-loop, maintenance, and runtime eval workflows.
