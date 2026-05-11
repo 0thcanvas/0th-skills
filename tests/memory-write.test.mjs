@@ -136,6 +136,39 @@ test("appendMemoryClaim routes global-scope claims to the global brain", () => {
   });
 });
 
+test("memory claims preserve global routing and provenance fields", () => {
+  const repo = tempDir();
+  const memoryFile = path.join(repo, "claims.jsonl");
+
+  appendMemoryClaim({
+    cwd: repo,
+    memoryFile,
+    updateBrief: false,
+    now: new Date("2026-05-11T13:00:00.000Z"),
+    input: {
+      type: "external_research",
+      claim: "Brain/source routing separates storage owner from knowledge namespace.",
+      scope: "global",
+      brain_id: "global",
+      source_id: "memory-systems-world-model",
+      topic: "agent-memory",
+      subject_key: "memory-routing",
+      owner_project_key: "0th-skills",
+      related_ids: ["source-pack-memory-systems"],
+      evidence_path: "sources/memory-systems/source-pack.jsonl",
+      confidence: "high"
+    }
+  });
+
+  const [claim] = readJsonl(memoryFile);
+  assert.equal(claim.brain_id, "global");
+  assert.equal(claim.source_id, "memory-systems-world-model");
+  assert.equal(claim.topic, "agent-memory");
+  assert.equal(claim.subject_key, "memory-routing");
+  assert.equal(claim.owner_project_key, "0th-skills");
+  assert.deepEqual(claim.related_ids, ["source-pack-memory-systems"]);
+});
+
 test("appendMemoryClaim refuses duplicate explicit ids", () => {
   const repo = tempDir();
   const memoryFile = path.join(repo, ".0th", "memory", "claims.jsonl");

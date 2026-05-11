@@ -83,6 +83,11 @@ export function normalizeEvidenceRecord(input, {
   const evidencePaths = normalizeList(input.evidence_paths ?? input.evidence_path ?? input.evidencePath);
   const relatedIds = normalizeList(input.related_ids ?? input.related_id ?? input.relatedId);
   const redactionStatus = String(input.redaction_status ?? input.redactionStatus ?? "no_secrets_observed").trim();
+  const brainId = input.brain_id ? String(input.brain_id).trim() : "";
+  const sourceId = input.source_id ? String(input.source_id).trim() : "";
+  const topic = input.topic ? String(input.topic).trim() : "";
+  const subjectKey = input.subject_key ? String(input.subject_key).trim() : "";
+  const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
 
   if (!eventType) throw new Error("event_type is required");
   if (!summary) throw new Error("summary is required");
@@ -98,7 +103,12 @@ export function normalizeEvidenceRecord(input, {
     summary,
     ...sourcePaths,
     ...evidencePaths,
-    ...relatedIds
+    ...relatedIds,
+    brainId,
+    sourceId,
+    topic,
+    subjectKey,
+    ownerProjectKey
   ], "evidence contains secret-like content; redact it before writing");
 
   const record = {
@@ -113,6 +123,11 @@ export function normalizeEvidenceRecord(input, {
   if (sourcePaths.length > 0) record.source_paths = sourcePaths;
   if (evidencePaths.length > 0) record.evidence_paths = evidencePaths;
   if (relatedIds.length > 0) record.related_ids = relatedIds;
+  if (brainId) record.brain_id = brainId;
+  if (sourceId) record.source_id = sourceId;
+  if (topic) record.topic = topic;
+  if (subjectKey) record.subject_key = subjectKey;
+  if (ownerProjectKey) record.owner_project_key = ownerProjectKey;
 
   return record;
 }
@@ -197,6 +212,26 @@ function parseArgs(argv) {
     if (token === "--scope") {
       options.input.scope = rest[++index];
       options.scope = options.input.scope;
+      continue;
+    }
+    if (token === "--brain-id") {
+      options.input.brain_id = rest[++index];
+      continue;
+    }
+    if (token === "--source-id") {
+      options.input.source_id = rest[++index];
+      continue;
+    }
+    if (token === "--topic") {
+      options.input.topic = rest[++index];
+      continue;
+    }
+    if (token === "--subject-key") {
+      options.input.subject_key = rest[++index];
+      continue;
+    }
+    if (token === "--owner-project-key") {
+      options.input.owner_project_key = rest[++index];
       continue;
     }
     if (token === "--summary") {

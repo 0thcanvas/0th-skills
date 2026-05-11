@@ -47,11 +47,27 @@ function scoreRecord(record, queryTokens, searchText) {
   return queryTokens.reduce((score, token) => score + (haystack.includes(token) ? 1 : 0), 0);
 }
 
+function routingFields(record, { defaultSourceId }) {
+  const scope = record.scope ?? "repo";
+  return {
+    brain_id: record.brain_id ?? (scope === "global" ? "global" : "project"),
+    source_id: record.source_id ?? defaultSourceId,
+    topic: record.topic ?? null,
+    subject_key: record.subject_key ?? record.id,
+    owner_project_key: record.owner_project_key ?? null
+  };
+}
+
 function claimResult(claim, queryTokens) {
   const searchText = [
     claim.id,
     claim.type,
     claim.scope,
+    claim.brain_id,
+    claim.source_id,
+    claim.topic,
+    claim.subject_key,
+    claim.owner_project_key,
     claim.lifecycle_state,
     claim.claim,
     claim.confidence,
@@ -75,7 +91,8 @@ function claimResult(claim, queryTokens) {
     updated_at: claim.last_confirmed_at ?? claim.created_at,
     source_pointers: evidenceFor(claim),
     snippet: snippet(claim.claim, queryTokens),
-    score
+    score,
+    ...routingFields(claim, { defaultSourceId: "project-runtime" })
   };
 }
 
@@ -84,6 +101,11 @@ function openLoopResult(loop, queryTokens) {
     loop.id,
     loop.title,
     loop.scope,
+    loop.brain_id,
+    loop.source_id,
+    loop.topic,
+    loop.subject_key,
+    loop.owner_project_key,
     loop.status,
     loop.priority,
     loop.next_action,
@@ -107,7 +129,8 @@ function openLoopResult(loop, queryTokens) {
     updated_at: loop.updated_at,
     source_pointers: evidenceFor(loop),
     snippet: snippet(`${loop.title}: ${loop.next_action}`, queryTokens),
-    score
+    score,
+    ...routingFields(loop, { defaultSourceId: "task-runtime" })
   };
 }
 
@@ -116,6 +139,11 @@ function evidenceResult(record, queryTokens) {
     record.id,
     record.event_type,
     record.scope,
+    record.brain_id,
+    record.source_id,
+    record.topic,
+    record.subject_key,
+    record.owner_project_key,
     record.summary,
     record.redaction_status,
     ...(record.source_paths ?? []),
@@ -136,7 +164,8 @@ function evidenceResult(record, queryTokens) {
     updated_at: record.observed_at,
     source_pointers: evidenceFor(record),
     snippet: snippet(record.summary, queryTokens),
-    score
+    score,
+    ...routingFields(record, { defaultSourceId: "evidence-runtime" })
   };
 }
 

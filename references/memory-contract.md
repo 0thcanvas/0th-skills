@@ -92,6 +92,29 @@ Secret-bearing values must never be written to evidence records. The evidence wr
 obvious token/API-key shapes, but the workflow still depends on agents recording source pointers
 and redacted summaries rather than raw transcript dumps.
 
+## Global Routing Fields
+
+Global Memory v2 separates record ownership from recall scope. Claims and evidence may carry:
+
+- `brain_id` — storage owner, e.g. `global` or `project`.
+- `source_id` — named source namespace, e.g. a research pack or workflow domain.
+- `topic` — coarse retrieval bucket.
+- `subject_key` — stable conflict/reconciliation key for the thing being discussed.
+- `owner_project_key` — project that produced or applies the record when relevant.
+- `related_ids` — explicit source-backed links to other records.
+
+Legacy project records without these fields remain valid. Recall synthesizes defaults rather than
+rewriting old memory: `brain_id: project`, `source_id: project-runtime`, `subject_key: <record id>`,
+and `topic: null`.
+
+## Source Packs
+
+Source packs are the fidelity layer for global research/reference material. A source pack stores
+verbatim redacted text chunks, stable source-pointer metadata, chunk summaries, timestamps,
+redaction status, stale-after policy, and content hashes. Hashes are computed from the stored
+redacted bytes plus stable source-pointer metadata, so deduplication and fidelity checks are
+reproducible. Summaries and indexes point back to chunks; they do not replace source text.
+
 ## Memory Write Gate
 
 Run this gate at meaningful workflow boundaries: after a decision, verified root cause, user

@@ -84,9 +84,15 @@ export function normalizeMemoryClaim(input, {
   const evidenceIds = normalizeList(input.evidence_ids ?? input.evidence_id);
   const supersedes = normalizeList(input.supersedes);
   const supersededBy = normalizeList(input.superseded_by);
+  const relatedIds = normalizeList(input.related_ids ?? input.related_id);
   const evidencePath = input.evidence_path ? String(input.evidence_path).trim() : "";
   const confidence = input.confidence ? String(input.confidence).trim() : "";
   const reviewCaveat = input.review_caveat ? String(input.review_caveat).trim() : "";
+  const brainId = input.brain_id ? String(input.brain_id).trim() : "";
+  const sourceId = input.source_id ? String(input.source_id).trim() : "";
+  const topic = input.topic ? String(input.topic).trim() : "";
+  const subjectKey = input.subject_key ? String(input.subject_key).trim() : "";
+  const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
 
   if (!type) throw new Error("type is required");
   assertAllowed("type", type, MEMORY_TYPES);
@@ -119,7 +125,13 @@ export function normalizeMemoryClaim(input, {
     ...sourcePaths,
     ...sourceSymbols,
     ...supersedes,
-    ...supersededBy
+    ...supersededBy,
+    ...relatedIds,
+    brainId,
+    sourceId,
+    topic,
+    subjectKey,
+    ownerProjectKey
   ], "memory claim contains secret-like content; redact it before writing");
 
   const claim = {
@@ -146,6 +158,12 @@ export function normalizeMemoryClaim(input, {
   if (sourceSymbols.length > 0) claim.source_symbols = sourceSymbols;
   if (supersedes.length > 0) claim.supersedes = supersedes;
   if (supersededBy.length > 0) claim.superseded_by = supersededBy;
+  if (relatedIds.length > 0) claim.related_ids = relatedIds;
+  if (brainId) claim.brain_id = brainId;
+  if (sourceId) claim.source_id = sourceId;
+  if (topic) claim.topic = topic;
+  if (subjectKey) claim.subject_key = subjectKey;
+  if (ownerProjectKey) claim.owner_project_key = ownerProjectKey;
 
   return claim;
 }
@@ -256,6 +274,26 @@ function parseArgs(argv) {
       options.input.scope = argv[++index];
       continue;
     }
+    if (token === "--brain-id") {
+      options.input.brain_id = argv[++index];
+      continue;
+    }
+    if (token === "--source-id") {
+      options.input.source_id = argv[++index];
+      continue;
+    }
+    if (token === "--topic") {
+      options.input.topic = argv[++index];
+      continue;
+    }
+    if (token === "--subject-key") {
+      options.input.subject_key = argv[++index];
+      continue;
+    }
+    if (token === "--owner-project-key") {
+      options.input.owner_project_key = argv[++index];
+      continue;
+    }
     if (token === "--lifecycle-state") {
       options.input.lifecycle_state = argv[++index];
       continue;
@@ -282,6 +320,10 @@ function parseArgs(argv) {
     }
     if (token === "--evidence-id") {
       pushListOption(options.input, "evidence_ids", argv[++index]);
+      continue;
+    }
+    if (token === "--related-id") {
+      pushListOption(options.input, "related_ids", argv[++index]);
       continue;
     }
     if (token === "--source-path") {

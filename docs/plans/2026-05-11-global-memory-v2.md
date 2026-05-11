@@ -23,11 +23,11 @@ Define owner-vs-scope routing before adding any global writes.
 
 ### 2. Record Schema and Source Fidelity
 Upgrade records so global memory can be cited, compared, and replayed safely.
-- [ ] Claims and evidence can carry `brain_id`, `source_id`, `topic`, `subject_key`, `owner_project_key`, lifecycle, confidence, and provenance fields.
-- [ ] Legacy project claims without new routing fields recall with synthesized defaults instead of requiring a rewrite migration.
-- [ ] Source packs store verbatim chunks, content hashes, source pointers, chunk summaries, timestamps, redaction status, and stale-after policy.
-- [ ] Source-pack hashes are computed from stored redacted bytes plus stable source-pointer metadata so dedup and fidelity checks are reproducible.
-- [ ] Related records use explicit ids or source-backed links; graph-like traversal is deferred until flat scoped recall fails in evaluation.
+- [x] Claims and evidence can carry `brain_id`, `source_id`, `topic`, `subject_key`, `owner_project_key`, lifecycle, confidence, and provenance fields.
+- [x] Legacy project claims without new routing fields recall with synthesized defaults instead of requiring a rewrite migration.
+- [x] Source packs store verbatim chunks, content hashes, source pointers, chunk summaries, timestamps, redaction status, and stale-after policy.
+- [x] Source-pack hashes are computed from stored redacted bytes plus stable source-pointer metadata so dedup and fidelity checks are reproducible.
+- [x] Related records use explicit ids or source-backed links; graph-like traversal is deferred until flat scoped recall fails in evaluation.
 
 ### 3. Global Writes and Source-Pack Ingestion
 Add the smallest useful global write path without changing project behavior.

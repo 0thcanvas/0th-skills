@@ -50,6 +50,37 @@ test("recall --source matches a claim by its source_symbols", () => {
   assert.equal(bySymbol.results[0].kind, "claim");
 });
 
+test("recall synthesizes routing defaults for legacy project claims", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  appendMemoryClaim({
+    cwd: dir,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      type: "decision",
+      claim: "Legacy project claims remain recallable without routing metadata.",
+      scope: "repo",
+      evidence_path: "docs/decisions/legacy.md",
+      confidence: "high"
+    }
+  });
+
+  const recall = recallMemory({
+    cwd: dir,
+    memoryFile,
+    taskFile: path.join(dir, "tasks.jsonl"),
+    evidenceFile: path.join(dir, "events.jsonl"),
+    query: "legacy routing metadata"
+  });
+
+  assert.equal(recall.result_count, 1);
+  assert.equal(recall.results[0].brain_id, "project");
+  assert.equal(recall.results[0].source_id, "project-runtime");
+  assert.equal(recall.results[0].subject_key, recall.results[0].id);
+  assert.equal(recall.results[0].topic, null);
+});
+
 test("memory-maintain --apply is idempotent — a second run produces no actions and preserves marked_at", () => {
   // PR #21 review NEW1: pre-fix, --apply re-marked every
   // duplicate tail on every run and overwrote `review.marked_at`. Running

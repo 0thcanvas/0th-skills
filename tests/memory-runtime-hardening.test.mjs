@@ -225,6 +225,35 @@ test("global-scope evidence records route to the global brain", () => {
   }
 });
 
+test("global evidence records preserve routing provenance fields", () => {
+  const dir = tempDir();
+  const evidenceFile = path.join(dir, "events.jsonl");
+  addEvidenceRecord({
+    cwd: dir,
+    evidenceFile,
+    now: new Date("2026-05-11T13:10:00.000Z"),
+    input: {
+      event_type: "research",
+      scope: "global",
+      brain_id: "global",
+      source_id: "memory-systems-world-model",
+      topic: "agent-memory",
+      subject_key: "source-pack-fidelity",
+      owner_project_key: "0th-skills",
+      summary: "MemPalace-style drawers preserve source text while summaries act as pointers.",
+      source_paths: ["sources/memory-systems/source-pack.jsonl"],
+      redaction_status: "no_secrets_observed"
+    }
+  });
+
+  const [record] = readJsonl(evidenceFile);
+  assert.equal(record.brain_id, "global");
+  assert.equal(record.source_id, "memory-systems-world-model");
+  assert.equal(record.topic, "agent-memory");
+  assert.equal(record.subject_key, "source-pack-fidelity");
+  assert.equal(record.owner_project_key, "0th-skills");
+});
+
 test("locked writes preserve concurrent memory claims", async () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");
