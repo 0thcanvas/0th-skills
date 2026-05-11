@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import crypto from "node:crypto";
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
@@ -307,7 +307,7 @@ export function expandSourcePack({
 }
 
 function readJsonArg(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return readJsonFileArg(filePath);
 }
 
 function pushListOption(options, key, value) {

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { emitBriefRegenerationFailed } from "./lib/diagnostics.mjs";
+import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
@@ -125,6 +126,7 @@ export function reconcileReadSet({
         brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
       } catch (err) {
         briefError = err.message;
+        emitBriefRegenerationFailed(err);
       }
     }
 
@@ -160,7 +162,7 @@ function parseArgs(argv) {
 
 function main() {
   const { memoryFile, readSetPath } = parseArgs(process.argv.slice(2));
-  const readSet = JSON.parse(fs.readFileSync(readSetPath, "utf8"));
+  const readSet = readJsonFileArg(readSetPath);
   const result = reconcileReadSet({ memoryFile, readSet });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

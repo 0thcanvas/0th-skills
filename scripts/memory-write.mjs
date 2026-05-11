@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { emitBriefRegenerationFailed } from "./lib/diagnostics.mjs";
+import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
@@ -215,6 +216,7 @@ export function appendMemoryClaim({
         });
       } catch (err) {
         briefError = err.message;
+        emitBriefRegenerationFailed(err);
       }
     }
 
@@ -233,7 +235,7 @@ export function appendMemoryClaim({
 }
 
 function readJsonArg(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return readJsonFileArg(filePath);
 }
 
 function pushListOption(options, key, value) {

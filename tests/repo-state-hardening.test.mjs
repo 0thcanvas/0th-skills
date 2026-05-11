@@ -27,6 +27,22 @@ function initRepo(dir) {
   return sh(dir, ["git", "rev-parse", "HEAD"]).trim();
 }
 
+function captureStderr(callback) {
+  const originalWrite = process.stderr.write;
+  let stderr = "";
+  process.stderr.write = (chunk, ...args) => {
+    stderr += String(chunk);
+    const maybeCallback = args.find((arg) => typeof arg === "function");
+    if (maybeCallback) maybeCallback();
+    return true;
+  };
+  try {
+    return { result: callback(), stderr };
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+}
+
 test("readRepoState returns structured sentinel when state.json is corrupt", () => {
   const dir = tempDir();
   const stateFile = path.join(dir, "state.json");
@@ -113,18 +129,19 @@ test("preflight surfaces a structured memory_sync_failed flag when memory-sync t
 
   const repoStateFile = path.join(runtimeDir, "state.json");
 
-  const result = runPreflight({
+  const { result, stderr } = captureStderr(() => runPreflight({
     cwd: work,
     allowPull: true,
     memoryFile,
     repoStateFile
-  });
+  }));
   assert.equal(result.action, "fast_forward_pulled", "expected FF to succeed");
   assert.equal(result.memory_sync_failed, true, "expected structured memory_sync_failed flag");
   assert.ok(
     result.warnings.some((w) => w.includes("memory-sync failed")),
     `expected memory-sync warning, got: ${result.warnings.join(" | ")}`
   );
+  assert.match(stderr, /preflight-degraded: memory_sync_failed/);
 });
 
 test("preflight survives an unreadable previous state.json with a warning rather than crashing", () => {
@@ -137,13 +154,51 @@ test("preflight survives an unreadable previous state.json with a warning rather
   // Pre-fix: this would throw SyntaxError out of readRepoState before the
   // warnings array existed. The fix returns the unreadable sentinel and the
   // preflight pushes a warning + continues with previousRepoState=null.
-  const result = runPreflight({
+  const { result, stderr } = captureStderr(() => runPreflight({
     cwd: work,
     allowPull: false,
     repoStateFile: stateFile
-  });
+  }));
   assert.ok(
     result.warnings.some((w) => /repo state.*unreadable|repo_state_unreadable/i.test(w)),
     `expected unreadable warning, got: ${result.warnings.join(" | ")}`
   );
+  assert.equal(result.repo_state_unreadable, true);
+  assert.match(stderr, /preflight-degraded: repo_state_unreadable/);
+});
+
+test("preflight surfaces a structured drift_sync_failed flag when drift-sync throws for an unseen HEAD", () => {
+  const work = tempDir();
+  const initialHead = initRepo(work);
+  const runtimeDir = tempDir();
+  const repoStateFile = path.join(runtimeDir, "state.json");
+
+  writeRepoState({
+    cwd: work,
+    repoStateFile,
+    state: {
+      last_seen_head: "0000000000000000000000000000000000000000",
+      branch: "main",
+      last_memory_sync_at: null
+    }
+  });
+  assert.notEqual(initialHead, "0000000000000000000000000000000000000000");
+
+  const memoryFile = path.join(runtimeDir, "claims.jsonl");
+  fs.writeFileSync(memoryFile, "{not-jsonl\n");
+
+  const { result, stderr } = captureStderr(() => runPreflight({
+    cwd: work,
+    allowPull: false,
+    memoryFile,
+    repoStateFile
+  }));
+
+  assert.equal(result.drift_sync_failed, true);
+  assert.equal(result.memory_sync_failed, false);
+  assert.ok(
+    result.warnings.some((w) => /unseen HEAD drift/i.test(w)),
+    `expected an unseen-HEAD-drift warning, got: ${result.warnings.join(" | ")}`
+  );
+  assert.match(stderr, /preflight-degraded: drift_sync_failed/);
 });

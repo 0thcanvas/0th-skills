@@ -86,7 +86,7 @@ Evidence records include:
 - `summary`
 - `observed_at`
 - `redaction_status`: no_secrets_observed, redacted, or secret_reference_only
-- optional `source_paths`, `evidence_paths`, and `related_ids`
+- at least one of `source_paths`, `evidence_paths`, or `related_ids` (any subset is allowed; supplying none is a validation error)
 
 Secret-bearing values must never be written to evidence records. The evidence writer rejects
 obvious token/API-key shapes, but the workflow still depends on agents recording source pointers
@@ -188,7 +188,7 @@ the runtime `claims.jsonl`. The canonical implementation lives in `scripts/memor
 `scripts/memory.mjs` is a routing dispatcher and direct invocation of `scripts/memory-write.mjs`
 is supported for tests and migration tooling.
 
-Minimum command shape:
+Minimum command shape (`--scope` may be omitted; it defaults to `repo`):
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember \

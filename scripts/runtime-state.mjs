@@ -3,6 +3,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { writeStderrLine } from "./lib/diagnostics.mjs";
+
+let gitMissingWarned = false;
 
 function runGit(cwd, args) {
   try {
@@ -11,7 +14,11 @@ function runGit(cwd, args) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"]
     }).trim();
-  } catch {
+  } catch (err) {
+    if (err?.code === "ENOENT" && !gitMissingWarned) {
+      gitMissingWarned = true;
+      writeStderrLine("warning: `git` binary not found on PATH; runtime-state will fall back to a cwd-based project slug.");
+    }
     return null;
   }
 }

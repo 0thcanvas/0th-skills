@@ -39,6 +39,22 @@ function readJsonl(filePath) {
   return text.split("\n").map((line) => JSON.parse(line));
 }
 
+function captureStderr(callback) {
+  const originalWrite = process.stderr.write;
+  let stderr = "";
+  process.stderr.write = (chunk, ...args) => {
+    stderr += String(chunk);
+    const maybeCallback = args.find((arg) => typeof arg === "function");
+    if (maybeCallback) maybeCallback();
+    return true;
+  };
+  try {
+    return { result: callback(), stderr };
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+}
+
 test("recall --source matches a claim by its source_symbols", () => {
   // PR #21 review NEW2: scoreRecord includes source_symbols in
   // the search text but matchFilters only checks `source_pointers`, which
@@ -153,6 +169,59 @@ test("default recall searches project memory first, then bounded global memory",
     assert.equal(recall.results[1].store_scope, "global");
     assert.equal(recall.results[1].source_id, "memory-systems-world-model");
   });
+});
+
+test("recall degrades corrupt optional evidence while preserving claim recall", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  const taskFile = path.join(dir, "tasks.jsonl");
+  const evidenceFile = path.join(dir, "events.jsonl");
+
+  appendMemoryClaim({
+    cwd: dir,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      type: "decision",
+      claim: "Optional evidence corruption must not hide recallable project claims.",
+      scope: "repo",
+      evidence_path: "docs/recall.md",
+      confidence: "high"
+    }
+  });
+  fs.writeFileSync(evidenceFile, "{not-jsonl\n");
+
+  const recall = recallMemory({
+    cwd: dir,
+    memoryFile,
+    taskFile,
+    evidenceFile,
+    query: "optional evidence corruption"
+  });
+
+  assert.equal(recall.result_count, 1);
+  assert.equal(recall.results[0].kind, "claim");
+  assert.equal(recall.degraded_sources.length, 1);
+  assert.equal(recall.degraded_sources[0].source, "project_evidence");
+  assert.equal(recall.degraded_sources[0].file, evidenceFile);
+  assert.match(recall.degraded_sources[0].error, /corrupt JSONL/);
+});
+
+test("recall fails loudly when the primary project memory file is corrupt", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  fs.writeFileSync(memoryFile, "{not-jsonl\n");
+
+  assert.throws(
+    () => recallMemory({
+      cwd: dir,
+      memoryFile,
+      taskFile: path.join(dir, "tasks.jsonl"),
+      evidenceFile: path.join(dir, "events.jsonl"),
+      query: "primary memory corruption"
+    }),
+    /corrupt JSONL/
+  );
 });
 
 test("recall can search global-only memory and filter by source namespace", () => {
@@ -347,6 +416,86 @@ test("memory-maintain --apply is idempotent — a second run produces no actions
 
   const afterSecond = fs.readFileSync(memoryFile, "utf8");
   assert.equal(afterFirst, afterSecond, "second apply must leave the JSONL byte-identical");
+});
+
+test("memory-maintain emits a stderr marker when brief regeneration fails after apply", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  const taskFile = path.join(dir, "tasks.jsonl");
+  const repoStateFile = path.join(dir, "state.json");
+  fs.writeFileSync(path.join(dir, "brief-blocker"), "");
+  const briefFile = path.join(dir, "brief-blocker", "brief.md");
+
+  write(memoryFile, {
+    id: "first",
+    type: "decision",
+    claim: "Brief failures should be visible after maintain mutates claims.",
+    scope: "repo",
+    lifecycle_state: "active",
+    created_at: "2026-01-01T00:00:00.000Z",
+    last_confirmed_at: "2026-01-01T00:00:00.000Z",
+    confidence: "high",
+    evidence_path: "scripts/lib/jsonl.mjs"
+  });
+  write(memoryFile, {
+    id: "second",
+    type: "decision",
+    claim: "Brief failures should be visible after maintain mutates claims.",
+    scope: "repo",
+    lifecycle_state: "active",
+    created_at: "2026-01-02T00:00:00.000Z",
+    last_confirmed_at: "2026-01-02T00:00:00.000Z",
+    confidence: "high",
+    evidence_path: "scripts/lib/jsonl.mjs"
+  });
+
+  const { result, stderr } = captureStderr(() => runMemoryMaintain({
+    cwd: dir,
+    memoryFile,
+    taskFile,
+    briefFile,
+    repoStateFile,
+    apply: true,
+    includeGlobal: false,
+    maintainedAt: "2026-01-10T00:00:00.000Z"
+  }));
+
+  assert.equal(result.actions.length, 1);
+  assert.equal(result.brief_updated, false);
+  assert.ok(result.brief_error);
+  assert.match(stderr, /brief-regeneration-failed:/);
+});
+
+test("memory-maintain warns when git state cannot be read for repo drift", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  const taskFile = path.join(dir, "tasks.jsonl");
+  const briefFile = path.join(dir, "brief.md");
+  const repoStateFile = path.join(dir, "state.json");
+  write(memoryFile, {
+    id: "only",
+    type: "decision",
+    claim: "Repo drift warnings should surface git failures.",
+    scope: "repo",
+    lifecycle_state: "active",
+    created_at: "2026-01-01T00:00:00.000Z",
+    last_confirmed_at: "2026-01-01T00:00:00.000Z",
+    confidence: "high",
+    evidence_path: "scripts/memory-maintain.mjs"
+  });
+  fs.writeFileSync(repoStateFile, JSON.stringify({ last_seen_head: "abc123" }) + "\n");
+
+  const { result, stderr } = captureStderr(() => runMemoryMaintain({
+    cwd: dir,
+    memoryFile,
+    taskFile,
+    briefFile,
+    repoStateFile,
+    includeGlobal: false
+  }));
+
+  assert.deepEqual(result.findings.repo_drift, []);
+  assert.match(stderr, /warning: git rev-parse failed|repo_drift signal will be incomplete/);
 });
 
 test("memory-maintain dry-run leaves the JSONL byte-identical", () => {

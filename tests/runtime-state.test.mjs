@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   resolveGlobalEvidencePaths,
   resolveGlobalLinkPaths,
@@ -14,6 +14,8 @@ import {
   resolveProjectStateDir,
   resolveTaskPaths
 } from "../scripts/runtime-state.mjs";
+
+const repoRoot = path.resolve(import.meta.dirname, "..");
 
 function tempDir(prefix = "0th-runtime-state-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -126,4 +128,25 @@ test("scope global routes memory paths to the global brain instead of the curren
   assert.ok(projectMemory.memoryFile.includes(`${path.sep}projects${path.sep}`));
   assert.equal(globalMemory.memoryFile, path.join(stateRoot, "global", "memory", "claims.jsonl"));
   assert.equal(globalMemory.briefFile, path.join(stateRoot, "global", "memory", "brief.md"));
+});
+
+test("runtime-state warns when git is missing before falling back to cwd identity", () => {
+  const repo = initRepoWithRemote("git@github.com:0thcanvas/example-product.git");
+  const child = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `import { resolveProjectIdentity } from "./scripts/runtime-state.mjs"; console.log(JSON.stringify(resolveProjectIdentity({ cwd: ${JSON.stringify(repo)} })));`
+    ],
+    {
+      cwd: repoRoot,
+      env: { ...process.env, PATH: "" },
+      encoding: "utf8"
+    }
+  );
+
+  assert.equal(child.status, 0, child.stderr);
+  assert.match(child.stderr, /warning: `git` binary not found on PATH/);
+  assert.equal(JSON.parse(child.stdout).repo_root, path.resolve(repo));
 });

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { appendMemoryClaim, normalizeMemoryClaim } from "../scripts/memory-write.mjs";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
@@ -32,6 +32,26 @@ function readJsonl(filePath) {
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
+}
+
+function captureStderr(callback) {
+  const originalWrite = process.stderr.write;
+  let stderr = "";
+  process.stderr.write = (chunk, ...args) => {
+    stderr += String(chunk);
+    const maybeCallback = args.find((arg) => typeof arg === "function");
+    if (maybeCallback) maybeCallback();
+    return true;
+  };
+  try {
+    return { result: callback(), stderr };
+  } finally {
+    process.stderr.write = originalWrite;
+  }
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 test("normalizeMemoryClaim validates required memory contract fields", () => {
@@ -272,6 +292,25 @@ test("memory write CLI appends a claim and writes JSON output", () => {
   assert.equal(claim.claim, "Failure came from stale repo state.");
 });
 
+test("memory write CLI reports malformed --json input with the file path", () => {
+  const repo = tempDir();
+  const badJson = path.join(repo, "bad-input.json");
+  fs.writeFileSync(badJson, "{not-json\n");
+
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.join(repoRoot, "scripts/memory-write.mjs"),
+      "--json",
+      badJson
+    ],
+    { cwd: repo, encoding: "utf8" }
+  );
+
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, new RegExp(`failed to parse JSON from ${escapeRegExp(badJson)}`));
+});
+
 test("appendMemoryClaim persists the claim even when brief generation fails (no duplicate-id trap)", () => {
   // Defense-in-depth for the PR #19 silent-failure: runBriefGeneration runs
   // AFTER the JSONL append. If it threw, the previous version dumped a stack
@@ -286,7 +325,7 @@ test("appendMemoryClaim persists the claim even when brief generation fails (no 
   fs.writeFileSync(path.join(dir, "brief-blocker"), "");
   const briefFile = path.join(dir, "brief-blocker", "brief.md"); // parent is a file
 
-  const result = appendMemoryClaim({
+  const { result, stderr } = captureStderr(() => appendMemoryClaim({
     cwd: dir,
     memoryFile,
     briefFile,
@@ -297,11 +336,12 @@ test("appendMemoryClaim persists the claim even when brief generation fails (no 
       evidence_path: "docs/pr19.md",
       confidence: "high"
     }
-  });
+  }));
 
   assert.equal(result.written, true, "claim must persist even when brief fails");
   assert.equal(result.brief_updated, false, "brief_updated must be false on failure");
   assert.ok(result.brief_error, "brief_error must be populated, not swallowed");
+  assert.match(stderr, /brief-regeneration-failed:/);
   assert.ok(
     fs.existsSync(memoryFile),
     "claims.jsonl must exist after partial-success path"

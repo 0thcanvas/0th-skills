@@ -8,8 +8,11 @@ import { execFileSync } from "node:child_process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { emitBriefRegenerationFailed, writeStderrLine } from "./lib/diagnostics.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { resolveGlobalSourcePaths, resolveMemoryPaths, resolveRepoStatePaths, resolveTaskPaths } from "./runtime-state.mjs";
+
+const gitFailuresLogged = new Set();
 
 function runGit(cwd, args) {
   try {
@@ -18,7 +21,16 @@ function runGit(cwd, args) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"]
     }).trim();
-  } catch {
+  } catch (err) {
+    const code = err?.code ?? "UNKNOWN";
+    const key = `${code}:${args[0] ?? "git"}`;
+    if (!gitFailuresLogged.has(key)) {
+      gitFailuresLogged.add(key);
+      const reason = code === "ENOENT"
+        ? "`git` binary not found on PATH"
+        : `git ${args[0] ?? ""} failed (${code})`;
+      writeStderrLine(`warning: ${reason}; repo_drift signal will be incomplete.`);
+    }
     return null;
   }
 }
@@ -354,6 +366,7 @@ export function runMemoryMaintain({
           brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
         } catch (err) {
           briefError = err.message;
+          emitBriefRegenerationFailed(err);
         }
       }
     }
@@ -397,6 +410,7 @@ export function runMemoryMaintain({
             });
           } catch (err) {
             globalBriefError = err.message;
+            emitBriefRegenerationFailed(err);
           }
         }
         return visibleLockState(innerLockState);

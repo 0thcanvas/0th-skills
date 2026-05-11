@@ -6,6 +6,7 @@ import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { emitBriefRegenerationFailed } from "./lib/diagnostics.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
@@ -118,6 +119,7 @@ export function runMemorySync({
         });
       } catch (err) {
         briefError = err.message;
+        emitBriefRegenerationFailed(err);
       }
     }
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import process from "node:process";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { appendMemoryClaim } from "./memory-write.mjs";
 
 export const MEMORY_GATE_OUTCOMES = ["project", "global", "both", "nothing_durable"];
@@ -188,7 +188,7 @@ export function captureMemoryEvent({
 }
 
 function readJsonArg(filePath) {
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  return readJsonFileArg(filePath);
 }
 
 function pushListOption(options, key, value) {

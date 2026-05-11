@@ -284,6 +284,24 @@ function detectSubjectConflicts({
     .filter(Boolean);
 }
 
+function readJsonlForRecall(filePath, {
+  source,
+  primary = false,
+  degradedSources
+}) {
+  try {
+    return readJsonl(filePath);
+  } catch (err) {
+    if (primary) throw err;
+    degradedSources.push({
+      source,
+      file: filePath,
+      error: err.message
+    });
+    return [];
+  }
+}
+
 export function recallMemory({
   cwd = process.cwd(),
   query = "",
@@ -328,15 +346,56 @@ export function recallMemory({
   const filters = { kind, type, scope, lifecycleState, source, sourceId, brainId };
   const includeProjectStore = resolvedStoreScope !== "global";
   const includeGlobalStore = resolvedStoreScope !== "project";
-  const projectClaims = includeProjectStore ? readJsonl(resolvedMemoryFile) : [];
+  const degradedSources = [];
+  const projectClaims = includeProjectStore
+    ? readJsonlForRecall(resolvedMemoryFile, {
+      source: "project_memory",
+      primary: true,
+      degradedSources
+    })
+    : [];
   const projectLoops = includeProjectStore && includeTasks
     ? allProjectTasks
-      ? listOpenLoops({ cwd, allProjects: true }).loops
-      : readJsonl(resolvedTaskFile)
+      ? (() => {
+        try {
+          return listOpenLoops({ cwd, allProjects: true }).loops;
+        } catch (err) {
+          if (kind === "open_loop") throw err;
+          degradedSources.push({
+            source: "project_tasks",
+            file: null,
+            error: err.message
+          });
+          return [];
+        }
+      })()
+      : readJsonlForRecall(resolvedTaskFile, {
+        source: "project_tasks",
+        primary: kind === "open_loop",
+        degradedSources
+      })
     : [];
-  const projectEvidence = includeProjectStore && includeEvidence ? readJsonl(resolvedEvidenceFile) : [];
-  const globalClaims = includeGlobalStore ? readJsonl(resolvedGlobalMemoryFile) : [];
-  const globalEvidence = includeGlobalStore && includeEvidence ? readJsonl(resolvedGlobalEvidenceFile) : [];
+  const projectEvidence = includeProjectStore && includeEvidence
+    ? readJsonlForRecall(resolvedEvidenceFile, {
+      source: "project_evidence",
+      primary: kind === "evidence",
+      degradedSources
+    })
+    : [];
+  const globalClaims = includeGlobalStore
+    ? readJsonlForRecall(resolvedGlobalMemoryFile, {
+      source: "global_memory",
+      primary: resolvedStoreScope === "global",
+      degradedSources
+    })
+    : [];
+  const globalEvidence = includeGlobalStore && includeEvidence
+    ? readJsonlForRecall(resolvedGlobalEvidenceFile, {
+      source: "global_evidence",
+      primary: kind === "evidence" && resolvedStoreScope === "global",
+      degradedSources
+    })
+    : [];
   const effectiveProjectLimit = projectLimit ?? limit;
   const effectiveGlobalLimit = globalLimit ?? (
     resolvedStoreScope === "global" ? limit : Math.min(3, limit)
@@ -385,6 +444,7 @@ export function recallMemory({
     global_limit: includeGlobalStore ? effectiveGlobalLimit : 0,
     result_count: results.length,
     results,
+    degraded_sources: degradedSources,
     conflicts,
     has_conflicts: conflicts.length > 0,
     abstained: results.length === 0 && conflicts.length === 0
