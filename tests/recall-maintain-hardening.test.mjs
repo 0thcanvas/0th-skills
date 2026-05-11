@@ -32,6 +32,13 @@ function write(file, line) {
   fs.appendFileSync(file, JSON.stringify(line) + "\n");
 }
 
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const text = fs.readFileSync(filePath, "utf8").trim();
+  if (!text) return [];
+  return text.split("\n").map((line) => JSON.parse(line));
+}
+
 test("recall --source matches a claim by its source_symbols", () => {
   // PR #21 review NEW2: scoreRecord includes source_symbols in
   // the search text but matchFilters only checks `source_pointers`, which
@@ -389,4 +396,162 @@ test("memory-maintain dry-run leaves the JSONL byte-identical", () => {
   });
   const after = fs.readFileSync(memoryFile, "utf8");
   assert.equal(before, after, "dry-run must leave the memory file byte-identical");
+});
+
+test("memory-maintain reports global stale claims, source-pack expiry, conflicts, and orphan links", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const globalMemoryFile = path.join(stateRoot, "global", "memory", "claims.jsonl");
+    const sourceIndexFile = path.join(stateRoot, "global", "sources", "index.jsonl");
+    write(globalMemoryFile, {
+      id: "stale-global",
+      type: "external_research",
+      claim: "Stale global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl",
+      last_confirmed_at: "2026-01-01T00:00:00.000Z",
+      stale_after_days: 30
+    });
+    write(globalMemoryFile, {
+      id: "dup-a",
+      type: "external_research",
+      claim: "Duplicate global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl"
+    });
+    write(globalMemoryFile, {
+      id: "dup-b",
+      type: "external_research",
+      claim: "Duplicate global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl"
+    });
+    write(globalMemoryFile, {
+      id: "conflict-a",
+      type: "external_research",
+      claim: "Startup reads project memory only.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "medium",
+      source_id: "memory-systems",
+      subject_key: "startup-routing",
+      evidence_path: "sources/memory/source-pack.jsonl",
+      related_ids: ["missing-link"]
+    });
+    write(globalMemoryFile, {
+      id: "conflict-b",
+      type: "external_research",
+      claim: "Startup reads project memory plus bounded global memory.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      subject_key: "startup-routing",
+      evidence_path: "missing/source-pack.jsonl"
+    });
+    write(sourceIndexFile, {
+      id: "expired-source-pack",
+      source_id: "memory-systems",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      stale_after_days: 30,
+      source_pack_file: "packs/expired-source-pack.jsonl",
+      chunk_count: 1
+    });
+
+    const result = runMemoryMaintain({
+      cwd: repo,
+      maintainedAt: "2026-03-15T00:00:00.000Z"
+    });
+
+    assert.deepEqual(result.findings.global.stale_claims.map((entry) => entry.id), ["stale-global"]);
+    assert.deepEqual(result.findings.global.duplicate_candidates, [
+      { claim: "duplicate global claim.", ids: ["dup-a", "dup-b"] }
+    ]);
+    assert.deepEqual(result.findings.global.expired_source_packs.map((entry) => entry.id), ["expired-source-pack"]);
+    assert.deepEqual(result.findings.global.orphan_links, [
+      { id: "conflict-a", missing_id: "missing-link" }
+    ]);
+    assert.deepEqual(result.findings.global.conflicts[0].ids.sort(), ["conflict-a", "conflict-b"]);
+    assert.deepEqual(result.findings.global.missing_sources, [
+      { id: "conflict-b", missing_path: "missing/source-pack.jsonl" }
+    ]);
+  });
+});
+
+test("memory-maintain --apply marks global claims conservatively and never deletes source packs", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const globalMemoryFile = path.join(stateRoot, "global", "memory", "claims.jsonl");
+    const sourceIndexFile = path.join(stateRoot, "global", "sources", "index.jsonl");
+    const sourcePackFile = path.join(stateRoot, "global", "sources", "packs", "expired-source-pack.jsonl");
+    write(globalMemoryFile, {
+      id: "stale-global",
+      type: "external_research",
+      claim: "Stale global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl",
+      last_confirmed_at: "2026-01-01T00:00:00.000Z",
+      stale_after_days: 30
+    });
+    write(globalMemoryFile, {
+      id: "dup-a",
+      type: "external_research",
+      claim: "Duplicate global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl"
+    });
+    write(globalMemoryFile, {
+      id: "dup-b",
+      type: "external_research",
+      claim: "Duplicate global claim.",
+      scope: "global",
+      lifecycle_state: "active",
+      confidence: "high",
+      source_id: "memory-systems",
+      evidence_path: "sources/memory/source-pack.jsonl"
+    });
+    write(sourceIndexFile, {
+      id: "expired-source-pack",
+      source_id: "memory-systems",
+      created_at: "2026-01-01T00:00:00.000Z",
+      updated_at: "2026-01-01T00:00:00.000Z",
+      stale_after_days: 30,
+      source_pack_file: "packs/expired-source-pack.jsonl",
+      chunk_count: 1
+    });
+    write(sourcePackFile, {
+      id: "chunk-1",
+      text: "Verbatim source material must not be deleted by maintenance.",
+      content_hash: "hash"
+    });
+
+    const result = runMemoryMaintain({
+      cwd: repo,
+      maintainedAt: "2026-03-15T00:00:00.000Z",
+      apply: true
+    });
+    const claims = readJsonl(globalMemoryFile);
+
+    assert.equal(result.actions.some((action) => action.id === "stale-global" && action.action === "marked_needs_review"), true);
+    assert.equal(claims.find((claim) => claim.id === "stale-global").lifecycle_state, "needs_review");
+    assert.equal(claims.find((claim) => claim.id === "dup-b").lifecycle_state, "needs_review");
+    assert.equal(fs.existsSync(sourceIndexFile), true);
+    assert.equal(fs.existsSync(sourcePackFile), true);
+  });
 });

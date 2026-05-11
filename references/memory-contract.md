@@ -271,6 +271,11 @@ silently picking one. Use `memory expand --id <id>` to fetch the full record or 
 record matches, recall/expand returns an abstention-shaped result instead of inventing.
 
 Use `memory maintain` to report stale claims, duplicate candidates, missing sources, orphan open
-loops, supersession candidates, and repo drift. `memory maintain --apply` may perform conservative
-source-backed lifecycle changes, such as marking duplicate candidates `needs_review`; it does not
-destructively delete memory.
+loops, supersession candidates, repo drift, and global brain health. Global maintenance reports
+stale global claims, expired source packs, duplicate global claims, missing global source evidence,
+orphan `related_ids`, and subject-key conflicts.
+
+`memory maintain --apply` may perform only conservative source-backed lifecycle changes, such as
+marking affected claims `needs_review`; it does not destructively delete memory or source-pack
+material. When project and global claims both need updates, maintenance takes locks in deterministic
+project-then-global order and preserves successful writes even if derived brief regeneration fails.

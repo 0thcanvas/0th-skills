@@ -60,10 +60,10 @@ Capture global knowledge at workflow boundaries instead of relying on migration 
 
 ### 7. Maintenance, Staleness, and Locks
 Extend maintenance from project runtime state to global brain health without creating racey multi-file updates.
-- [ ] Maintenance reports stale global claims, expired source packs, duplicates, orphan links, missing source evidence, and conflicts.
-- [ ] Apply mode performs only conservative lifecycle changes such as `needs_review`, `superseded`, or `archived`.
-- [ ] Maintenance never deletes global source material without an explicit operator action.
-- [ ] Multi-file updates use append-only records or deterministic lock ordering, and stale brief regeneration failures preserve successful writes.
+- [x] Maintenance reports stale global claims, expired source packs, duplicates, orphan links, missing source evidence, and conflicts.
+- [x] Apply mode performs only conservative lifecycle changes such as `needs_review`, `superseded`, or `archived`.
+- [x] Maintenance never deletes global source material without an explicit operator action.
+- [x] Multi-file updates use append-only records or deterministic lock ordering, and stale brief regeneration failures preserve successful writes.
 
 ### 8. Evaluation and Dogfood Gates
 Protect the design with executable behavior checks before calling the global layer done.
