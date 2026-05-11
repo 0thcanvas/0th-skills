@@ -276,6 +276,17 @@ Review state is stored at:
 
 Use `--state-dir` for a one-off override.
 
+Memory v2 runtime state is also local user state, not project-repo content. By default the memory
+and open-loop scripts store generated JSONL/brief files at:
+
+- `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` if set
+- `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` if `XDG_STATE_HOME` is set
+- `~/.0th/skills/projects/<project-key>/...` otherwise
+
+The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
+the same repo share one local Memory v2 state directory. Each command prints the concrete file path
+it read or wrote in its JSON result. Use explicit path flags only for tests or migration work.
+
 ## Verification
 
 Run the local test suite with:

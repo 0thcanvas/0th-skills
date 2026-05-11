@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { readJsonl } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { resolveTaskPaths } from "./runtime-state.mjs";
 
 const PRIORITY_ORDER = new Map([
   ["P0", 0],
@@ -94,18 +95,23 @@ export function generateOpenLoopBrief(loops, {
 
 export function runOpenLoopBriefGeneration({
   cwd = process.cwd(),
-  taskFile = path.join(cwd, ".0th", "tasks", "open-loops.jsonl"),
-  outputFile = path.join(cwd, ".0th", "tasks", "brief.md"),
+  taskFile = null,
+  outputFile = null,
   now = new Date(),
   staleDays = 14
 } = {}) {
-  const loops = readJsonl(taskFile);
+  const defaults = resolveTaskPaths({ cwd });
+  const resolvedTaskFile = taskFile ?? defaults.taskFile;
+  const resolvedOutputFile = outputFile ?? (
+    taskFile ? path.join(path.dirname(resolvedTaskFile), "brief.md") : defaults.briefFile
+  );
+  const loops = readJsonl(resolvedTaskFile);
   const brief = generateOpenLoopBrief(loops, { now, staleDays });
-  fs.mkdirSync(path.dirname(outputFile), { recursive: true });
-  fs.writeFileSync(outputFile, brief);
+  fs.mkdirSync(path.dirname(resolvedOutputFile), { recursive: true });
+  fs.writeFileSync(resolvedOutputFile, brief);
   return {
-    task_file: taskFile,
-    output_file: outputFile,
+    task_file: resolvedTaskFile,
+    output_file: resolvedOutputFile,
     loop_count: loops.length,
     written: true
   };
@@ -142,7 +148,7 @@ function main() {
     process.stdout.write([
       "Usage: node scripts/open-loop-brief.mjs [--task-file FILE] [--output FILE] [--stale-days N]",
       "",
-      "Generates .0th/tasks/brief.md from .0th/tasks/open-loops.jsonl.",
+      "Generates the open-loop brief from the user-level runtime state directory.",
       ""
     ].join("\n"));
     return;

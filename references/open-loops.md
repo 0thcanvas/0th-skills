@@ -8,8 +8,12 @@ action.
 
 ## Storage
 
-- Repo-local loops live in `.0th/tasks/open-loops.jsonl`.
-- The session-start brief lives in `.0th/tasks/brief.md`.
+- Open loops default to the user-level Memory v2 runtime state directory, not the product repo.
+- The concrete runtime files are reported in command JSON as `task_file`, `brief_file`, or
+  `output_file`.
+- The default root is `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...`,
+  `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...`, or
+  `~/.0th/skills/projects/<project-key>/...`.
 - Use `scripts/open-loop.mjs` for writes and status changes (`add`, `block`, `close`, `drop`,
   plus `list` for read access).
 - Use `scripts/open-loop-brief.mjs` for the generated startup brief.

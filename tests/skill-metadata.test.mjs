@@ -214,7 +214,7 @@ test("shared memory contract separates open loops from durable memory claims", (
   const source = read(memoryContractPath);
 
   assert.match(source, /Open Loops/);
-  assert.match(source, /\.0th\/tasks\/open-loops\.jsonl/);
+  assert.match(source, /user\/runtime data|user-level/i);
   assert.match(source, /do not store TODOs as memory claims/i);
 });
 
@@ -245,7 +245,7 @@ test("core skills require the shared memory write gate", () => {
     );
     assert.match(
       source,
-      /do not hand-edit `.0th\/memory\/claims\.jsonl`/,
+      /do not hand-edit runtime `claims\.jsonl`/,
       `${skillName} should forbid manual claim-file edits`
     );
   }
@@ -263,8 +263,8 @@ test("core skills read open-loop briefs after memory briefs", () => {
     );
     assert.match(
       source,
-      /\.0th\/tasks\/brief\.md/,
-      `${skillName} should name the generated open-loop brief path`
+      /output_file/,
+      `${skillName} should read the generated open-loop brief path from command JSON`
     );
     assert.match(
       source,
@@ -345,12 +345,12 @@ test("core skills read the generated memory brief first when present", () => {
     );
     assert.match(
       source,
-      /\.0th\/memory\/brief\.md/,
-      `${skillName} should name the generated brief path`
+      /output_file/,
+      `${skillName} should read the generated memory brief path from command JSON`
     );
     assert.match(
       source,
-      /read it before browsing indexes/i,
+      /before browsing indexes/i,
       `${skillName} should prefer the brief before manual index browsing`
     );
   }

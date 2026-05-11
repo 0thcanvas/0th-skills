@@ -11,7 +11,7 @@
 //      line in claims.jsonl does not brick the memory store with a generic
 //      "Unexpected token" error.
 //   2. writeJsonlAtomic always mkdirs the parent (recursive: true) so fresh
-//      checkouts work without pre-existing .0th/memory/ directories.
+//      runtime state works without pre-existing directories.
 //   3. The temp-file pattern uses pid suffixes to avoid same-process tmp
 //      collisions and renames atomically on the local filesystem.
 //

@@ -6,6 +6,7 @@ import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
+import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 function normalizedArray(value) {
   return [...new Set(value ?? [])].sort();
@@ -41,12 +42,16 @@ export function reconcileReadSet({
   cwd = process.cwd()
 }) {
   if (!readSet) throw new Error("readSet is required");
-  // Default memoryFile + briefFile to the canonical .0th/memory/ locations
-  // so the CLI can be invoked as documented in skills/build/SKILL.md:
+  // Default memoryFile + briefFile after cwd is known so the CLI can be
+  // invoked as documented in skills/build/SKILL.md:
   //   `node read-set-reconcile.mjs --read-set <path>`
-  // without forcing every caller to thread --memory-file through.
-  const resolvedMemoryFile = memoryFile ?? path.join(cwd, ".0th", "memory", "claims.jsonl");
-  const resolvedBriefFile = briefFile ?? path.join(cwd, ".0th", "memory", "brief.md");
+  // without forcing every caller to thread --memory-file through. The default
+  // runtime state lives outside the product repo checkout.
+  const defaults = resolveMemoryPaths({ cwd });
+  const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
+  const resolvedBriefFile = briefFile ?? (
+    memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
+  );
 
   const normalizedReadSet = normalizeReadSet(readSet);
   const claims = readJsonl(resolvedMemoryFile);

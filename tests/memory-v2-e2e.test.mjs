@@ -29,6 +29,21 @@ function tempRepo() {
   return dir;
 }
 
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-v2-state-"));
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+}
+
 function readJsonl(filePath) {
   return fs.readFileSync(filePath, "utf8")
     .trim()
@@ -37,102 +52,101 @@ function readJsonl(filePath) {
 }
 
 test("Memory v2 accepts write, brief, source-change sync, and read-set confirmation", () => {
-  const repo = tempRepo();
-  const memoryFile = path.join(repo, ".0th", "memory", "claims.jsonl");
-  const briefFile = path.join(repo, ".0th", "memory", "brief.md");
+  withTempStateRoot(() => {
+    const repo = tempRepo();
 
-  const writeResult = appendMemoryClaim({
-    cwd: repo,
-    now: new Date("2026-05-10T22:00:00.000Z"),
-    input: {
-      type: "decision",
-      claim: "Memory v2 uses write-through claim capture.",
-      scope: "repo",
-      lifecycle_state: "active",
-      evidence_path: "docs/decisions/memory-v2.md",
-      source_paths: ["src/memory.js"],
-      source_symbols: ["memory"],
-      confidence: "high"
-    }
+    const writeResult = appendMemoryClaim({
+      cwd: repo,
+      now: new Date("2026-05-10T22:00:00.000Z"),
+      input: {
+        type: "decision",
+        claim: "Memory v2 uses write-through claim capture.",
+        scope: "repo",
+        lifecycle_state: "active",
+        evidence_path: "docs/decisions/memory-v2.md",
+        source_paths: ["src/memory.js"],
+        source_symbols: ["memory"],
+        confidence: "high"
+      }
+    });
+
+    assert.equal(writeResult.written, true);
+    assert.match(fs.readFileSync(writeResult.brief_file, "utf8"), /write-through claim capture/);
+
+    const from = sh(repo, ["git", "rev-parse", "HEAD"]);
+    fs.writeFileSync(path.join(repo, "src", "memory.js"), "export const memory = 'v2';\n");
+    sh(repo, ["git", "add", "src/memory.js"]);
+    sh(repo, ["git", "commit", "-m", "update memory"]);
+    const to = sh(repo, ["git", "rev-parse", "HEAD"]);
+
+    const syncResult = runMemorySync({
+      cwd: repo,
+      from,
+      to,
+      syncedAt: "2026-05-10T22:10:00.000Z"
+    });
+    let [claim] = readJsonl(writeResult.memory_file);
+
+    assert.deepEqual(syncResult.affected_claim_ids, [writeResult.id]);
+    assert.equal(claim.lifecycle_state, "needs_review");
+    assert.equal(claim.review.reason, "source_changed");
+
+    const reconcileResult = reconcileReadSet({
+      cwd: repo,
+      confirmedAt: "2026-05-10T22:20:00.000Z",
+      readSet: {
+        files: ["src/memory.js"],
+        symbols: ["memory"],
+        tests: ["tests/memory-v2-e2e.test.mjs"],
+        verified_claims: [
+          {
+            id: writeResult.id,
+            outcome: "confirmed",
+            evidence_path: "tests/memory-v2-e2e.test.mjs"
+          }
+        ]
+      }
+    });
+    [claim] = readJsonl(writeResult.memory_file);
+
+    assert.deepEqual(reconcileResult.checked_claim_ids, [writeResult.id]);
+    assert.deepEqual(reconcileResult.updated_claim_ids, [writeResult.id]);
+    assert.equal(claim.lifecycle_state, "active");
+    assert.equal(claim.review, undefined);
+    assert.equal(claim.last_confirmed_at, "2026-05-10T22:20:00.000Z");
   });
-
-  assert.equal(writeResult.written, true);
-  assert.match(fs.readFileSync(briefFile, "utf8"), /write-through claim capture/);
-
-  const from = sh(repo, ["git", "rev-parse", "HEAD"]);
-  fs.writeFileSync(path.join(repo, "src", "memory.js"), "export const memory = 'v2';\n");
-  sh(repo, ["git", "add", "src/memory.js"]);
-  sh(repo, ["git", "commit", "-m", "update memory"]);
-  const to = sh(repo, ["git", "rev-parse", "HEAD"]);
-
-  const syncResult = runMemorySync({
-    cwd: repo,
-    from,
-    to,
-    memoryFile,
-    syncedAt: "2026-05-10T22:10:00.000Z"
-  });
-  let [claim] = readJsonl(memoryFile);
-
-  assert.deepEqual(syncResult.affected_claim_ids, [writeResult.id]);
-  assert.equal(claim.lifecycle_state, "needs_review");
-  assert.equal(claim.review.reason, "source_changed");
-
-  const reconcileResult = reconcileReadSet({
-    memoryFile,
-    confirmedAt: "2026-05-10T22:20:00.000Z",
-    readSet: {
-      files: ["src/memory.js"],
-      symbols: ["memory"],
-      tests: ["tests/memory-v2-e2e.test.mjs"],
-      verified_claims: [
-        {
-          id: writeResult.id,
-          outcome: "confirmed",
-          evidence_path: "tests/memory-v2-e2e.test.mjs"
-        }
-      ]
-    }
-  });
-  [claim] = readJsonl(memoryFile);
-
-  assert.deepEqual(reconcileResult.checked_claim_ids, [writeResult.id]);
-  assert.deepEqual(reconcileResult.updated_claim_ids, [writeResult.id]);
-  assert.equal(claim.lifecycle_state, "active");
-  assert.equal(claim.review, undefined);
-  assert.equal(claim.last_confirmed_at, "2026-05-10T22:20:00.000Z");
 });
 
 test("Memory v2 tracks unfinished work as open loops instead of durable claims", () => {
-  const repo = tempRepo();
-  const taskFile = path.join(repo, ".0th", "tasks", "open-loops.jsonl");
-  const briefFile = path.join(repo, ".0th", "tasks", "brief.md");
+  withTempStateRoot(() => {
+    const repo = tempRepo();
 
-  const addResult = addOpenLoop({
-    cwd: repo,
-    now: new Date("2026-05-10T22:30:00.000Z"),
-    input: {
-      title: "Verify Memory v2 open-loop integration",
-      scope: "repo",
-      priority: "P1",
-      next_action: "Run the focused open-loop tests and full suite.",
-      evidence_path: "tests/memory-v2-e2e.test.mjs",
-      source_paths: ["scripts/open-loop.mjs", "scripts/open-loop-brief.mjs"]
-    }
+    const addResult = addOpenLoop({
+      cwd: repo,
+      now: new Date("2026-05-10T22:30:00.000Z"),
+      input: {
+        title: "Verify Memory v2 open-loop integration",
+        scope: "repo",
+        priority: "P1",
+        next_action: "Run the focused open-loop tests and full suite.",
+        evidence_path: "tests/memory-v2-e2e.test.mjs",
+        source_paths: ["scripts/open-loop.mjs", "scripts/open-loop-brief.mjs"]
+      }
+    });
+
+    assert.equal(addResult.written, true);
+    assert.match(fs.readFileSync(addResult.brief_file, "utf8"), /Verify Memory v2 open-loop integration/);
+
+    const closeResult = updateOpenLoopStatus({
+      cwd: repo,
+      id: addResult.id,
+      status: "done",
+      now: new Date("2026-05-10T22:40:00.000Z")
+    });
+    const [loop] = readJsonl(addResult.task_file);
+
+    assert.equal(closeResult.status, "done");
+    assert.equal(loop.status, "done");
+    assert.equal(loop.closed_at, "2026-05-10T22:40:00.000Z");
   });
-
-  assert.equal(addResult.written, true);
-  assert.match(fs.readFileSync(briefFile, "utf8"), /Verify Memory v2 open-loop integration/);
-
-  const closeResult = updateOpenLoopStatus({
-    cwd: repo,
-    id: addResult.id,
-    status: "done",
-    now: new Date("2026-05-10T22:40:00.000Z")
-  });
-  const [loop] = readJsonl(taskFile);
-
-  assert.equal(closeResult.status, "done");
-  assert.equal(loop.status, "done");
-  assert.equal(loop.closed_at, "2026-05-10T22:40:00.000Z");
 });

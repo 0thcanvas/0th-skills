@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 import process from "node:process";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
+import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 function runGit(cwd, args) {
   return execFileSync("git", args, {
@@ -47,19 +47,24 @@ export function runMemorySync({
   cwd = process.cwd(),
   from,
   to,
-  memoryFile = path.join(cwd, ".0th", "memory", "claims.jsonl"),
-  briefFile = path.join(cwd, ".0th", "memory", "brief.md"),
+  memoryFile = null,
+  briefFile = null,
   syncedAt = new Date().toISOString(),
   updateBrief = true
 } = {}) {
   if (!from) throw new Error("--from is required");
   if (!to) throw new Error("--to is required");
 
+  const defaults = resolveMemoryPaths({ cwd });
+  const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
+  const resolvedBriefFile = briefFile ?? (
+    memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
+  );
   const changed = changedSources(cwd, from, to);
-  const claims = readMemoryClaims(memoryFile);
+  const claims = readMemoryClaims(resolvedMemoryFile);
   if (claims === null) {
     return {
-      memory_file: memoryFile,
+      memory_file: resolvedMemoryFile,
       memory_file_exists: false,
       from_revision: from,
       to_revision: to,
@@ -89,27 +94,31 @@ export function runMemorySync({
     };
   });
 
-  writeJsonlAtomic(memoryFile, updatedClaims);
+  writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
 
-  // Regenerate the machine-facing brief after lifecycle-state flips so
-  // .0th/memory/brief.md doesn't keep claiming "active" for claims that
-  // memory-sync just demoted to "needs_review". The decision record names
-  // the brief as "the primary machine-facing memory layer" — if we mutate
-  // claims without refreshing the brief, agents read a lying view until
-  // the next memory-write. Brief failure is non-fatal: surface it on the
-  // returned record but don't undo the claim updates.
+  // Regenerate the machine-facing brief after lifecycle-state flips so it
+  // doesn't keep claiming "active" for claims that memory-sync just demoted
+  // to "needs_review". The decision record names the brief as "the primary
+  // machine-facing memory layer" — if we mutate claims without refreshing
+  // the brief, agents read a lying view until the next memory-write. Brief
+  // failure is non-fatal: surface it on the returned record but don't undo
+  // the claim updates.
   let brief = null;
   let briefError = null;
   if (updateBrief && affected.length > 0) {
     try {
-      brief = runBriefGeneration({ cwd, memoryFile, outputFile: briefFile });
+      brief = runBriefGeneration({
+        cwd,
+        memoryFile: resolvedMemoryFile,
+        outputFile: resolvedBriefFile
+      });
     } catch (err) {
       briefError = err.message;
     }
   }
 
   return {
-    memory_file: memoryFile,
+    memory_file: resolvedMemoryFile,
     memory_file_exists: true,
     from_revision: from,
     to_revision: to,

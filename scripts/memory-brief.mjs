@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { readJsonl } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 const SECTIONS = [
   ["Active Decisions", (claim) => claim.type === "decision" && claim.lifecycle_state !== "archived"],
@@ -52,16 +53,21 @@ export function generateBrief(claims) {
 
 export function runBriefGeneration({
   cwd = process.cwd(),
-  memoryFile = path.join(cwd, ".0th", "memory", "claims.jsonl"),
-  outputFile = path.join(cwd, ".0th", "memory", "brief.md")
+  memoryFile = null,
+  outputFile = null
 } = {}) {
-  const claims = readJsonl(memoryFile);
+  const defaults = resolveMemoryPaths({ cwd });
+  const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
+  const resolvedOutputFile = outputFile ?? (
+    memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
+  );
+  const claims = readJsonl(resolvedMemoryFile);
   const brief = generateBrief(claims);
-  fs.mkdirSync(path.dirname(outputFile), { recursive: true });
-  fs.writeFileSync(outputFile, brief);
+  fs.mkdirSync(path.dirname(resolvedOutputFile), { recursive: true });
+  fs.writeFileSync(resolvedOutputFile, brief);
   return {
-    memory_file: memoryFile,
-    output_file: outputFile,
+    memory_file: resolvedMemoryFile,
+    output_file: resolvedOutputFile,
     claim_count: claims.length,
     written: true
   };

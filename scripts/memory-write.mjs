@@ -6,6 +6,7 @@ import process from "node:process";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 export const MEMORY_TYPES = [
   "decision",
@@ -129,8 +130,8 @@ export function normalizeMemoryClaim(input, {
 
 export function appendMemoryClaim({
   cwd = process.cwd(),
-  memoryFile = path.join(cwd, ".0th", "memory", "claims.jsonl"),
-  briefFile = path.join(cwd, ".0th", "memory", "brief.md"),
+  memoryFile = null,
+  briefFile = null,
   input,
   now = new Date(),
   updateBrief = true
@@ -139,10 +140,15 @@ export function appendMemoryClaim({
     throw new Error("input memory claim is required");
   }
 
-  const existingClaims = readJsonl(memoryFile);
+  const defaults = resolveMemoryPaths({ cwd });
+  const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
+  const resolvedBriefFile = briefFile ?? (
+    memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
+  );
+  const existingClaims = readJsonl(resolvedMemoryFile);
   const claim = normalizeMemoryClaim(input, { existingClaims, now });
   const nextClaims = [...existingClaims, claim];
-  writeJsonlAtomic(memoryFile, nextClaims);
+  writeJsonlAtomic(resolvedMemoryFile, nextClaims);
 
   // The claim is already on disk by this point. If runBriefGeneration throws
   // (permissions, disk full, brief target is a directory), we must NOT lose
@@ -154,15 +160,15 @@ export function appendMemoryClaim({
   let briefError = null;
   if (updateBrief) {
     try {
-      brief = runBriefGeneration({ cwd, memoryFile, outputFile: briefFile });
+      brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
     } catch (err) {
       briefError = err.message;
     }
   }
 
   return {
-    memory_file: memoryFile,
-    brief_file: updateBrief ? briefFile : null,
+    memory_file: resolvedMemoryFile,
+    brief_file: updateBrief ? resolvedBriefFile : null,
     id: claim.id,
     type: claim.type,
     lifecycle_state: claim.lifecycle_state,

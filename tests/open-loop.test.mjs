@@ -17,6 +17,21 @@ function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "0th-open-loop-"));
 }
 
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = path.join(tempDir(), "state");
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+}
+
 function readJsonl(filePath) {
   return fs.readFileSync(filePath, "utf8")
     .trim()
@@ -57,36 +72,59 @@ test("normalizeOpenLoop validates the action tracking contract", () => {
   );
 });
 
-test("addOpenLoop writes a normalized repo-local loop and regenerates the brief", () => {
-  const repo = tempDir();
-  const taskFile = path.join(repo, ".0th", "tasks", "open-loops.jsonl");
-  const briefFile = path.join(repo, ".0th", "tasks", "brief.md");
+test("addOpenLoop writes a normalized runtime loop and regenerates the brief", () => {
+  withTempStateRoot(() => {
+    const repo = tempDir();
 
-  const result = addOpenLoop({
-    cwd: repo,
-    now: new Date("2026-05-10T22:00:00.000Z"),
-    input: {
-      title: "Finish open-loop tracking",
-      scope: "repo",
-      priority: "P1",
-      next_action: "Wire startup briefs into every core skill.",
-      evidence_path: "docs/plans/2026-05-10-0th-memory-v2.md",
-      source_paths: ["skills/build/SKILL.md", "skills/build/SKILL.md"]
-    }
+    const result = addOpenLoop({
+      cwd: repo,
+      now: new Date("2026-05-10T22:00:00.000Z"),
+      input: {
+        title: "Finish open-loop tracking",
+        scope: "repo",
+        priority: "P1",
+        next_action: "Wire startup briefs into every core skill.",
+        evidence_path: "docs/plans/2026-05-10-0th-memory-v2.md",
+        source_paths: ["skills/build/SKILL.md", "skills/build/SKILL.md"]
+      }
+    });
+
+    const [loop] = readJsonl(result.task_file);
+    const brief = fs.readFileSync(result.brief_file, "utf8");
+
+    assert.equal(result.written, true);
+    assert.equal(result.brief_updated, true);
+    assert.equal(result.task_file.startsWith(path.join(repo, ".0th")), false);
+    assert.equal(loop.id, "2026-05-10-repo-finish-open-loop-tracking");
+    assert.equal(loop.status, "open");
+    assert.equal(loop.priority, "P1");
+    assert.equal(loop.created_at, "2026-05-10T22:00:00.000Z");
+    assert.equal(loop.updated_at, "2026-05-10T22:00:00.000Z");
+    assert.deepEqual(loop.source_paths, ["skills/build/SKILL.md"]);
+    assert.match(brief, /Finish open-loop tracking/);
   });
+});
 
-  const [loop] = readJsonl(taskFile);
-  const brief = fs.readFileSync(briefFile, "utf8");
+test("addOpenLoop default stores runtime task state outside the project checkout", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const result = addOpenLoop({
+      cwd: repo,
+      now: new Date("2026-05-11T01:30:00.000Z"),
+      input: {
+        title: "Keep Memory v2 runtime tasks out of product repos",
+        scope: "repo",
+        priority: "P1",
+        next_action: "Write tasks to user state by default.",
+        evidence_path: "references/open-loops.md"
+      }
+    });
 
-  assert.equal(result.written, true);
-  assert.equal(result.brief_updated, true);
-  assert.equal(loop.id, "2026-05-10-repo-finish-open-loop-tracking");
-  assert.equal(loop.status, "open");
-  assert.equal(loop.priority, "P1");
-  assert.equal(loop.created_at, "2026-05-10T22:00:00.000Z");
-  assert.equal(loop.updated_at, "2026-05-10T22:00:00.000Z");
-  assert.deepEqual(loop.source_paths, ["skills/build/SKILL.md"]);
-  assert.match(brief, /Finish open-loop tracking/);
+    assert.ok(result.task_file.startsWith(stateRoot));
+    assert.ok(result.brief_file.startsWith(stateRoot));
+    assert.equal(fs.existsSync(path.join(repo, ".0th")), false);
+    assert.equal(fs.existsSync(result.task_file), true);
+  });
 });
 
 test("updateOpenLoopStatus blocks, closes, and drops existing loops without losing provenance", () => {
@@ -116,14 +154,14 @@ test("updateOpenLoopStatus blocks, closes, and drops existing loops without losi
     id: added.id,
     status: "blocked",
     blockedReason: "Waiting for user priority.",
-    nextAction: "Ask whether repo-local storage is enough.",
+    nextAction: "Ask whether user-level runtime storage is enough.",
     now: new Date("2026-05-10T23:00:00.000Z")
   });
 
   let [loop] = readJsonl(taskFile);
   assert.equal(loop.status, "blocked");
   assert.equal(loop.blocked_reason, "Waiting for user priority.");
-  assert.equal(loop.next_action, "Ask whether repo-local storage is enough.");
+  assert.equal(loop.next_action, "Ask whether user-level runtime storage is enough.");
 
   updateOpenLoopStatus({
     cwd: repo,

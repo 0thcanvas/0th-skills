@@ -6,6 +6,7 @@ import process from "node:process";
 import { runOpenLoopBriefGeneration } from "./open-loop-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { resolveTaskPaths } from "./runtime-state.mjs";
 
 export const OPEN_LOOP_STATUSES = ["open", "blocked", "done", "dropped"];
 export const OPEN_LOOP_PRIORITIES = ["P0", "P1", "P2", "P3"];
@@ -131,20 +132,30 @@ function regenerateBrief({ cwd, taskFile, briefFile, updateBrief }) {
 
 export function addOpenLoop({
   cwd = process.cwd(),
-  taskFile = path.join(cwd, ".0th", "tasks", "open-loops.jsonl"),
-  briefFile = path.join(cwd, ".0th", "tasks", "brief.md"),
+  taskFile = null,
+  briefFile = null,
   input,
   now = new Date(),
   updateBrief = true
 } = {}) {
-  const existingLoops = readJsonl(taskFile);
+  const defaults = resolveTaskPaths({ cwd });
+  const resolvedTaskFile = taskFile ?? defaults.taskFile;
+  const resolvedBriefFile = briefFile ?? (
+    taskFile ? path.join(path.dirname(resolvedTaskFile), "brief.md") : defaults.briefFile
+  );
+  const existingLoops = readJsonl(resolvedTaskFile);
   const loop = normalizeOpenLoop(input, { existingLoops, now });
-  writeJsonlAtomic(taskFile, [...existingLoops, loop]);
-  const brief = regenerateBrief({ cwd, taskFile, briefFile, updateBrief });
+  writeJsonlAtomic(resolvedTaskFile, [...existingLoops, loop]);
+  const brief = regenerateBrief({
+    cwd,
+    taskFile: resolvedTaskFile,
+    briefFile: resolvedBriefFile,
+    updateBrief
+  });
 
   return {
-    task_file: taskFile,
-    brief_file: updateBrief ? briefFile : null,
+    task_file: resolvedTaskFile,
+    brief_file: updateBrief ? resolvedBriefFile : null,
     id: loop.id,
     status: loop.status,
     priority: loop.priority,
@@ -166,17 +177,18 @@ function sortLoops(left, right) {
 
 export function listOpenLoops({
   cwd = process.cwd(),
-  taskFile = path.join(cwd, ".0th", "tasks", "open-loops.jsonl"),
+  taskFile = null,
   includeClosed = false,
   status = null
 } = {}) {
-  const loops = readJsonl(taskFile)
+  const resolvedTaskFile = taskFile ?? resolveTaskPaths({ cwd }).taskFile;
+  const loops = readJsonl(resolvedTaskFile)
     .filter((loop) => includeClosed || loop.status === "open" || loop.status === "blocked")
     .filter((loop) => !status || loop.status === status)
     .sort(sortLoops);
 
   return {
-    task_file: taskFile,
+    task_file: resolvedTaskFile,
     loop_count: loops.length,
     loops
   };
@@ -188,8 +200,8 @@ function mergeSourcePaths(existing, next) {
 
 export function updateOpenLoopStatus({
   cwd = process.cwd(),
-  taskFile = path.join(cwd, ".0th", "tasks", "open-loops.jsonl"),
-  briefFile = path.join(cwd, ".0th", "tasks", "brief.md"),
+  taskFile = null,
+  briefFile = null,
   id,
   status,
   blockedReason = null,
@@ -203,7 +215,12 @@ export function updateOpenLoopStatus({
   if (!id) throw new Error("id is required");
   assertAllowed("status", status, OPEN_LOOP_STATUSES);
 
-  const loops = readJsonl(taskFile);
+  const defaults = resolveTaskPaths({ cwd });
+  const resolvedTaskFile = taskFile ?? defaults.taskFile;
+  const resolvedBriefFile = briefFile ?? (
+    taskFile ? path.join(path.dirname(resolvedTaskFile), "brief.md") : defaults.briefFile
+  );
+  const loops = readJsonl(resolvedTaskFile);
   const index = loops.findIndex((loop) => loop.id === id);
   if (index === -1) throw new Error(`open loop not found: ${id}`);
 
@@ -249,8 +266,13 @@ export function updateOpenLoopStatus({
   if (mergedSourcePaths.length > 0) next.source_paths = mergedSourcePaths;
 
   loops[index] = next;
-  writeJsonlAtomic(taskFile, loops);
-  const brief = regenerateBrief({ cwd, taskFile, briefFile, updateBrief });
+  writeJsonlAtomic(resolvedTaskFile, loops);
+  const brief = regenerateBrief({
+    cwd,
+    taskFile: resolvedTaskFile,
+    briefFile: resolvedBriefFile,
+    updateBrief
+  });
 
   // Echo back the lifecycle-relevant reason/action fields so the CLI's JSON
   // output self-documents what was recorded; previously the user had to
@@ -258,8 +280,8 @@ export function updateOpenLoopStatus({
   // actually landed. This also makes --json-driven invocations testable
   // without coupling tests to the on-disk format.
   return {
-    task_file: taskFile,
-    brief_file: updateBrief ? briefFile : null,
+    task_file: resolvedTaskFile,
+    brief_file: updateBrief ? resolvedBriefFile : null,
     id: next.id,
     status: next.status,
     updated: true,
@@ -391,7 +413,7 @@ function helpText() {
     "",
     "add requires --title, --scope, --next-action, and --evidence-path or --source-path.",
     "block requires --id and --blocked-reason. drop requires --id and --drop-reason.",
-    "The generated .0th/tasks/brief.md is updated unless --no-brief is passed.",
+    "The generated task brief in the user-level runtime state directory is updated unless --no-brief is passed.",
     ""
   ].join("\n");
 }

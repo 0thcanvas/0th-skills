@@ -6,6 +6,20 @@ Memory is workflow-integrated: capture happens at meaningful events, not only at
 Markdown artifacts remain the evidence layer; generated briefs and indexes are the machine-facing
 recall layer.
 
+## Runtime State
+
+Generated Memory v2 state is user/runtime data, not product-repo content. By default, scripts
+store it outside the target checkout under:
+
+- `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` when `OTH_SKILLS_STATE_DIR` is set.
+- `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` when `XDG_STATE_HOME` is set.
+- `~/.0th/skills/projects/<project-key>/...` otherwise.
+
+`<project-key>` is derived from the Git `origin` URL when available, falling back to the checkout
+path for non-Git directories. The command JSON output always reports the concrete file it read or
+wrote. Use explicit `--memory-file`, `--brief-output`, `--task-file`, or `--output` only for tests
+or deliberate migration work.
+
 ## Memory Types
 
 - `decision` — a chosen direction, rejected alternative, or durability reason.
@@ -29,10 +43,10 @@ recall layer.
 Open loops are unfinished actions, blockers, and handoff items. They are not durable memory
 claims; do not store TODOs as memory claims.
 
-Track open loops in `.0th/tasks/open-loops.jsonl` through `scripts/open-loop.mjs`, then
-generate `.0th/tasks/brief.md` with `scripts/open-loop-brief.mjs` at session start after the
-memory brief. Use `repo` scope for work tied to one checkout, `project` scope for work spanning
-repos in the same product, and `global` scope only for cross-project operating concerns.
+Track open loops through `scripts/open-loop.mjs`, then generate the open-loop brief with
+`scripts/open-loop-brief.mjs` at session start after the memory brief. Use `repo` scope for work
+tied to one checkout, `project` scope for work spanning repos in the same product, and `global`
+scope only for cross-project operating concerns.
 
 ## Memory Write Gate
 
@@ -66,7 +80,7 @@ If the outcome is `nothing durable`, write nothing and say so only when the user
 ## Canonical Writer
 
 Durable memory claims must be written through `scripts/memory-write.mjs`; do not hand-edit
-`.0th/memory/claims.jsonl`.
+the runtime `claims.jsonl`.
 
 Minimum command shape:
 
@@ -81,12 +95,12 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
 ```
 
 The writer validates required fields, appends one JSONL claim, rejects duplicate explicit ids,
-and regenerates `.0th/memory/brief.md` unless `--no-brief` is passed. `scripts/memory-sync.mjs`
-and `scripts/read-set-reconcile.mjs` also refresh the brief whenever they update any claim, so
-the brief never lags lifecycle-state changes. If brief regeneration fails (filesystem error,
-disk full, brief target is a directory), the claim or lifecycle update is preserved and the
-failure surfaces on the result as `brief_error` — the writer never silently drops a successful
-claim because the brief refresh threw.
+and regenerates the memory brief unless `--no-brief` is passed. `scripts/memory-sync.mjs` and
+`scripts/read-set-reconcile.mjs` also refresh the brief whenever they update any claim, so the
+brief never lags lifecycle-state changes. If brief regeneration fails (filesystem error, disk
+full, brief target is a directory), the claim or lifecycle update is preserved and the failure
+surfaces on the result as `brief_error` — the writer never silently drops a successful claim
+because the brief refresh threw.
 
 `evidence_path` vs `source_paths`: `evidence_path` is a single path to the proof artifact that
 justifies the claim (the decision record, dossier, or doc you would point a human at to defend
@@ -103,10 +117,10 @@ sessions on the same checkout, or `memory-write` overlapping with the auto-sync 
 `session-preflight`) both read the JSONL at time T, both append their own claim, and both
 rename, whichever renames last wins and the other claim is silently lost.
 
-Memory v2 assumes a **single writer per checkout**. If you run multiple agents or shells against
-the same `.0th/memory/` or `.0th/tasks/` directory, serialize the writes yourself (one CLI at a
-time, or a wrapper that takes an exclusive lock). A future revision may add `flock`-style
-locking; until then the contract is documented above so silent loss does not surprise anyone.
+Memory v2 assumes a **single writer per project runtime directory**. If you run multiple agents or
+shells against the same generated memory/task files, serialize the writes yourself (one CLI at a
+time, or a wrapper that takes an exclusive lock). A future revision may add `flock`-style locking;
+until then the contract is documented above so silent loss does not surprise anyone.
 
 ## Sync Granularity
 
@@ -120,7 +134,7 @@ symbol-aware verification when an agent has already paid the inspection cost.
 
 ## Claim Schema
 
-Each claim in `.0th/memory/claims.jsonl` is one JSON object with:
+Each claim in the runtime `claims.jsonl` is one JSON object with:
 
 - `id` — unique; generated from date, type, and claim text when omitted.
 - `type` — one of the Memory Types above.

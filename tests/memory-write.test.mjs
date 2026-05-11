@@ -12,6 +12,21 @@ function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-write-"));
 }
 
+function withTempStateRoot(callback) {
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  const stateRoot = path.join(tempDir(), "state");
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  try {
+    return callback(stateRoot);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+}
+
 function readJsonl(filePath) {
   return fs.readFileSync(filePath, "utf8")
     .trim()
@@ -44,34 +59,57 @@ test("normalizeMemoryClaim validates required memory contract fields", () => {
 });
 
 test("appendMemoryClaim writes a schema-normalized claim and regenerates the brief", () => {
-  const repo = tempDir();
-  const memoryFile = path.join(repo, ".0th", "memory", "claims.jsonl");
-  const briefFile = path.join(repo, ".0th", "memory", "brief.md");
+  withTempStateRoot(() => {
+    const repo = tempDir();
 
-  const result = appendMemoryClaim({
-    cwd: repo,
-    now: new Date("2026-05-10T21:00:00.000Z"),
-    input: {
-      type: "decision",
-      claim: "Use canonical memory-write for durable Memory v2 claims.",
-      scope: "repo",
-      evidence_path: "docs/decisions/memory.md",
-      source_paths: ["scripts/memory-write.mjs", "scripts/memory-write.mjs"],
-      confidence: "high"
-    }
+    const result = appendMemoryClaim({
+      cwd: repo,
+      now: new Date("2026-05-10T21:00:00.000Z"),
+      input: {
+        type: "decision",
+        claim: "Use canonical memory-write for durable Memory v2 claims.",
+        scope: "repo",
+        evidence_path: "docs/decisions/memory.md",
+        source_paths: ["scripts/memory-write.mjs", "scripts/memory-write.mjs"],
+        confidence: "high"
+      }
+    });
+
+    const [claim] = readJsonl(result.memory_file);
+    const brief = fs.readFileSync(result.brief_file, "utf8");
+
+    assert.equal(result.written, true);
+    assert.equal(result.brief_updated, true);
+    assert.equal(result.memory_file.startsWith(path.join(repo, ".0th")), false);
+    assert.equal(claim.id, "2026-05-10-decision-use-canonical-memory-write-for-durable-memory-v2-claims");
+    assert.equal(claim.type, "decision");
+    assert.equal(claim.lifecycle_state, "active");
+    assert.equal(claim.created_at, "2026-05-10T21:00:00.000Z");
+    assert.deepEqual(claim.source_paths, ["scripts/memory-write.mjs"]);
+    assert.match(brief, /Use canonical memory-write/);
   });
+});
 
-  const [claim] = readJsonl(memoryFile);
-  const brief = fs.readFileSync(briefFile, "utf8");
+test("appendMemoryClaim default stores runtime state outside the project checkout", () => {
+  withTempStateRoot((stateRoot) => {
+    const repo = tempDir();
+    const result = appendMemoryClaim({
+      cwd: repo,
+      now: new Date("2026-05-11T01:00:00.000Z"),
+      input: {
+        type: "repo_state",
+        claim: "Memory v2 runtime state belongs to user state, not the product repo.",
+        scope: "repo",
+        evidence_path: "references/memory-contract.md",
+        confidence: "high"
+      }
+    });
 
-  assert.equal(result.written, true);
-  assert.equal(result.brief_updated, true);
-  assert.equal(claim.id, "2026-05-10-decision-use-canonical-memory-write-for-durable-memory-v2-claims");
-  assert.equal(claim.type, "decision");
-  assert.equal(claim.lifecycle_state, "active");
-  assert.equal(claim.created_at, "2026-05-10T21:00:00.000Z");
-  assert.deepEqual(claim.source_paths, ["scripts/memory-write.mjs"]);
-  assert.match(brief, /Use canonical memory-write/);
+    assert.ok(result.memory_file.startsWith(stateRoot));
+    assert.ok(result.brief_file.startsWith(stateRoot));
+    assert.equal(fs.existsSync(path.join(repo, ".0th")), false);
+    assert.equal(fs.existsSync(result.memory_file), true);
+  });
 });
 
 test("appendMemoryClaim refuses duplicate explicit ids", () => {
