@@ -58,7 +58,7 @@ test("normalizeOpenLoop validates the action tracking contract", () => {
       scope: "repo",
       next_action: "do it"
     }),
-    /evidence_path or at least one source_path/
+    /evidence_path, evidence_id, or at least one source_path/
   );
   assert.throws(
     () => normalizeOpenLoop({
@@ -125,6 +125,50 @@ test("addOpenLoop default stores runtime task state outside the project checkout
     assert.equal(fs.existsSync(path.join(repo, ".0th")), false);
     assert.equal(fs.existsSync(result.task_file), true);
   });
+});
+
+test("open-loop mutations persist even when brief generation fails", () => {
+  const repo = tempDir();
+  const taskFile = path.join(repo, "open-loops.jsonl");
+  fs.writeFileSync(path.join(repo, "brief-blocker"), "");
+  const briefFile = path.join(repo, "brief-blocker", "brief.md");
+
+  const added = addOpenLoop({
+    cwd: repo,
+    taskFile,
+    briefFile,
+    now: new Date("2026-05-11T02:00:00.000Z"),
+    input: {
+      id: "brief-failure-loop",
+      title: "Brief failure still records the loop",
+      scope: "repo",
+      priority: "P1",
+      next_action: "Report the brief refresh error without dropping state.",
+      evidence_path: "docs/pr19.md"
+    }
+  });
+
+  assert.equal(added.written, true);
+  assert.equal(added.brief_updated, false);
+  assert.ok(added.brief_error);
+  assert.equal(readJsonl(taskFile)[0].id, "brief-failure-loop");
+
+  const updated = updateOpenLoopStatus({
+    cwd: repo,
+    taskFile,
+    briefFile,
+    id: "brief-failure-loop",
+    status: "blocked",
+    blockedReason: "Brief output path is blocked.",
+    now: new Date("2026-05-11T02:05:00.000Z")
+  });
+
+  const [loop] = readJsonl(taskFile);
+  assert.equal(updated.updated, true);
+  assert.equal(updated.brief_updated, false);
+  assert.ok(updated.brief_error);
+  assert.equal(loop.status, "blocked");
+  assert.equal(loop.blocked_reason, "Brief output path is blocked.");
 });
 
 test("updateOpenLoopStatus blocks, closes, and drops existing loops without losing provenance", () => {

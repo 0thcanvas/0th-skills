@@ -240,8 +240,8 @@ test("core skills require the shared memory write gate", () => {
     );
     assert.match(
       source,
-      /memory-write\.mjs/,
-      `${skillName} should require the canonical memory writer for durable claims`
+      /memory\.mjs" remember|memory remember/,
+      `${skillName} should require the unified memory writer for durable claims`
     );
     assert.match(
       source,
@@ -258,8 +258,8 @@ test("core skills read open-loop briefs after memory briefs", () => {
 
     assert.match(
       source,
-      /open-loop-brief\.mjs/,
-      `${skillName} should name the open-loop brief generator`
+      /memory\.mjs" task-brief|memory task-brief/,
+      `${skillName} should name the open-loop brief command`
     );
     assert.match(
       source,
@@ -281,8 +281,8 @@ test("core skills update open loops for unfinished work", () => {
 
     assert.match(
       source,
-      /open-loop\.mjs/,
-      `${skillName} should name the open-loop writer`
+      /memory\.mjs" open-loop|memory open-loop/,
+      `${skillName} should name the open-loop command`
     );
     assert.match(
       source,
@@ -299,8 +299,8 @@ test("core skills require conservative repo preflight", () => {
 
     assert.match(
       source,
-      /session-preflight\.mjs/,
-      `${skillName} should name the shared session preflight script`
+      /memory\.mjs" preflight|memory preflight/,
+      `${skillName} should name the shared memory preflight command`
     );
     assert.match(
       source,
@@ -340,8 +340,8 @@ test("core skills read the generated memory brief first when present", () => {
 
     assert.match(
       source,
-      /memory-brief\.mjs/,
-      `${skillName} should name the shared memory brief generator`
+      /memory\.mjs" brief|memory brief/,
+      `${skillName} should name the shared memory brief command`
     );
     assert.match(
       source,

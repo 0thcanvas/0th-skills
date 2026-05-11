@@ -69,6 +69,20 @@ test("evaluateMemoryBackends scores baselines by required capabilities", () => {
       evidence_paths: ["scripts/memory-sync.mjs"],
     },
     {
+      id: "memory_v2_runtime_hardened",
+      label: "Memory v2 runtime hardening",
+      mode: "local_executable",
+      capabilities: [
+        "source_provenance",
+        "repo_sync",
+        "incident_aggregation",
+        "generated_brief",
+        "open_loop_tracking",
+        "locked_writes",
+      ],
+      evidence_paths: ["scripts/memory.mjs"],
+    },
+    {
       id: "gbrain_task_manager_pattern",
       label: "GBrain-style task manager",
       mode: "research_pattern",
@@ -93,8 +107,9 @@ test("evaluateMemoryBackends scores baselines by required capabilities", () => {
 
   const report = evaluateMemoryBackends(questions, baselines);
 
-  assert.equal(report.recommendation.selected_baseline, "thin_0th_local_layer");
+  assert.equal(report.recommendation.selected_baseline, "memory_v2_runtime_hardened");
   assert.equal(report.results.find((result) => result.id === "thin_0th_local_layer").answered, 6);
+  assert.equal(report.results.find((result) => result.id === "memory_v2_runtime_hardened").answered, 6);
   assert.equal(report.results.find((result) => result.id === "current_markdown_lookup").answered, 1);
 });
 
@@ -111,23 +126,26 @@ test("real memory eval set covers required categories and candidate baselines", 
   assert.ok(questions.length >= 10);
   assert.deepEqual(report.categories, [
     "changed_code_behavior",
+    "benchmark_alignment",
     "decision",
     "open_loop",
     "recurring_mistake",
     "repo_vocabulary",
+    "runtime_hardening",
     "stale_claim",
-  ]);
+  ].sort());
   assert.deepEqual(
     report.results.map((result) => result.id).sort(),
     [
       "agentmemory_lifecycle_profile_pattern",
       "current_markdown_lookup",
       "gbrain_task_manager_pattern",
+      "memory_v2_runtime_hardened",
       "mempalace_verbatim_pattern",
       "thin_0th_local_layer",
     ],
   );
-  assert.equal(report.recommendation.selected_baseline, "thin_0th_local_layer");
+  assert.equal(report.recommendation.selected_baseline, "memory_v2_runtime_hardened");
 });
 
 test("memory eval CLI emits JSON and writes a markdown report", () => {
@@ -146,7 +164,7 @@ test("memory eval CLI emits JSON and writes a markdown report", () => {
   const report = JSON.parse(stdout);
   const markdown = fs.readFileSync(outputPath, "utf8");
 
-  assert.equal(report.recommendation.selected_baseline, "thin_0th_local_layer");
+  assert.equal(report.recommendation.selected_baseline, "memory_v2_runtime_hardened");
   assert.match(markdown, /# Memory Backend Eval/);
-  assert.match(markdown, /Thin 0th local layer/);
+  assert.match(markdown, /Memory v2 runtime hardening/);
 });

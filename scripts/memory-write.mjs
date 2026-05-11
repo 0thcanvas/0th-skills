@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { readJsonl, writeJsonlAtomic } from "./lib/jsonl.mjs";
+import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
@@ -79,6 +80,7 @@ export function normalizeMemoryClaim(input, {
   const scope = input.scope ?? "repo";
   const sourcePaths = normalizeList(input.source_paths ?? input.source_path);
   const sourceSymbols = normalizeList(input.source_symbols ?? input.source_symbol);
+  const evidenceIds = normalizeList(input.evidence_ids ?? input.evidence_id);
   const supersedes = normalizeList(input.supersedes);
   const supersededBy = normalizeList(input.superseded_by);
   const evidencePath = input.evidence_path ? String(input.evidence_path).trim() : "";
@@ -94,8 +96,8 @@ export function normalizeMemoryClaim(input, {
   assertAllowed("lifecycle_state", lifecycleState, LIFECYCLE_STATES);
   assertAllowed("scope", scope, SCOPES);
 
-  if (!evidencePath && sourcePaths.length === 0) {
-    throw new Error("evidence_path or at least one source_path is required");
+  if (!evidencePath && sourcePaths.length === 0 && evidenceIds.length === 0) {
+    throw new Error("evidence_path, evidence_id, or at least one source_path is required");
   }
   if (!confidence && !reviewCaveat) {
     throw new Error("confidence or review_caveat is required");
@@ -120,6 +122,7 @@ export function normalizeMemoryClaim(input, {
   if (confidence) claim.confidence = confidence;
   if (reviewCaveat) claim.review_caveat = reviewCaveat;
   if (evidencePath) claim.evidence_path = evidencePath;
+  if (evidenceIds.length > 0) claim.evidence_ids = evidenceIds;
   if (sourcePaths.length > 0) claim.source_paths = sourcePaths;
   if (sourceSymbols.length > 0) claim.source_symbols = sourceSymbols;
   if (supersedes.length > 0) claim.supersedes = supersedes;
@@ -145,37 +148,40 @@ export function appendMemoryClaim({
   const resolvedBriefFile = briefFile ?? (
     memoryFile ? path.join(path.dirname(resolvedMemoryFile), "brief.md") : defaults.briefFile
   );
-  const existingClaims = readJsonl(resolvedMemoryFile);
-  const claim = normalizeMemoryClaim(input, { existingClaims, now });
-  const nextClaims = [...existingClaims, claim];
-  writeJsonlAtomic(resolvedMemoryFile, nextClaims);
+  return withFileLock(resolvedMemoryFile, (lockState) => {
+    const existingClaims = readJsonl(resolvedMemoryFile);
+    const claim = normalizeMemoryClaim(input, { existingClaims, now });
+    const nextClaims = [...existingClaims, claim];
+    writeJsonlAtomic(resolvedMemoryFile, nextClaims);
 
-  // The claim is already on disk by this point. If runBriefGeneration throws
-  // (permissions, disk full, brief target is a directory), we must NOT lose
-  // the fact that the write succeeded — otherwise the caller treats the
-  // whole operation as a failure and a retry hits uniqueId-collision
-  // ("memory id already exists"), trapping the user. Capture the brief
-  // error and surface it as a non-fatal field on the success record.
-  let brief = null;
-  let briefError = null;
-  if (updateBrief) {
-    try {
-      brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
-    } catch (err) {
-      briefError = err.message;
+    // The claim is already on disk by this point. If runBriefGeneration throws
+    // (permissions, disk full, brief target is a directory), we must NOT lose
+    // the fact that the write succeeded — otherwise the caller treats the
+    // whole operation as a failure and a retry hits uniqueId-collision
+    // ("memory id already exists"), trapping the user. Capture the brief
+    // error and surface it as a non-fatal field on the success record.
+    let brief = null;
+    let briefError = null;
+    if (updateBrief) {
+      try {
+        brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+      } catch (err) {
+        briefError = err.message;
+      }
     }
-  }
 
-  return {
-    memory_file: resolvedMemoryFile,
-    brief_file: updateBrief ? resolvedBriefFile : null,
-    id: claim.id,
-    type: claim.type,
-    lifecycle_state: claim.lifecycle_state,
-    written: true,
-    brief_updated: Boolean(brief),
-    brief_error: briefError
-  };
+    return {
+      memory_file: resolvedMemoryFile,
+      brief_file: updateBrief ? resolvedBriefFile : null,
+      id: claim.id,
+      type: claim.type,
+      lifecycle_state: claim.lifecycle_state,
+      written: true,
+      brief_updated: Boolean(brief),
+      brief_error: briefError,
+      lock: visibleLockState(lockState)
+    };
+  });
 }
 
 function readJsonArg(filePath) {
@@ -253,6 +259,10 @@ function parseArgs(argv) {
     }
     if (token === "--evidence-path") {
       options.input.evidence_path = argv[++index];
+      continue;
+    }
+    if (token === "--evidence-id") {
+      pushListOption(options.input, "evidence_ids", argv[++index]);
       continue;
     }
     if (token === "--source-path") {

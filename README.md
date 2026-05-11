@@ -276,8 +276,19 @@ Review state is stored at:
 
 Use `--state-dir` for a one-off override.
 
-Memory v2 runtime state is also local user state, not project-repo content. By default the memory
-and open-loop scripts store generated JSONL/brief files at:
+Memory v2 runtime state is also local user state, not project-repo content. Normal agents should
+use the unified command surface:
+
+```bash
+node scripts/memory.mjs preflight
+node scripts/memory.mjs brief
+node scripts/memory.mjs task-brief
+node scripts/memory.mjs recall --query "repo preflight" --limit 5
+node scripts/memory.mjs runtime-eval
+```
+
+By default the memory, evidence, repo-state, and open-loop commands store generated JSONL/brief
+files at:
 
 - `$OTH_SKILLS_STATE_DIR/projects/<project-key>/...` if set
 - `$XDG_STATE_HOME/0th-skills/projects/<project-key>/...` if `XDG_STATE_HOME` is set
@@ -285,7 +296,8 @@ and open-loop scripts store generated JSONL/brief files at:
 
 The `<project-key>` is derived from the Git `origin` URL when available, so multiple checkouts of
 the same repo share one local Memory v2 state directory. Each command prints the concrete file path
-it read or wrote in its JSON result. Use explicit path flags only for tests or migration work.
+it read or wrote in its JSON result. Direct scripts such as `memory-write.mjs` and `open-loop.mjs`
+remain compatibility wrappers; use explicit path flags only for tests or migration work.
 
 ## Verification
 

@@ -4,6 +4,8 @@ import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { runMemorySync } from "./memory-sync.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { readRepoState, writeRepoState } from "./repo-state.mjs";
+import { resolveRepoStatePaths } from "./runtime-state.mjs";
 
 function runGit(cwd, args, { allowFailure = false } = {}) {
   try {
@@ -42,13 +44,33 @@ function relationFor({ upstream, ahead, behind }) {
 export function runPreflight({
   cwd = process.cwd(),
   allowPull = true,
-  memoryFile
+  memoryFile,
+  repoStateFile
 } = {}) {
   const repoRoot = runGit(cwd, ["rev-parse", "--show-toplevel"]);
   const branch = runGit(repoRoot, ["branch", "--show-current"]) || "DETACHED";
   const beforeHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
   const fetchedAt = new Date().toISOString();
+  const resolvedRepoStateFile = repoStateFile ?? resolveRepoStatePaths({ cwd: repoRoot }).repoStateFile;
+  const previousRepoState = readRepoState({ cwd: repoRoot, repoStateFile: resolvedRepoStateFile });
   const warnings = [];
+  let driftSync = null;
+
+  if (
+    previousRepoState?.last_seen_head &&
+    previousRepoState.last_seen_head !== beforeHead
+  ) {
+    try {
+      driftSync = runMemorySync({
+        cwd: repoRoot,
+        from: previousRepoState.last_seen_head,
+        to: beforeHead,
+        ...(memoryFile ? { memoryFile } : {})
+      });
+    } catch (err) {
+      warnings.push(`memory-sync failed for previously unseen HEAD drift: ${err.message}`);
+    }
+  }
 
   const fetchResult = runGit(repoRoot, ["fetch", "--all", "--prune"], { allowFailure: true });
   const fetchOk = fetchResult !== null;
@@ -61,20 +83,21 @@ export function runPreflight({
   });
   const status = runGit(repoRoot, ["status", "--porcelain"]);
   const clean = status.length === 0;
-  const { ahead, behind } = upstream ? readAheadBehind(repoRoot) : { ahead: 0, behind: 0 };
+  const initialRelation = upstream ? readAheadBehind(repoRoot) : { ahead: 0, behind: 0 };
+  const { ahead: initialAhead, behind: initialBehind } = initialRelation;
 
   let action = "up_to_date";
   let memorySync = null;
   if (!upstream) {
     action = "no_upstream";
     warnings.push("current branch has no upstream");
-  } else if (ahead > 0 && behind > 0) {
+  } else if (initialAhead > 0 && initialBehind > 0) {
     action = "blocked_divergent";
     warnings.push("branch is divergent; refusing to auto-merge, reset, or stash");
-  } else if (behind > 0 && !clean) {
+  } else if (initialBehind > 0 && !clean) {
     action = "blocked_dirty_behind";
     warnings.push("branch is behind upstream but working tree is dirty; refusing to auto-pull");
-  } else if (behind > 0 && allowPull) {
+  } else if (initialBehind > 0 && allowPull) {
     // Pull with allowFailure so a failed --ff-only (ref-lock contention,
     // remote moved between fetch and pull, hook rejection) doesn't erase
     // the structured preflight result. The agent gets a named action +
@@ -86,9 +109,9 @@ export function runPreflight({
     } else {
       action = "fast_forward_pulled";
     }
-  } else if (behind > 0) {
+  } else if (initialBehind > 0) {
     action = "fast_forward_available";
-  } else if (ahead > 0) {
+  } else if (initialAhead > 0) {
     action = "ahead_only";
   }
 
@@ -111,12 +134,36 @@ export function runPreflight({
     }
   }
 
-  const result = {
+  const { ahead, behind } = upstream ? readAheadBehind(repoRoot) : { ahead: 0, behind: 0 };
+  const upstreamRelation = relationFor({ upstream, ahead, behind });
+  const repoState = {
     repo_root: repoRoot,
     branch,
     clean,
     upstream,
-    upstream_relation: relationFor({ upstream, ahead, behind }),
+    upstream_relation: upstreamRelation,
+    ahead,
+    behind,
+    last_seen_head: afterHead,
+    previous_seen_head: previousRepoState?.last_seen_head ?? null,
+    fetched_at: fetchedAt,
+    last_memory_sync_at: (memorySync || driftSync) ? new Date().toISOString() : previousRepoState?.last_memory_sync_at ?? null,
+    action,
+    warnings
+  };
+  const repoStateWrite = writeRepoState({
+    cwd: repoRoot,
+    repoStateFile: resolvedRepoStateFile,
+    state: repoState
+  });
+
+  const result = {
+    repo_root: repoRoot,
+    repo_state_file: resolvedRepoStateFile,
+    branch,
+    clean,
+    upstream,
+    upstream_relation: upstreamRelation,
     ahead,
     behind,
     before_head: beforeHead,
@@ -127,9 +174,20 @@ export function runPreflight({
     warnings
   };
 
+  if (previousRepoState) {
+    result.previous_repo_state = {
+      last_seen_head: previousRepoState.last_seen_head,
+      branch: previousRepoState.branch,
+      last_memory_sync_at: previousRepoState.last_memory_sync_at
+    };
+  }
+  if (driftSync) {
+    result.drift_sync = driftSync;
+  }
   if (memorySync) {
     result.memory_sync = memorySync;
   }
+  result.repo_state = repoStateWrite;
 
   return result;
 }
@@ -139,7 +197,9 @@ function main() {
   const allowPull = !args.includes("--no-pull");
   const memoryFileIndex = args.indexOf("--memory-file");
   const memoryFile = memoryFileIndex === -1 ? undefined : args[memoryFileIndex + 1];
-  const result = runPreflight({ cwd: process.cwd(), allowPull, memoryFile });
+  const repoStateFileIndex = args.indexOf("--repo-state-file");
+  const repoStateFile = repoStateFileIndex === -1 ? undefined : args[repoStateFileIndex + 1];
+  const result = runPreflight({ cwd: process.cwd(), allowPull, memoryFile, repoStateFile });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
