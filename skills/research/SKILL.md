@@ -44,6 +44,8 @@ If resuming an ongoing research thread:
 
 - See `references/source-routing.md` for query-shaping examples and source-bucket heuristics.
 - See `references/video-source-research.md` when YouTube, talks, demos, podcasts, or transcripts are a major source bucket.
+- See `../../references/working-artifacts.md` for exploratory reports, HTML summaries, and decks:
+  durable findings go to the KB/memory layer, while human-facing renderings are temporary unless promoted.
 
 ## Template Files
 

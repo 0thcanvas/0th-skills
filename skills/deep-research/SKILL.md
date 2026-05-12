@@ -138,6 +138,8 @@ Survey mode is single-pass: Phase 0-1-2-3-7s, or USER_STOP.
 - `references/quality-rubric.md` — 10-point quality gate criteria and loop-back targets.
 - `references/failure-modes.md` — failure mode defenses and overexcitement detector.
 - `references/abstract-mechanisms.md` — cross-domain translation vocabulary.
+- `../../references/working-artifacts.md` — optional human-facing HTML reports, slide decks, and
+  comparison surfaces stay outside repo truth unless explicitly promoted.
 
 ## Templates
 

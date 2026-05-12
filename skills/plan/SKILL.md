@@ -39,6 +39,12 @@ If resuming ongoing work:
 3. Read recent git log to see what's already been built
 4. Report: "N of M slices complete. Next: [slice name]."
 
+## Reference Files
+
+- See `../../references/working-artifacts.md` for planning drafts and optional human-facing
+  comparisons. Approved `/plan` outputs still save to `docs/plans/` unless the user explicitly asks
+  for a throwaway planning artifact.
+
 ## Process
 
 ### 1. Read the Decision

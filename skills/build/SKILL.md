@@ -49,6 +49,8 @@ If resuming ongoing work:
 - See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
 - See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
 - See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
+- See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
+  review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`.
 
 ## Secret Handling
 

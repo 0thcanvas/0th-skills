@@ -44,6 +44,9 @@ If this is a new session on ongoing work:
 ## Template Files
 
 - See `templates/decision-record.md` for the canonical short-form decision record scaffold.
+- See `../../references/working-artifacts.md` for the draft lane: exploratory decision drafts and
+  HTML comparisons are temporary working artifacts, while aligned `/think` decisions still write to
+  `docs/decisions/`.
 
 ## Process
 
@@ -81,6 +84,8 @@ When evidence for a recommendation is thin, dispatch /research before deciding r
 ### 4. Decide
 
 Once aligned, write the decision record. Always write it — even if you think you'll build in this session.
+Pre-alignment notes, option grids, or HTML artifacts may live in the working-artifact lane, but the
+aligned decision record is the promoted repo evidence.
 
 **Format** — use `templates/decision-record.md` and save the result to
 `docs/decisions/YYYY-MM-DD-<topic>.md`.

@@ -244,6 +244,19 @@ test("shared working-artifacts contract defines lanes and lifecycle choices", ()
   }
 });
 
+test("artifact-producing skills reference the working-artifacts contract", () => {
+  for (const skillName of ["build", "debug", "deep-research", "plan", "research", "ship", "think"]) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /\.\.\/\.\.\/references\/working-artifacts\.md/,
+      `${skillName} should link to the shared working-artifacts contract`
+    );
+  }
+});
+
 test("core skills require the shared memory write gate", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
