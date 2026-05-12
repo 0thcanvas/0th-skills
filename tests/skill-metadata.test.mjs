@@ -14,6 +14,7 @@ const researchOutputTemplatePath = path.join(skillsRoot, "research", "templates"
 const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw-findings-note.md");
 const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
 const memoryContractPath = path.join(repoRoot, "references", "memory-contract.md");
+const workingArtifactsContractPath = path.join(repoRoot, "references", "working-artifacts.md");
 
 // `zoom-out` is intentionally excluded: its `disable-model-invocation: true` (and
 // matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
@@ -216,6 +217,117 @@ test("shared memory contract separates open loops from durable memory claims", (
   assert.match(source, /Open Loops/);
   assert.match(source, /user\/runtime data|user-level/i);
   assert.match(source, /do not store TODOs as memory claims/i);
+});
+
+// `retro` is intentionally excluded from the artifact-producing wiring: it writes incident logs
+// to `${KB_ROOT}/learning/skill-incidents/` (outside the repo doc tree), so the repo-doc lane of
+// the working-artifacts contract does not apply.
+// `zoom-out` is intentionally excluded: it is a read-only mapping skill that does not write
+// artifacts, matching its existing exclusion from the broader `skillNames` list above.
+const ARTIFACT_PRODUCING_SKILLS = [
+  "build",
+  "debug",
+  "deep-research",
+  "improve-architecture",
+  "plan",
+  "research",
+  "ship",
+  "think"
+];
+
+test("shared working-artifacts contract defines lanes and lifecycle choices", () => {
+  assert.equal(
+    fs.existsSync(workingArtifactsContractPath),
+    true,
+    "working artifacts contract should exist"
+  );
+
+  const source = read(workingArtifactsContractPath);
+
+  // Structural anchors: the four sections must exist in document order.
+  assert.match(
+    source,
+    /## Lanes[\s\S]+## Paths[\s\S]+## Lifecycle Choices[\s\S]+## Maintenance Reports/,
+    "working artifacts contract should keep its four-section structure"
+  );
+
+  // Lane bullets: each lane must appear as a bold-headed bullet, not just in prose.
+  for (const lane of ["Memory v2", "repo docs", "working artifacts"]) {
+    const escaped = lane.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.match(
+      source,
+      new RegExp(`-\\s+\\*\\*${escaped}\\*\\*`),
+      `working artifacts contract should list "${lane}" as a bullet item`
+    );
+  }
+
+  // State-root resolution order and the verification-report exception are explicit.
+  assert.match(source, /\$OTH_SKILLS_STATE_DIR/);
+  assert.match(source, /\$XDG_STATE_HOME/);
+  assert.match(source, /\$\{VERIFICATION_REPORT_DIR:-verification-report\}/);
+
+  // Lifecycle choices must appear as bold-headed bullets — not just incidental prose matches.
+  for (const choice of ["current", "compact", "supersede", "delete"]) {
+    assert.match(
+      source,
+      new RegExp(`-\\s+\\*\\*${choice}\\*\\*:`),
+      `working artifacts contract should list "${choice}" as a lifecycle choice bullet`
+    );
+  }
+
+  // Draft lane and the aligned `/think` exception are explicit.
+  assert.match(source, /not agent truth/);
+  assert.match(source, /Aligned `\/think` decision records/);
+});
+
+test("artifact-producing skills reference the working-artifacts contract", () => {
+  for (const skillName of ARTIFACT_PRODUCING_SKILLS) {
+    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
+    const source = read(skillPath);
+
+    assert.match(
+      source,
+      /\.\.\/\.\.\/references\/working-artifacts\.md/,
+      `${skillName} should link to the shared working-artifacts contract`
+    );
+  }
+});
+
+test("working-artifacts contract requires report-first stale doc cleanup", () => {
+  const source = read(workingArtifactsContractPath);
+
+  // The maintenance directive must require the four-class classification, not just name it.
+  assert.match(
+    source,
+    /classify each candidate as current, compact, supersede, or delete/,
+    "maintenance directive should require the four-class classification"
+  );
+
+  assert.match(
+    source,
+    /stale repo-doc candidates/,
+    "maintenance directive should call out stale repo-doc candidates"
+  );
+
+  // Report-first rule is imperative, not optional.
+  assert.match(
+    source,
+    /Always report before destructive cleanup/,
+    "maintenance directive should be imperative about report-first"
+  );
+
+  assert.match(
+    source,
+    /deleted or revamped features/,
+    "maintenance directive should cover deleted/revamped feature docs"
+  );
+
+  // Tombstone-style evidence is required before removing cited docs.
+  assert.match(
+    source,
+    /tombstone,\s+evidence record,\s+source pack,\s+or\s+replacement source pointer/,
+    "maintenance directive should require tombstone-style evidence"
+  );
 });
 
 test("core skills require the shared memory write gate", () => {

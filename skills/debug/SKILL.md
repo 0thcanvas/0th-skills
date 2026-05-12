@@ -42,6 +42,8 @@ If resuming a debug session:
 ## Reference Files
 
 - See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
+- See `../../references/working-artifacts.md` for throwaway timelines, causal graphs, HAR summaries,
+  and other human-facing debug artifacts that should not become repo truth by default.
 - For MV3 Chrome-extension bugs (service worker state, storage, console), use `@0th/browser-kit` + `@0th/browser-kit/ext-debug` (via a `browser-kit session open --ext …` session) rather than ad-hoc CDP — see the browser-kit README for setup.
 
 ## Secret Handling

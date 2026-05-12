@@ -22,6 +22,8 @@ After /build completes. Or when you have changes on a branch ready to land.
 ## Template Files
 
 - See `templates/pr-body.md` for the default PR structure so the review context stays consistent.
+- See `../../references/working-artifacts.md` for optional PR explainers or human-facing review
+  cockpits. The PR body, git diff, and verification report remain the canonical shipping evidence.
 
 ## Process
 

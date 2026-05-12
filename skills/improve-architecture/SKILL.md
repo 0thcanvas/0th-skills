@@ -41,6 +41,12 @@ Use these terms exactly. Consistent language is the point — don't substitute "
 - **The interface is the test surface.** If you want to test past the interface, the module is probably the wrong shape.
 - **One adapter = hypothetical seam. Two adapters = real seam.** Don't introduce a seam unless something actually varies across it.
 
+## Reference Files
+
+- See `../../references/working-artifacts.md` for candidate audits, deepening-opportunity drafts,
+  and other exploratory write-ups. Accepted and rejected decision records still write to
+  `docs/decisions/` per the aligned-decision contract.
+
 ## Process
 
 ### 1. Read context
