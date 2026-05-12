@@ -277,7 +277,8 @@ test("recall can include open loops across project runtime directories", () => {
         title: "Cross project loop A",
         scope: "repo",
         next_action: "Finish memory recall in project A.",
-        evidence_path: "docs/a.md"
+        evidence_path: "docs/a.md",
+        created_at: "2026-05-11T00:00:00.000Z"
       }
     });
     addOpenLoop({
@@ -286,7 +287,8 @@ test("recall can include open loops across project runtime directories", () => {
         title: "Cross project loop B",
         scope: "repo",
         next_action: "Finish memory recall in project B.",
-        evidence_path: "docs/b.md"
+        evidence_path: "docs/b.md",
+        created_at: "2026-05-11T00:00:00.000Z"
       }
     });
 
@@ -318,7 +320,8 @@ test("recall surfaces subject-key conflicts across project and global claims", (
         scope: "repo",
         subject_key: "memory-startup-routing",
         evidence_path: "docs/project.md",
-        confidence: "medium"
+        confidence: "medium",
+        created_at: "2026-05-11T00:00:00.000Z"
       }
     });
     appendMemoryClaim({
@@ -331,7 +334,8 @@ test("recall surfaces subject-key conflicts across project and global claims", (
         source_id: "memory-systems-world-model",
         subject_key: "memory-startup-routing",
         evidence_path: "sources/memory-systems/source-pack.jsonl",
-        confidence: "high"
+        confidence: "high",
+        created_at: "2026-05-11T00:00:00.000Z"
       }
     });
 
