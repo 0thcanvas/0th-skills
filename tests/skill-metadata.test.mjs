@@ -257,6 +257,20 @@ test("artifact-producing skills reference the working-artifacts contract", () =>
   }
 });
 
+test("working-artifacts contract requires report-first stale doc cleanup", () => {
+  const source = read(workingArtifactsContractPath);
+
+  for (const fragment of [
+    "maintenance reports",
+    "stale repo-doc candidates",
+    "deleted or revamped features",
+    "report before destructive cleanup",
+    "tombstone"
+  ]) {
+    assert.ok(source.includes(fragment), `working artifacts contract should include "${fragment}"`);
+  }
+});
+
 test("core skills require the shared memory write gate", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");

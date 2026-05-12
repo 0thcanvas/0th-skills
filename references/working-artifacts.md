@@ -36,6 +36,18 @@ Use lifecycle, not age:
 Before deleting repo docs that Memory v2 cites, leave a durable tombstone, evidence record, source
 pack, or replacement source pointer so memory does not point at vanished proof.
 
+## Maintenance Reports
+
+Artifact maintenance reports stale repo-doc candidates before any destructive change. The report
+should classify each candidate as current, compact, supersede, or delete, and it should name the
+evidence path or Memory v2 claim that justifies the recommendation.
+
+For deleted or revamped features, remove or supersede docs that describe the old behavior in the
+same lifecycle pass. If the old docs explain a durable lesson, compact that lesson into Memory v2
+first. If Memory v2 cites the old doc, leave a tombstone, evidence record, source pack, or
+replacement source pointer before removal. Always report before destructive cleanup; do not silently
+delete repo docs just because they look old.
+
 aligned `/think` decision records keep their current contract: after alignment, write the decision
 record to `docs/decisions/`. This reference only adds a draft lane before alignment and a lifecycle
 review after a repo doc stops describing current reality.
