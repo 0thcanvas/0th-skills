@@ -6,17 +6,15 @@
 
 ## Decision
 
-Separate workflow outputs into three lanes: memory is the compact agent record, repo docs are promoted durable evidence, and working artifacts are temporary scaffolding outside the repo. Decision drafts, planning drafts, research drafts, exploratory HTML reports, and human review cockpits should default to the 0th state root (`$OTH_SKILLS_STATE_DIR`, `$XDG_STATE_HOME`, then `~/.0th/skills/...`) under `work/` or `artifacts/` until a workflow boundary compacts their useful content into memory and explicitly promotes any durable repo documentation.
+Separate workflow outputs into three lanes — Memory v2 (compact agent record), repo docs (promoted durable evidence), and working artifacts (temporary scaffolding under the 0th state root). Drafts, exploratory reports, and human-facing comparisons default to the state root (`$OTH_SKILLS_STATE_DIR`, `$XDG_STATE_HOME`, then `~/.0th/skills/...`) until a workflow boundary compacts their useful content into memory or promotes it to repo docs. See `references/working-artifacts.md` for the full contract.
 
-Aligned `/think` decision records still follow the current skill contract and are written to `docs/decisions/`; this decision adds a draft lane before alignment and a lifecycle review after the decision stops describing current reality. Repo docs should describe current reality or intentionally promoted history. When a feature is deleted, replaced, or fully revamped, its docs should be deleted, superseded, or compacted into memory rather than left in `docs/` as accidental context. Deleting a repo doc that memory cites requires first leaving a durable tombstone, evidence record, source pack, or replacement source pointer so memory does not point at vanished proof.
+Aligned `/think` decision records still write to `docs/decisions/`; this decision only adds a draft lane before alignment and a lifecycle review after a repo doc stops describing current reality. Deleting a repo doc that Memory v2 cites requires first leaving a tombstone, evidence record, source pack, or replacement source pointer.
 
 ## Constraints
 
-- Future agents can read any checked-in file, so stale HTML, plans, and decision drafts in `docs/` can poison context even if they were intended for humans.
-- Most decisions and plans are agent scaffolding, not human documentation; keeping every intermediate file creates a fossil layer with low current value.
-- The system still needs a track record: durable lessons, tombstones, supersession links, and evidence pointers belong in Memory v2 lifecycle records.
-- Cleanup should be lifecycle-driven, not age-driven: current, compact, supersede, or delete based on whether the artifact still helps a future decision.
-- Gate-consumed verification artifacts are an explicit exception: `${VERIFICATION_REPORT_DIR:-verification-report}` remains checkout-local and gitignored because `/build`, `/ship`, and `ship-gate` read verifier briefs, reports, product acceptance, and counterpart-review evidence from that path.
+- Stale HTML, plans, and decision drafts in `docs/` can poison agent context even when intended for humans, so the three lanes must stay distinct.
+- Cleanup is lifecycle-driven, not age-driven: current, compact, supersede, or delete based on whether the artifact still helps a future decision; report before destructive cleanup.
+- Gate-consumed verification artifacts are an explicit exception — `${VERIFICATION_REPORT_DIR:-verification-report}` remains checkout-local and gitignored because `/build`, `/ship`, and `ship-gate` read verifier briefs, reports, product acceptance, and counterpart-review evidence from that path.
 
 ## Not Doing
 

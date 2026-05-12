@@ -28,6 +28,6 @@ Add report-first cleanup guidance for stale docs and deleted or revamped feature
 - [ ] Acceptance criterion: docs for deleted/replaced features require compaction, supersession, or tombstone evidence before removing cited source files.
 
 ### 4. Guardrails
-Add tests and generated wrapper updates so the policy does not drift across published skill surfaces.
-- [ ] Acceptance criterion: tests fail if the shared reference is missing or core skill prompts lose required working-artifact lifecycle language.
-- [ ] Acceptance criterion: Codex wrappers are regenerated if shared skill files change, and targeted metadata tests pass.
+Add tests so the policy does not drift across published skill surfaces.
+- [ ] Acceptance criterion: tests fail if the shared reference is missing, loses its lane/lifecycle/maintenance structure, or if an artifact-producing skill drops the reference link.
+- [ ] Acceptance criterion: targeted metadata tests pass. Codex wrappers stay in sync because `scripts/build-codex-wrappers.mjs` embeds only frontmatter plus a stub link — SKILL.md body edits do not require wrapper regeneration, and the existing `tests/codex-wrapper-drift.test.mjs` already catches drift in the generated frontmatter surface.

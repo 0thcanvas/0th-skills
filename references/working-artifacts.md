@@ -1,5 +1,9 @@
 # Working Artifacts
 
+<!-- lifecycle: current — durable shared contract for the three artifact lanes;
+     supersede when the memory contract absorbs this lane or when the verification-report
+     exception changes. -->
+
 Working artifacts are temporary files that help a human or agent think through work before the
 useful result is compacted, promoted, or discarded.
 
@@ -9,8 +13,9 @@ useful result is compacted, promoted, or discarded.
   supersession links, and evidence pointers belong there.
 - **repo docs** are promoted durable evidence. They should describe current reality or
   intentionally preserved history.
-- **working artifacts** are temporary scaffolding. Draft plans, decision drafts, research drafts,
-  exploratory HTML reports, and human review cockpits are not agent truth by default.
+- **working artifacts** are temporary scaffolding. Drafts, exploratory reports, human-facing
+  comparisons, and similar scratch outputs are not agent truth by default; each skill names the
+  specific artifact types it produces.
 
 ## Paths
 
@@ -48,6 +53,6 @@ first. If Memory v2 cites the old doc, leave a tombstone, evidence record, sourc
 replacement source pointer before removal. Always report before destructive cleanup; do not silently
 delete repo docs just because they look old.
 
-aligned `/think` decision records keep their current contract: after alignment, write the decision
+Aligned `/think` decision records keep their current contract: after alignment, write the decision
 record to `docs/decisions/`. This reference only adds a draft lane before alignment and a lifecycle
 review after a repo doc stops describing current reality.
