@@ -25,12 +25,10 @@ const codexDescriptions = {
 
 const codexWrapperNotes = {
   research: [
-    "Codex dispatch note: use `spawn_agent` for research subquestions. If `0th_researcher` is not an `agent_type`, use `agent_type: default`, `model: gpt-5.4`, and `reasoning_effort: medium` with a self-contained `0th_researcher fallback` prompt.",
-    "Do not continue in the main thread solely because the named agent is unavailable; main-thread search is only for when `spawn_agent` fails."
+    "Codex dispatch note: use `spawn_agent` for research subquestions. If `0th_researcher` is not an `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread."
   ],
   "deep-research": [
-    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents. If named `0th_*` agents are not `agent_type` choices, use `spawn_agent` fallback roles from the shared workflow with `model: gpt-5.4` and explicit `reasoning_effort` pins.",
-    "Do not continue in the main thread solely because a named agent is unavailable; main-thread execution is only for when `spawn_agent` fails."
+    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents via `spawn_agent`. If a named `0th_*` agent is not an `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread."
   ]
 };
 

@@ -103,20 +103,9 @@ Use host-native agents:
 | World-model synthesis | `0th:synthesizer` | `0th_synthesizer` |
 | Experiment | `0th:experimenter` | `0th_experimenter` |
 
-Codex dispatch fallback:
-
-- If the named `0th_*` agent is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
-- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with
-  `model: gpt-5.4` so fallback agents do not inherit an expensive parent model.
-  Use `agent_type: default`, `reasoning_effort: medium` for `0th_researcher fallback`;
-  use `agent_type: default`, `reasoning_effort: high` for `0th_deep_researcher fallback`
-  and `0th_synthesizer fallback`; use `agent_type: worker`, `reasoning_effort: high`
-  for `0th_experimenter fallback` because experiments write isolated files.
-- Each fallback prompt must be self-contained: phase, mode, task, source bucket or input
-  paths, output path, context rule, and the named agent's required return shape.
-- Do not continue in the main thread solely because the named `0th_*` agent is not an
-  exposed `agent_type`. Main-thread execution is only the fallback when `spawn_agent`
-  itself is unavailable or the subagent call fails.
+Codex dispatch fallback: if a named `0th_*` agent in this table is not exposed as a
+`spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md`
+instead of continuing in the main thread.
 
 Each agent writes results to disk and returns a short summary. Do not pull raw webpages,
 full paper text, search listings, experiment logs, or previous phase outputs into the

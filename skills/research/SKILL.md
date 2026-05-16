@@ -100,17 +100,9 @@ Subagent choice by host:
 - **Claude-hosted runs:** use `0th:web-researcher`
 - **Codex-hosted runs:** use `0th_researcher`
 
-Codex dispatch fallback:
-
-- If `0th_researcher` is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
-- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with
-  `agent_type: default`, `model: gpt-5.4`, and `reasoning_effort: medium`. Use a
-  self-contained prompt headed `0th_researcher fallback` and include the question,
-  source bucket, context, source-priority rules, and required ANSWER / KEY DETAILS /
-  SOURCES / GAPS shape.
-- Do not continue in the main thread solely because `0th_researcher` is not an exposed
-  `agent_type`. Main-thread web search is only the fallback when `spawn_agent` itself
-  is unavailable or the subagent call fails.
+Codex dispatch fallback: if `0th_researcher` is not exposed as a `spawn_agent`
+`agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing
+in the main thread.
 
 For every sub-question in your map:
 

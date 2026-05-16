@@ -105,21 +105,7 @@ When a loop is managed verification and its failure should be surfaced back thro
 5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
 6. **Read `CONTEXT.md`** at the project root if it exists — use its vocabulary to align your hypothesis and report with the project's domain terms.
 7. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
-
-Codex dispatch fallback:
-
-- If the named `0th_*` agent is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
-- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with an explicit
-  fallback prompt and pinned model settings:
-  - `0th_explorer fallback`: `agent_type: explorer`, `model: gpt-5.4-mini`,
-    `reasoning_effort: medium`; include the bug symptom, suspected area, context already read,
-    and the required SUMMARY / FILES / SYMBOLS / GAPS / READ_SET return shape.
-  - `0th_test_runner fallback`: `agent_type: default`, `model: gpt-5.4-mini`,
-    `reasoning_effort: medium`; include the repro command or test scope, failure-dossier
-    requirement when applicable, and the condensed PASS / FAIL return shape.
-- Do not continue in the main thread solely because the named `0th_*` agent is not an exposed
-  `agent_type`. Main-thread execution is only the fallback when `spawn_agent` itself is
-  unavailable or the subagent call fails.
+8. Codex dispatch fallback: if `0th_explorer` or `0th_test_runner` is not exposed as a `spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread.
 
 Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
 

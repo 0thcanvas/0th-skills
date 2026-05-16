@@ -115,32 +115,7 @@ Rules:
 - When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
 - On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
 - On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
-
-Codex dispatch fallback:
-
-- If the named `0th_*` agent is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
-- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with an explicit
-  fallback prompt and pinned model settings:
-  - `0th_explorer fallback`: `agent_type: explorer`, `model: gpt-5.4-mini`,
-    `reasoning_effort: medium`; include the mapping question, relevant context, and the required
-    SUMMARY / FILES / SYMBOLS / GAPS / READ_SET return shape.
-  - `0th_test_runner fallback`: `agent_type: default`, `model: gpt-5.4-mini`,
-    `reasoning_effort: medium`; include the test scope or command, failure-dossier requirement
-    when applicable, and the condensed PASS / FAIL return shape.
-  - `0th_reviewer fallback`: `agent_type: default`, `model: gpt-5.4`,
-    `reasoning_effort: high`; include the slice spec, diff, test output, acceptance criteria,
-    and VERDICT / Acceptance criteria / Issues / Scope return shape.
-  - `0th_verifier fallback`: `agent_type: worker`, `model: gpt-5.4`,
-    `reasoning_effort: high`; include the persisted verifier brief path, stack-minimums,
-    current branch, test output, report path, and the rule that other agents may be active and
-    it must not revert unrelated edits.
-  - `0th_experience_reviewer fallback`: `agent_type: default`, `model: gpt-5.4`,
-    `reasoning_effort: high`; include the decision or plan source, feature summary, verifier
-    evidence, known concerns, and VERDICT / Judgment source / Findings / Fix before human
-    review / Deferred return shape.
-- Do not continue in the main thread solely because the named `0th_*` agent is not an exposed
-  `agent_type`. Main-thread execution is only the fallback when `spawn_agent` itself is
-  unavailable or the subagent call fails.
+- Codex dispatch fallback: if `0th_explorer`, `0th_test_runner`, `0th_reviewer`, `0th_verifier`, or `0th_experience_reviewer` is not exposed as a `spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread.
 
 ### 3. Mid-Build Bugs
 

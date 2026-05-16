@@ -98,9 +98,6 @@ Approve, modify, or reject this decomposition.
 For each sub-problem x source bucket combination, dispatch the host-native search agent in parallel:
 - Claude-hosted runs: `0th:web-researcher`
 - Codex-hosted runs: `0th_researcher`
-- Codex fallback: if `0th_researcher` is not exposed as a `spawn_agent` `agent_type`,
-  dispatch `spawn_agent` with `agent_type: default`, `model: gpt-5.4`,
-  `reasoning_effort: medium`, and a prompt headed `0th_researcher fallback`.
 - **Question:** the sub-problem, phrased for the source bucket.
 - **Source bucket:** the assigned bucket.
 - **Context:** which sub-problem this serves.
@@ -122,10 +119,6 @@ Use the raw finding template (`templates/raw-finding.md`). Tag provenance as `or
 4. For key arXiv papers surfaced in Pass 1 or Pass 2: dispatch the host-native deep extraction agent with:
    - Claude-hosted runs: `0th:deep-researcher`
    - Codex-hosted runs: `0th_deep_researcher`
-   - Codex fallback: if `0th_deep_researcher` is not exposed as a `spawn_agent`
-     `agent_type`, dispatch `spawn_agent` with `agent_type: default`,
-     `model: gpt-5.4`, `reasoning_effort: high`, and a prompt headed
-     `0th_deep_researcher fallback`.
    - **Source URL:** the paper/repo URL.
    - **Extraction questions:** architecture details, methods, quantitative results, limitations.
    - **Context:** which sub-problem and gap this fills.
@@ -150,9 +143,6 @@ After writing to KB, reference findings by file path, not by content.
 Dispatch the host-native synthesis agent with:
 - Claude-hosted runs: `0th:synthesizer`
 - Codex-hosted runs: `0th_synthesizer`
-- Codex fallback: if `0th_synthesizer` is not exposed as a `spawn_agent` `agent_type`,
-  dispatch `spawn_agent` with `agent_type: default`, `model: gpt-5.4`,
-  `reasoning_effort: high`, and a prompt headed `0th_synthesizer fallback`.
 - **Raw note paths:** paths to NEW raw notes from the current iteration's Phase 1 only.
 - **Existing world-model path:** `TOPIC_ROOT/world-model.md` (if iteration > 1).
 - **World-model output path:** `TOPIC_ROOT/world-model.md`.
@@ -245,8 +235,6 @@ cross-domain search.
    c. Dispatch the host-native search agent (`0th:web-researcher` on Claude, `0th_researcher` on Codex) to search those fields for candidate techniques.
    d. Dispatch the host-native deep extraction agent (`0th:deep-researcher` on Claude, `0th_deep_researcher` on Codex) for promising cross-domain papers/techniques — extract
       architecture details, methods, and quantitative results.
-      On Codex, use the same `spawn_agent` `agent_type: default` fallback prompts as Phase 1
-      if the named agents are not exposed.
    e. **Translation step** (mandatory): explicitly describe how the cross-domain technique maps
       back to the original problem. Record as `analogous_to` edges in world model.
 
@@ -298,10 +286,6 @@ Steps:
 3. Dispatch the host-native experiment agent with:
    - Claude-hosted runs: `0th:experimenter`
    - Codex-hosted runs: `0th_experimenter`
-   - Codex fallback: if `0th_experimenter` is not exposed as a `spawn_agent`
-     `agent_type`, dispatch `spawn_agent` with `agent_type: worker`,
-     `model: gpt-5.4`, `reasoning_effort: high`, and a prompt headed
-     `0th_experimenter fallback`.
    - **Architecture doc path:** `TOPIC_ROOT/wiki/architecture.md`
    - **Hypothesis:** the specific claim to test.
    - **Success criteria:** measurable threshold that defines pass/fail.
@@ -494,20 +478,6 @@ previous summaries are gone from context — they live on disk.
 
 ### Codex Generic-Agent Fallback
 
-Named Codex agents are preferred, but some hosts expose only generic `spawn_agent`
-`agent_type` choices. If a named `0th_*` agent is unavailable, use generic fallback
-dispatch instead of doing that phase in the orchestrator:
-
-- `agent_type: default` for `0th_researcher fallback`, `0th_deep_researcher fallback`,
-  and `0th_synthesizer fallback`.
-- `agent_type: worker` for `0th_experimenter fallback`, because it writes experiment files.
-- Always set `model: gpt-5.4` on fallback `spawn_agent` calls so they do not inherit the
-  parent session model. Use `reasoning_effort: medium` for `0th_researcher fallback` and
-  `reasoning_effort: high` for deep extraction, synthesis, and experiment fallbacks.
-- Include the phase, mode, task, input paths, output path, context rule, and return shape in
-  the prompt. For `worker`, state that other agents may be active and it must not revert
-  unrelated edits.
-
-Do not continue in the main thread solely because the named `0th_*` agent is not exposed as
-an `agent_type`. Main-thread execution is only the fallback when `spawn_agent` itself is
-unavailable or the subagent call fails.
+On Codex-hosted runs, if a named `0th_*` agent in this guide is not exposed as a
+`spawn_agent` `agent_type`, follow `../../../references/codex-dispatch-fallback.md`
+instead of doing that phase in the orchestrator.

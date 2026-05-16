@@ -12,24 +12,27 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
-function assertCodexFallback(label, source) {
-  assert.match(source, /spawn_agent/, `${label} should name the Codex dispatch tool`);
-  assert.match(source, /agent_type/, `${label} should specify generic Codex agent_type fallback`);
-  assert.match(source, /model:\s*`?gpt-5\.4(?:-mini)?`?/, `${label} should pin fallback model`);
-  assert.match(source, /reasoning_effort/, `${label} should pin fallback reasoning effort`);
-  assert.doesNotMatch(
-    source,
-    /gpt-5\.5|xhigh|extra high/i,
-    `${label} should not use the latest expensive default`
-  );
+function assertReferencesFallback(label, source) {
   assert.match(
     source,
-    /Do not continue in the main thread solely because/,
+    /codex-dispatch-fallback\.md/,
+    `${label} should point to the shared Codex fallback reference`
+  );
+  assert.match(source, /spawn_agent/, `${label} should name the Codex dispatch tool`);
+  assert.match(
+    source,
+    /instead of continuing\s+in the main thread|instead of doing that phase in the orchestrator/,
     `${label} should forbid main-thread fallback when only named agents are unavailable`
+  );
+  assert.doesNotMatch(
+    source,
+    /fallback prompt and pinned model settings|Always set `model: gpt-5\.4`|Use `agent_type: default`/,
+    `${label} should not duplicate the detailed fallback mapping`
   );
 }
 
 test("Codex-dispatched skills require generic subagent fallback dispatch", () => {
+  const fallbackReference = read("references/codex-dispatch-fallback.md");
   const build = read("skills/build/SKILL.md");
   const debug = read("skills/debug/SKILL.md");
   const think = read("skills/think/SKILL.md");
@@ -48,27 +51,57 @@ test("Codex-dispatched skills require generic subagent fallback dispatch", () =>
     ["research", research],
     ["deep-research", deepResearch],
     ["deep-research phase guide", phaseGuide],
-  ]) {
-    assertCodexFallback(label, source);
-  }
-
-  assert.match(build, /0th_explorer fallback/);
-  assert.match(build, /0th_test_runner fallback/);
-  assert.match(build, /0th_reviewer fallback/);
-  assert.match(build, /0th_verifier fallback/);
-  assert.match(build, /0th_experience_reviewer fallback/);
-  assert.match(debug, /0th_explorer fallback/);
-  assert.match(debug, /0th_test_runner fallback/);
-  assert.match(think, /0th_explorer fallback/);
-  assert.match(plan, /0th_explorer fallback/);
-  assert.match(research, /0th_researcher fallback/);
-  assert.match(deepResearch, /0th_synthesizer fallback/);
-  assert.match(phaseGuide, /0th_experimenter fallback/);
-
-  for (const [label, source] of [
     ["Codex research wrapper", codexResearch],
     ["Codex deep-research wrapper", codexDeepResearch],
   ]) {
-    assertCodexFallback(label, source);
+    assertReferencesFallback(label, source);
+  }
+
+  assert.match(
+    fallbackReference,
+    /agent_type/,
+    "reference should specify generic Codex agent_type fallback"
+  );
+  assert.match(
+    fallbackReference,
+    /`model` \| `reasoning_effort`/,
+    "reference should centralize model and reasoning pins"
+  );
+  assert.match(fallbackReference, /gpt-5\.4-mini/);
+  assert.match(fallbackReference, /gpt-5\.4/);
+  assert.match(fallbackReference, /medium/);
+  assert.match(fallbackReference, /high/);
+  assert.match(fallbackReference, /Do not continue in the main thread solely because/);
+  assert.doesNotMatch(
+    fallbackReference,
+    /gpt-5\.5|xhigh|extra high/i,
+    "fallback reference should not use the latest expensive default"
+  );
+
+  assert.match(build, /0th_explorer/);
+  assert.match(build, /0th_test_runner/);
+  assert.match(build, /0th_reviewer/);
+  assert.match(build, /0th_verifier/);
+  assert.match(build, /0th_experience_reviewer/);
+  assert.match(debug, /0th_explorer/);
+  assert.match(debug, /0th_test_runner/);
+  assert.match(think, /0th_explorer/);
+  assert.match(plan, /0th_explorer/);
+  assert.match(research, /0th_researcher/);
+  assert.match(deepResearch, /0th_synthesizer/);
+  assert.match(phaseGuide, /0th_experimenter/);
+
+  for (const fallback of [
+    "0th_explorer fallback",
+    "0th_test_runner fallback",
+    "0th_reviewer fallback",
+    "0th_verifier fallback",
+    "0th_experience_reviewer fallback",
+    "0th_researcher fallback",
+    "0th_deep_researcher fallback",
+    "0th_synthesizer fallback",
+    "0th_experimenter fallback",
+  ]) {
+    assert.match(fallbackReference, new RegExp(fallback));
   }
 });
