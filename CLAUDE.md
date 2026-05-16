@@ -41,6 +41,17 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **KB behavior is editor-agnostic.** Memory v2 runtime is the canonical agent recall path. If a project uses a markdown knowledge base, follow its configured root and the compatibility protocol in `PROTOCOL.md`; do not assume Obsidian.
 - **Secret values stay outside agents.** Agents may handle secret names, environment variable names, and secret-manager references, but not resolved secret values. Code should read secrets from environment variables or runtime bindings, while a human-owned secret runner injects values into the target process.
 
+## Review guidelines
+
+When reviewing pull requests, focus on P0/P1 issues that should block merge. Do not leave style nits unless they reveal a correctness, safety, or repo-contract problem.
+
+- Treat resolved secret values, revealing secret commands, raw credentials, cookies, Authorization headers, HARs, screenshots, or browser/CDP payloads as blockers.
+- Treat behavior changes without matching verification evidence as blockers: tests for testable logic, before/after evidence for non-testable workflow or config changes.
+- For skill or agent orchestration changes, verify the mirrored Claude and Codex surfaces stay aligned unless the asymmetry is explicitly documented.
+- For Codex-facing skill changes, verify generated wrappers, plugin smoke checks, and invoke-budget guards stay current.
+- For subagent dispatch, recursion, sandboxing, or model policy changes, verify `.codex/config.toml`, `.codex/agents/*.toml`, `agents/*.md`, and tests cover the intended runtime behavior.
+- Flag drive-by edits, broad formatting churn, and unrelated documentation rewrites when they are not required by the pull request.
+
 ## Secret Handling Contract
 
 The default local pattern is a secret-reference env file plus a runner that resolves values only inside the child process:
