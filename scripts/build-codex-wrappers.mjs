@@ -23,6 +23,17 @@ const codexDescriptions = {
   "zoom-out": "Use when asked to map unfamiliar code."
 };
 
+const codexWrapperNotes = {
+  research: [
+    "Codex dispatch note: use `spawn_agent` for research subquestions. If `0th_researcher` is not an `agent_type`, use `agent_type: default`, `model: gpt-5.4`, and `reasoning_effort: medium` with a self-contained `0th_researcher fallback` prompt.",
+    "Do not continue in the main thread solely because the named agent is unavailable; main-thread search is only for when `spawn_agent` fails."
+  ],
+  "deep-research": [
+    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents. If named `0th_*` agents are not `agent_type` choices, use `spawn_agent` fallback roles from the shared workflow with `model: gpt-5.4` and explicit `reasoning_effort` pins.",
+    "Do not continue in the main thread solely because a named agent is unavailable; main-thread execution is only for when `spawn_agent` fails."
+  ]
+};
+
 function fail(message) {
   process.stderr.write(`${message}\n`);
   process.exit(1);
@@ -87,9 +98,12 @@ function generateWrapper(skillName) {
     "",
     `# ${titleFor(name)}`,
     "",
-    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`,
-    ""
+    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`
   );
+  for (const note of codexWrapperNotes[skillName] ?? []) {
+    lines.push("", note);
+  }
+  lines.push("");
   return `${lines.join("\n")}`;
 }
 

@@ -58,6 +58,18 @@ If this is a new session on ongoing work:
 - Check recent commits in the affected area
 - On Codex-hosted runs, explicitly use `0th_explorer` when code ownership or execution paths are not already obvious from the initial read
 
+Codex dispatch fallback:
+
+- If `0th_explorer` is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
+- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with
+  `agent_type: explorer`, `model: gpt-5.4-mini`, and `reasoning_effort: medium`.
+  Use a self-contained prompt headed `0th_explorer fallback` and include the decision
+  question, code area or uncertainty, context already read, and required SUMMARY / FILES /
+  SYMBOLS / GAPS / READ_SET return shape.
+- Do not continue in the main thread solely because `0th_explorer` is not an exposed
+  `agent_type`. Main-thread code mapping is only the fallback when `spawn_agent` itself is
+  unavailable or the subagent call fails.
+
 ### 2. Grill
 
 Ask questions one at a time. For each question:

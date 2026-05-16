@@ -80,6 +80,10 @@ question `best TS TOML parser`.
 - Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
 - Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
+- Skills that dispatch Codex subagents include generic-agent fallback guidance with explicit
+  `agent_type`, `model`, and `reasoning_effort` pins so fallback dispatch does not inherit a
+  heavier parent session model or fall back to main-thread execution just because a named
+  `0th_*` agent is not exposed
 - Today, the mirrored 0th-managed agents are `implementer`, `reviewer`, `experience-reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, and `experimenter`
 - For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the custom `0th_explorer`
 - Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses a native `researcher` agent for focused source-cited research cycles

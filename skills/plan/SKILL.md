@@ -54,6 +54,18 @@ Load the decision record from /think (or the user's direct instruction). Read al
 On Codex-hosted runs, explicitly use `0th_explorer` when you need help mapping the current code
 paths or interfaces before you can slice the work cleanly.
 
+Codex dispatch fallback:
+
+- If `0th_explorer` is exposed as a `spawn_agent` `agent_type`, dispatch it directly.
+- If Codex exposes only generic `agent_type` choices, dispatch `spawn_agent` with
+  `agent_type: explorer`, `model: gpt-5.4-mini`, and `reasoning_effort: medium`.
+  Use a self-contained prompt headed `0th_explorer fallback` and include the decision
+  record, code paths or interfaces to map, context already read, and required SUMMARY /
+  FILES / SYMBOLS / GAPS / READ_SET return shape.
+- Do not continue in the main thread solely because `0th_explorer` is not an exposed
+  `agent_type`. Main-thread code mapping is only the fallback when `spawn_agent` itself is
+  unavailable or the subagent call fails.
+
 ### 2. Identify Durable Decisions
 
 Before slicing, note architectural decisions that span all slices:
