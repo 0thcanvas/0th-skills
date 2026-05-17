@@ -17,7 +17,7 @@ A repo can match multiple rows when distinct *root-level* signals are present: e
 Each row's minimum is a *behavior to exercise*, not a tool to use. The verifier walks this chain in order and picks the first usable tool:
 
 1. **Playwright** (default) — runs in CI, deterministic, has `_electron.launch` for Electron and headless modes for web.
-2. **Browser Kit** (managed `bb-browser` escape hatch) — real Chrome session for logged-in or shared-tab cases that Playwright can't reproduce.
+2. **Browser Kit** — managed wrapper around `bb-browser` for real Chrome sessions in logged-in or shared-tab cases that Playwright can't reproduce.
 3. **Computer-use** (last resort) — only on agents that have it granted (not all 0th sub-agents do).
 
 If no chain tool is usable for the matched stack on the running agent, the verifier returns BLOCKED — never PASS.

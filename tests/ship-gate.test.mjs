@@ -402,7 +402,7 @@ test("validateReport: legacy bb-browser-escape-hatch report satisfies browser-ki
         {
           stack: "bb-browser-escape-hatch",
           criterion: "logged-in route checked through Browser Kit",
-          tool: "bb-browser",
+          tool: "browser-kit",
           evidence_path: "verification-report/browser-kit.md",
           exercised_at: "2026-05-03T12:00:00Z"
         }
@@ -423,7 +423,7 @@ test("validateReport: legacy expected bb-browser-escape-hatch canonicalizes to b
         {
           stack: "browser-kit-escape-hatch",
           criterion: "logged-in route checked through Browser Kit",
-          tool: "bb-browser",
+          tool: "browser-kit",
           evidence_path: "verification-report/browser-kit.md",
           exercised_at: "2026-05-03T12:00:00Z"
         }

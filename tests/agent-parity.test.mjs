@@ -82,7 +82,7 @@ const expectedMirrors = {
       "Stack Minimum Detection",
       "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md",
       "Detection is multi-match",
-      "Playwright → Browser Kit (`bb-browser` MCP) → computer-use",
+      "Playwright → Browser Kit MCP → computer-use",
       "This floor cannot be lowered",
       "stack_minimums_exercised",
       "pre_dispatch_tool_failures_reviewed",

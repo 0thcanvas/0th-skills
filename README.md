@@ -198,9 +198,9 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 ### 0.2.2
 
 - Added the self-testing loop, slice 1: a workspace-shared `references/stack-minimums.md` matrix (electron-desktop, chrome-mv3-extension, web-app, cli, service, browser-kit-escape-hatch) plus the `stack_minimums_exercised` JSON evidence contract written to `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`
-- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, exercises each via the Playwright → Browser Kit (`bb-browser` MCP) → computer-use chain, and refuses to honor brief language attempting to lower the floor
+- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, exercises each via the Playwright → Browser Kit MCP → computer-use chain, and refuses to honor brief language attempting to lower the floor
 - Wired `/build` to construct verifier briefs that name matched stack ids (no escape language) and `/ship` to invoke the new `scripts/ship-gate.mjs` before `gh pr create` — fail-closed on missing/malformed/empty/wrong-stack reports or non-PASS outcome. First non-LLM enforcement layer in 0th's flow
-- Switched the verifier to Playwright by default for feature-specific UI checks; Browser Kit is the documented managed `bb-browser` escape hatch for logged-in / real-session / shared-tab cases only
+- Switched the verifier to Playwright by default for feature-specific UI checks; Browser Kit is the documented managed wrapper around `bb-browser` for logged-in / real-session / shared-tab cases only
 - Added a teardown contract to verifier and implementer subagents — "whatever you spawn, you stop" — covering dev servers, Browser Kit tabs (`browser_close_all` only closes the current MCP session's tabs), containers/ports, temp dirs, and reconciling test data per the existing hygiene rule
 - gitignored `verification-report/` so verifier artifacts stay out of PR diffs
 - Extended `tests/agent-parity.test.mjs` to require the new Step 0 fragments and the teardown fragments in both hosts; added 16 new unit tests in `tests/ship-gate.test.mjs` covering stack detection and report validation
@@ -223,7 +223,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 - Added a Surgical Changes rail to `/build` and the implementer agents on both hosts — every changed line traces to the slice spec; reviewer flags drive-by edits as scope creep
 - Added a `Durable: yes` durability tag to decision records in `/think` Step 4 (criteria: hard to reverse, surprising without context, real trade-off) so `/improve-architecture` doesn't re-litigate settled choices
 - Added `/think` guidance to dispatch `/research` when evidence for a recommendation is thin, rather than reasoning from pattern-matching
-- Surfaces PRs #4 (companion process-title fix) and #5 (Browser Kit / `bb-browser` as preferred verifier on both hosts)
+- Surfaces PRs #4 (companion process-title fix) and #5 (Browser Kit as the managed verifier escape hatch on both hosts)
 
 ### 0.1.9
 
