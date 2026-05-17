@@ -115,7 +115,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ### Naming conventions
 
-- Claude-side manifests use a colon-namespaced kebab name: `0th:implementer`, `0th:reviewer`, `0th:experience-reviewer`, `0th:test-runner`, `0th:web-researcher`, `0th:verifier`, `0th:synthesizer`, `0th:deep-researcher`, `0th:experimenter`
+- Claude-side `agents/*.md` frontmatter uses unprefixed kebab names (`implementer`, `reviewer`, etc.). The Claude plugin loader supplies the `0th:` namespace at invocation time, so callers use `0th:implementer`, `0th:reviewer`, `0th:web-researcher`, and so on.
 - Codex-side manifests use underscored names without a namespace separator: `0th_implementer`, `0th_reviewer`, `0th_experience_reviewer`, `0th_test_runner`, `0th_explorer`, `0th_researcher`, `0th_verifier`, `0th_synthesizer`, `0th_deep_researcher`, `0th_experimenter` — this matches Codex's TOML identifier rules (no colons, no hyphens)
 - `0th:verifier` (Claude) / `0th_verifier` (Codex) — exercises completed features as a real user before /ship
 - `0th:experience-reviewer` (Claude) / `0th_experience_reviewer` (Codex) — reviews completed features through the Product Acceptance Loop before human review

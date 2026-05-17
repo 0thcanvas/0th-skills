@@ -197,6 +197,16 @@ test("mirrored Claude agents have Codex counterparts with explicit runtime setti
 
     assert.ok(claudeMeta.name, `${agentName} Claude manifest should declare a name`);
     assert.ok(codexMeta.name, `${agentName} Codex manifest should declare a name`);
+    assert.equal(
+      claudeMeta.name,
+      agentName,
+      `${agentName} Claude manifest name should stay unprefixed; the plugin namespace supplies 0th: at invocation time`
+    );
+    assert.equal(
+      codexMeta.name,
+      `0th_${agentName.replaceAll("-", "_")}`,
+      `${agentName} Codex manifest name should use the 0th_ native identifier`
+    );
     assert.ok(codexMeta.model, `${agentName} Codex manifest should pin a model`);
     assert.ok(
       codexMeta.model_reasoning_effort,
@@ -227,6 +237,17 @@ test("README documents the deliberate asymmetry between mirrored and Claude-only
   for (const agentName of expectedClaudeOnly) {
     assert.ok(readme.includes(agentName), `README should mention Claude-only agent ${agentName}`);
   }
+
+  assert.match(
+    readme,
+    /Claude-side `agents\/\*\.md` frontmatter uses unprefixed kebab names/,
+    "README should distinguish Claude manifest names from plugin-qualified invocation names"
+  );
+  assert.match(
+    readme,
+    /plugin loader supplies the `0th:` namespace at invocation time/,
+    "README should explain where the Claude 0th: prefix comes from"
+  );
 
   for (const agentName of expectedCodexOnly) {
     assert.ok(readme.includes(agentName), `README should mention Codex-only agent ${agentName}`);
