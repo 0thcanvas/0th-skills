@@ -161,6 +161,12 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### 0.3.2
+
+- Made Browser Kit the named managed wrapper around `bb-browser` across workspace, build, debug, verifier, and stack-minimum guidance.
+- Added explicit session-reuse and safety-overlay rules: check existing tabs before navigation, pass a tab to `browser_open`, and use `browser_tab_new` only for intentional fresh tabs.
+- Renamed the verifier escape-hatch stack id to `browser-kit-escape-hatch` while keeping `/ship` compatibility for older `bb-browser-escape-hatch` reports.
+
 ### 0.3.1
 
 - Added the global Memory v2 runtime layer: project/global brain routing, source namespaces, source-pack ingestion, scoped recall, conflict surfacing, global maintenance, and no-Obsidian runtime evaluation.
