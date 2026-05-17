@@ -25,10 +25,10 @@ const codexDescriptions = {
 
 const codexWrapperNotes = {
   research: [
-    "Codex dispatch note: use `spawn_agent` for research subquestions. If `0th_researcher` is not an `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread."
+    "Codex dispatch note: use `spawn_agent` for research subquestions. `0th_researcher` is a workflow profile implemented through a generic role; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
   ],
   "deep-research": [
-    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents via `spawn_agent`. If a named `0th_*` agent is not an `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread."
+    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents via `spawn_agent`. `0th_*` names are workflow profiles implemented through generic roles; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
   ]
 };
 

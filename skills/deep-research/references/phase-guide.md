@@ -476,8 +476,9 @@ previous summaries are gone from context — they live on disk.
 | `0th:synthesizer` / `0th_synthesizer` | Phase 2 | Build/merge world model from raw notes. Consensus check. |
 | `0th:experimenter` / `0th_experimenter` | Phase 6 | Run proof-of-concept experiments. Pass/fail verdict. |
 
-### Codex Generic-Agent Fallback
+### Codex Dispatch Profiles
 
-On Codex-hosted runs, if a named `0th_*` agent in this guide is not exposed as a
-`spawn_agent` `agent_type`, follow `../../../references/codex-dispatch-fallback.md`
-instead of doing that phase in the orchestrator.
+On Codex-hosted runs, the `0th_*` entries in this guide are workflow profiles
+implemented through generic `spawn_agent` roles. Follow
+`../../../references/codex-dispatch-profiles.md` instead of doing that phase in the
+orchestrator.

@@ -57,7 +57,7 @@ If this is a new session on ongoing work:
 - Explore the codebase where the work will happen
 - Check recent commits in the affected area
 - On Codex-hosted runs, explicitly use `0th_explorer` when code ownership or execution paths are not already obvious from the initial read
-- Codex dispatch fallback: if `0th_explorer` is not exposed as a `spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread.
+- Codex dispatch profile: on Codex-hosted runs, `0th_explorer` is a workflow profile implemented through a generic `spawn_agent` role. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 ### 2. Grill
 

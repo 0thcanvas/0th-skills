@@ -100,9 +100,9 @@ Subagent choice by host:
 - **Claude-hosted runs:** use `0th:web-researcher`
 - **Codex-hosted runs:** use `0th_researcher`
 
-Codex dispatch fallback: if `0th_researcher` is not exposed as a `spawn_agent`
-`agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing
-in the main thread.
+Codex dispatch profile: on Codex-hosted runs, `0th_researcher` is a workflow profile
+implemented through a generic `spawn_agent` role. Follow
+`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 For every sub-question in your map:
 

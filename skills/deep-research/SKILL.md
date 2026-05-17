@@ -103,9 +103,9 @@ Use host-native agents:
 | World-model synthesis | `0th:synthesizer` | `0th_synthesizer` |
 | Experiment | `0th:experimenter` | `0th_experimenter` |
 
-Codex dispatch fallback: if a named `0th_*` agent in this table is not exposed as a
-`spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md`
-instead of continuing in the main thread.
+Codex dispatch profiles: on Codex-hosted runs, the `0th_*` entries in this table are
+workflow profiles implemented through generic `spawn_agent` roles. Follow
+`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 Each agent writes results to disk and returns a short summary. Do not pull raw webpages,
 full paper text, search listings, experiment logs, or previous phase outputs into the

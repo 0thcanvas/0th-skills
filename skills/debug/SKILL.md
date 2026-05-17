@@ -105,7 +105,7 @@ When a loop is managed verification and its failure should be surfaced back thro
 5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
 6. **Read `CONTEXT.md`** at the project root if it exists — use its vocabulary to align your hypothesis and report with the project's domain terms.
 7. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
-8. Codex dispatch fallback: if `0th_explorer` or `0th_test_runner` is not exposed as a `spawn_agent` `agent_type`, follow `../../references/codex-dispatch-fallback.md` instead of continuing in the main thread.
+8. Codex dispatch profiles: on Codex-hosted runs, `0th_explorer` and `0th_test_runner` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
 
