@@ -73,6 +73,12 @@ test("Codex-dispatched skills use generic subagent dispatch profiles", () => {
   assert.match(profileReference, /medium/);
   assert.match(profileReference, /high/);
   assert.match(profileReference, /Do not continue in the main thread for work that a Codex profile can handle/);
+  assert.match(profileReference, /shrink the prompt\s+to the required profile inputs and retry/);
+  assert.doesNotMatch(
+    profileReference,
+    /subagent call\s+fails/,
+    "profile reference should not treat ordinary spawn_agent failures as permission for main-thread execution"
+  );
   assert.doesNotMatch(
     profileReference,
     /gpt-5\.5|xhigh|extra high/i,

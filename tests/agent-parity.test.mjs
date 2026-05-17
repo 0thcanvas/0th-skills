@@ -122,7 +122,7 @@ const expectedMirrors = {
 };
 
 const expectedClaudeOnly = ["ask-counterpart-review", "ask-claude-review", "ask-codex-review", "web-researcher"];
-const expectedCodexOnly = ["explorer", "researcher"];
+const expectedCodexOnlyProfiles = ["0th_explorer", "0th_researcher"];
 
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -249,8 +249,8 @@ test("README documents the deliberate asymmetry between mirrored and Claude-only
     "README should explain where the Claude 0th: prefix comes from"
   );
 
-  for (const agentName of expectedCodexOnly) {
-    assert.ok(readme.includes(agentName), `README should mention Codex-only agent ${agentName}`);
+  for (const profileName of expectedCodexOnlyProfiles) {
+    assert.ok(readme.includes(profileName), `README should mention Codex-only profile ${profileName}`);
   }
 
   assert.ok(

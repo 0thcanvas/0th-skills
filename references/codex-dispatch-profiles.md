@@ -8,9 +8,10 @@ When a skill says to use `0th_explorer`, `0th_reviewer`, or another `0th_*` Code
 profile, dispatch `spawn_agent` with the generic role, model, reasoning effort, and
 prompt shape from this table.
 
-Do not continue in the main thread for work that a Codex profile can handle. Main-thread
-execution is only for when `spawn_agent` itself is unavailable or the subagent call
-fails.
+Do not continue in the main thread for work that a Codex profile can handle. If a
+`spawn_agent` call fails because the prompt is too large or malformed, shrink the prompt
+to the required profile inputs and retry. Main-thread execution is only for when the host
+does not provide `spawn_agent` at all.
 
 | Codex profile | Prompt heading | `agent_type` | `model` | `reasoning_effort` | Prompt must include |
 |---|---|---|---|---|---|
