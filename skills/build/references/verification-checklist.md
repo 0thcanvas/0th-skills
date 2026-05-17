@@ -4,8 +4,8 @@ Use this file when you need the compact per-method verification loops, not as th
 
 ## UI Features
 
-1. Preflight: confirm dev server is ready, capture startup errors if any. If the session browser is down, `browser-kit session open`; if the `bb-browser` MCP is not registered for the current host, `browser-kit mcp install --host <host>`.
-2. Navigate via browser automation, record the exact URL tested.
+1. Preflight: confirm dev server is ready, capture startup errors if any. Use Playwright by default. For logged-in/shared-tab/real-profile checks, use Browser Kit, the managed wrapper around `bb-browser`: run `browser-kit mcp status` before relying on `browser_*` tools; if the MCP is not registered for the current host, run `browser-kit mcp install --host <host>` and check status again; start or attach with `browser-kit session open` using default Chrome unless the operator explicitly selected optional Cloak.
+2. Navigate via browser automation, record the exact URL tested. With Browser Kit, call `browser_tab_list` before opening or navigating, reuse a matching logged-in tab when possible, pass a tab to `browser_open`, and use `browser_tab_new` only for intentional fresh tabs.
 3. Visual: before checking, state the Visual invariant that could fail. Use DOM/e2e tests for behavior/routing, screenshot inspection for layout/fit/overlap/responsive presentation, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
 4. Functional: fill forms, click buttons, navigate flows, verify success/error/loading states.
 5. Accessibility: keyboard nav works, focus visible, form labels present, error messages associated.

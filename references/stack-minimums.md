@@ -17,7 +17,7 @@ A repo can match multiple rows when distinct *root-level* signals are present: e
 Each row's minimum is a *behavior to exercise*, not a tool to use. The verifier walks this chain in order and picks the first usable tool:
 
 1. **Playwright** (default) — runs in CI, deterministic, has `_electron.launch` for Electron and headless modes for web.
-2. **bb-browser** (escape hatch) — real Chrome session for logged-in or shared-tab cases that Playwright can't reproduce.
+2. **Browser Kit** (managed `bb-browser` escape hatch) — real Chrome session for logged-in or shared-tab cases that Playwright can't reproduce.
 3. **Computer-use** (last resort) — only on agents that have it granted (not all 0th sub-agents do).
 
 If no chain tool is usable for the matched stack on the running agent, the verifier returns BLOCKED — never PASS.
@@ -27,11 +27,11 @@ If no chain tool is usable for the matched stack on the running agent, the verif
 | Stack id | Detection signals (any match) | Minimum behavior |
 |---|---|---|
 | `electron-desktop` | `package.json` has `electron` in `dependencies`/`devDependencies`, or `electron/main.*` file present | Launch the built binary; renderer invokes ≥1 method through the `contextBridge → preload → ipcRenderer → ipcMain` chain; assert the resolved value (not just no exception). Crossing the IPC bridge is the point — paper-level symmetry checks do not satisfy this row. |
-| `chrome-mv3-extension` | `manifest.json` with `"manifest_version": 3` | Background service worker responds to a message dispatched from a content script or extension popup; assert response shape. Use Playwright + Chrome-for-Testing by default; bb-browser only when the extension must run in the user's real Chrome profile. |
+| `chrome-mv3-extension` | `manifest.json` with `"manifest_version": 3` | Background service worker responds to a message dispatched from a content script or extension popup; assert response shape. Use Playwright + Chrome-for-Testing by default; use Browser Kit only when the extension must run in the user's real Chrome profile. |
 | `web-app` | `next.config.*`, `vite.config.*`, `astro.config.*`, or `app/` / `pages/` directory present, AND no `electron` dep | Loaded route fetches ≥1 backend response and renders without console errors. Exit criteria: backend hit count ≥ 1, console error count = 0. |
 | `cli` | `package.json` has `bin` field and no UI/electron deps | Spawn binary with fixture input; diff stdout against a known-good snapshot; assert exit code. |
 | `service` | `Dockerfile`, `fly.toml`, or a declared health endpoint, with no UI surface | Hit ≥1 endpoint of the running service (deployed or local docker); verify response shape and status; assert auth boundary if present. |
-| `bb-browser-escape-hatch` | Brief explicitly names "real-session", "logged-in", "shared-tab", or "user's Chrome" | Same evidence shape as `web-app`, but sourced from `browser_*` MCP tools against the user's Chrome session. Only this row uses bb-browser as the *primary* tool, not a chain fallback. |
+| `bb-browser-escape-hatch` | Brief explicitly names "real-session", "logged-in", "shared-tab", or "user's Chrome" | Same evidence shape as `web-app`, but sourced through Browser Kit's managed `browser_*` MCP tools against the user's Chrome session. Before relying on those tools, run `browser-kit mcp status`; start or attach with `browser-kit session open`; call `browser_tab_list` before opening or navigating; pass a tab to `browser_open`; use `browser_tab_new` only for intentional fresh tabs. Default provider is real Chrome; optional Cloak is only for explicit operator-selected sessions. Only this row uses Browser Kit as the *primary* tool, not a chain fallback. |
 
 ## Evidence contract — `stack_minimums_exercised`
 
