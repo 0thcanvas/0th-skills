@@ -23,6 +23,15 @@ const codexDescriptions = {
   "zoom-out": "Use when asked to map unfamiliar code."
 };
 
+const codexWrapperNotes = {
+  research: [
+    "Codex dispatch note: use `spawn_agent` for research subquestions. `0th_researcher` is a workflow profile implemented through a generic role; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
+  ],
+  "deep-research": [
+    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents via `spawn_agent`. `0th_*` names are workflow profiles implemented through generic roles; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
+  ]
+};
+
 function fail(message) {
   process.stderr.write(`${message}\n`);
   process.exit(1);
@@ -87,9 +96,12 @@ function generateWrapper(skillName) {
     "",
     `# ${titleFor(name)}`,
     "",
-    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`,
-    ""
+    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`
   );
+  for (const note of codexWrapperNotes[skillName] ?? []) {
+    lines.push("", note);
+  }
+  lines.push("");
   return `${lines.join("\n")}`;
 }
 

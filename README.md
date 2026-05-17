@@ -80,9 +80,12 @@ question `best TS TOML parser`.
 - Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
 - Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
+- Skills that dispatch Codex subagents point to `references/codex-dispatch-profiles.md`,
+  which defines the supported generic `spawn_agent` roles, model pins, reasoning-effort pins,
+  and prompt shapes for each `0th_*` workflow profile
 - Today, the mirrored 0th-managed agents are `implementer`, `reviewer`, `experience-reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, and `experimenter`
-- For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the custom `0th_explorer`
-- Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses a native `researcher` agent for focused source-cited research cycles
+- For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the `0th_explorer` workflow profile over the generic `explorer` role
+- Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses the `0th_researcher` workflow profile for focused source-cited research cycles
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
@@ -103,16 +106,16 @@ question `best TS TOML parser`.
 | Delegation model | Can auto-delegate from agent `description` | Spawns subagents only when explicitly asked |
 | Agent file format | Markdown with YAML frontmatter under `agents/` | TOML under `.codex/agents/` |
 | Current mirrored 0th agents | `implementer`, `reviewer`, `experience-reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, `experimenter` | `implementer`, `reviewer`, `experience-reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, `experimenter` |
-| Read-only exploration | Built-in `Explore` agent | Custom `0th_explorer` |
+| Read-only exploration | Built-in `Explore` agent | `0th_explorer` workflow profile over generic `explorer` |
 | Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
-| Codex-only agents | n/a | `explorer`, `researcher` |
+| Codex-only profiles | n/a | `0th_explorer`, `0th_researcher` |
 | Native policy pinning | Per-agent `model` in frontmatter | Per-agent `model`, `model_reasoning_effort`, `sandbox_mode`, plus `.codex/config.toml` |
 
 The goal is host-native parity, not identical files. When a behavior cannot be mirrored cleanly, document the asymmetry and keep the user-facing workflow explicit.
 
 ### Naming conventions
 
-- Claude-side manifests use a colon-namespaced kebab name: `0th:implementer`, `0th:reviewer`, `0th:experience-reviewer`, `0th:test-runner`, `0th:web-researcher`, `0th:verifier`, `0th:synthesizer`, `0th:deep-researcher`, `0th:experimenter`
+- Claude-side `agents/*.md` frontmatter uses unprefixed kebab names (`implementer`, `reviewer`, etc.). The Claude plugin loader supplies the `0th:` namespace at invocation time, so callers use `0th:implementer`, `0th:reviewer`, `0th:web-researcher`, and so on.
 - Codex-side manifests use underscored names without a namespace separator: `0th_implementer`, `0th_reviewer`, `0th_experience_reviewer`, `0th_test_runner`, `0th_explorer`, `0th_researcher`, `0th_verifier`, `0th_synthesizer`, `0th_deep_researcher`, `0th_experimenter` — this matches Codex's TOML identifier rules (no colons, no hyphens)
 - `0th:verifier` (Claude) / `0th_verifier` (Codex) — exercises completed features as a real user before /ship
 - `0th:experience-reviewer` (Claude) / `0th_experience_reviewer` (Codex) — reviews completed features through the Product Acceptance Loop before human review

@@ -475,3 +475,10 @@ previous summaries are gone from context — they live on disk.
 | `0th:deep-researcher` / `0th_deep_researcher` | Phase 1 Pass 2, Phase 5 | Deep extraction from papers/repos. Structured findings. |
 | `0th:synthesizer` / `0th_synthesizer` | Phase 2 | Build/merge world model from raw notes. Consensus check. |
 | `0th:experimenter` / `0th_experimenter` | Phase 6 | Run proof-of-concept experiments. Pass/fail verdict. |
+
+### Codex Dispatch Profiles
+
+On Codex-hosted runs, the `0th_*` entries in this guide are workflow profiles
+implemented through generic `spawn_agent` roles. Follow
+`../../../references/codex-dispatch-profiles.md` instead of doing that phase in the
+orchestrator.

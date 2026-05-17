@@ -115,6 +115,7 @@ Rules:
 - When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
 - On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
 - On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
+- Codex dispatch profiles: on Codex-hosted runs, `0th_explorer`, `0th_test_runner`, `0th_reviewer`, `0th_verifier`, and `0th_experience_reviewer` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 ### 3. Mid-Build Bugs
 

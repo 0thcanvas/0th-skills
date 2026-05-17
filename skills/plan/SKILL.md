@@ -54,6 +54,10 @@ Load the decision record from /think (or the user's direct instruction). Read al
 On Codex-hosted runs, explicitly use `0th_explorer` when you need help mapping the current code
 paths or interfaces before you can slice the work cleanly.
 
+Codex dispatch profile: on Codex-hosted runs, `0th_explorer` is a workflow profile
+implemented through a generic `spawn_agent` role. Follow
+`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
+
 ### 2. Identify Durable Decisions
 
 Before slicing, note architectural decisions that span all slices:

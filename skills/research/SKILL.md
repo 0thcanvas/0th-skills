@@ -100,6 +100,10 @@ Subagent choice by host:
 - **Claude-hosted runs:** use `0th:web-researcher`
 - **Codex-hosted runs:** use `0th_researcher`
 
+Codex dispatch profile: on Codex-hosted runs, `0th_researcher` is a workflow profile
+implemented through a generic `spawn_agent` role. Follow
+`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
+
 For every sub-question in your map:
 
 - Send one focused question to the research subagent, with the target source bucket when you know it
@@ -109,8 +113,8 @@ For every sub-question in your map:
 Dispatch subagents in parallel when the sub-questions are independent. Dispatch sequentially only
 when a later query depends on vocabulary learned from an earlier one.
 
-If the host-native subagent is unavailable, fall back to running web search directly, but apply the
-same discipline: one sub-question per search cycle, condense before writing anything into your local map.
+If no subagent path is available, fall back to running web search directly, but apply the same
+discipline: one sub-question per search cycle, condense before writing anything into your local map.
 
 ### 5. First Pass: Map the Space
 

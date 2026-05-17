@@ -103,6 +103,10 @@ Use host-native agents:
 | World-model synthesis | `0th:synthesizer` | `0th_synthesizer` |
 | Experiment | `0th:experimenter` | `0th_experimenter` |
 
+Codex dispatch profiles: on Codex-hosted runs, the `0th_*` entries in this table are
+workflow profiles implemented through generic `spawn_agent` roles. Follow
+`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
+
 Each agent writes results to disk and returns a short summary. Do not pull raw webpages,
 full paper text, search listings, experiment logs, or previous phase outputs into the
 orchestrator context.
