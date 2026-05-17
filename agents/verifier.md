@@ -25,7 +25,7 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 Before any feature-specific verification, detect applicable stacks for this repo using `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md` (the Detection signals column in the Matrix table). Detection is multi-match: distinct root signals (Electron + manifest, etc.) get every applicable row exercised. Nested-workspace cases (a CLI bundle living inside a parent UI repo) are not yet detected by `/ship`'s gate; treat them as a known v1 limitation and exercise the relevant row manually.
 
-For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → bb-browser → computer-use (last fallback, only on agents with computer-use granted).
+For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → Browser Kit MCP → computer-use (last fallback, only on agents with computer-use granted).
 
 **This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
 
@@ -47,7 +47,7 @@ For terminal-based verification commands whose failures should produce a managed
 
 Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
 
-- **UI:** Use Playwright by default for feature-specific UI checks (additive to the Step 0 stack-minimum exercise, which is already governed by the Playwright → bb-browser → computer-use chain per the matrix). Use the `browser_*` MCP tools exposed by `bb-browser` only when the brief invokes the escape hatch (logged-in flows, real-session-only behavior, shared-tab cases) per the bb-browser-escape-hatch row. To use the escape hatch: run `browser-kit session open` first so a warm logged-in profile is attached; install/verify the MCP with `browser-kit mcp install --host <host>` and `browser-kit mcp status`. If the MCP isn't registered when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
+- **UI:** Use Playwright by default for feature-specific UI checks (additive to the Step 0 stack-minimum exercise, which is already governed by the Playwright → Browser Kit MCP → computer-use chain per the matrix). Use Browser Kit, the managed wrapper around `bb-browser`, only when the brief invokes the escape hatch (logged-in flows, real-session-only behavior, shared-tab cases) per the `browser-kit-escape-hatch` row. Before relying on `browser_*` tools, run `browser-kit mcp status`; if the MCP is not registered for the current host, run `browser-kit mcp install --host <host>` and check status again. Start or attach a session with `browser-kit session open`; default provider is real Chrome, and optional Cloak should be requested only for explicit operator-selected sessions. Once connected, call `browser_tab_list` before opening or navigating, reuse a matching logged-in tab when possible, pass a tab to `browser_open` because it only navigates existing tabs, and use `browser_tab_new` only when intentionally creating a fresh tab. If Browser Kit is unavailable when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Take screenshots, fill forms, click through flows, check responsive behavior, verify accessibility basics. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
 - **API:** Hit endpoints with curl/fetch, verify response shapes and status codes, test write operations and validation
 - **Component:** Render in browser, check documented variants plus representative prop combinations, verify accessibility
@@ -120,7 +120,7 @@ Never surface secrets, tokens, or PII in any output:
 
 Whatever you spawn, you stop. Before returning an outcome:
 - Kill any dev server, worker, watcher, or background process you started for this verification (track PIDs of anything you launch — do not rely on the parent to clean up).
-- Close browser tabs/sessions you opened via `bb-browser`. `browser_close_all` only closes tabs opened during the current MCP session, so it is safe to call.
+- Close browser tabs/sessions you opened through Browser Kit. `browser_close_all` only closes tabs opened during the current MCP session, so it is safe to call.
 - Stop containers, databases, queues, or ports started for verification; remove temp directories and fixture files you created.
 - Reconcile created test data with the Test Data Hygiene rule above — delete artifacts you can clean up, leave tagged ones for later sweeps.
 
@@ -142,7 +142,7 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` along
     {
       "stack": "<stack id from stack-minimums.md>",
       "criterion": "<what was actually exercised>",
-      "tool": "playwright|playwright-electron|bb-browser|computer-use|null",
+      "tool": "playwright|playwright-electron|browser-kit|computer-use|null",
       "evidence_path": "<path to dossier, screenshot, or test output>",
       "exercised_at": "<ISO 8601 timestamp>"
     }

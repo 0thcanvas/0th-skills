@@ -24,6 +24,9 @@ const ACCEPTANCE_FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 // Skew tolerance for clock differences between the machine that wrote `reviewed_at` and
 // the machine running the gate (CI vs local laptop).
 const ACCEPTANCE_FUTURE_SKEW_MS = 5 * 60 * 1000;
+export const STACK_ALIASES = new Map([
+  ["bb-browser-escape-hatch", "browser-kit-escape-hatch"]
+]);
 
 const WEB_FRAMEWORK_CONFIGS = [
   "next.config.js", "next.config.mjs", "next.config.ts",
@@ -84,7 +87,7 @@ export function resolveRepoRoot(cwd) {
 }
 
 export function loadBrief(repoRoot, reportDir) {
-  // The brief drives bb-browser-escape-hatch detection. /build writes
+  // The brief drives browser-kit-escape-hatch detection. /build writes
   // verification-report/brief.txt when dispatching the verifier so the
   // gate can re-read it independently. Env var SHIP_GATE_BRIEF overrides
   // the file (for ad-hoc runs).
@@ -136,16 +139,21 @@ export function detectStacks(repoPath, brief = "") {
   if (hasService && !hasUIDeps) stacks.add("service");
 
   if (REAL_SESSION_PATTERN.test(brief)) {
-    stacks.add("bb-browser-escape-hatch");
+    stacks.add("browser-kit-escape-hatch");
   }
 
   return [...stacks];
 }
 
+function canonicalStack(stack) {
+  return STACK_ALIASES.get(stack) ?? stack;
+}
+
 export function validateReport(report, expectedStacks) {
   const reasons = [];
+  const canonicalExpectedStacks = expectedStacks.map(canonicalStack);
 
-  if (expectedStacks.length === 0) {
+  if (canonicalExpectedStacks.length === 0) {
     return { ok: true, reasons };
   }
 
@@ -174,10 +182,10 @@ export function validateReport(report, expectedStacks) {
         reasons.push(`entry missing required key '${key}': ${JSON.stringify(entry)}`);
       }
     }
-    if (entry.stack) exercisedStacks.add(entry.stack);
+    if (entry.stack) exercisedStacks.add(canonicalStack(entry.stack));
   }
 
-  for (const stack of expectedStacks) {
+  for (const stack of canonicalExpectedStacks) {
     if (!exercisedStacks.has(stack)) {
       reasons.push(`expected stack '${stack}' not present in stack_minimums_exercised`);
     }

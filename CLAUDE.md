@@ -40,6 +40,7 @@ Lightweight development workflow for solo builders using Claude Code + Codex.
 - **Cross-model review details live in `README.md`.** Use that as the authoritative reference for bridge-helper behavior and state handling.
 - **KB behavior is editor-agnostic.** Memory v2 runtime is the canonical agent recall path. If a project uses a markdown knowledge base, follow its configured root and the compatibility protocol in `PROTOCOL.md`; do not assume Obsidian.
 - **Secret values stay outside agents.** Agents may handle secret names, environment variable names, and secret-manager references, but not resolved secret values. Code should read secrets from environment variables or runtime bindings, while a human-owned secret runner injects values into the target process.
+- **Browser Kit manages real-browser sessions.** Browser Kit is the managed wrapper around `bb-browser`; use it for logged-in, shared-tab, or real-profile browser work. Before opening or navigating, check/list existing tabs and reuse a matching logged-in session when possible. `browser_open` requires an existing tab; use `browser_tab_new` only when intentionally creating a fresh tab. Run `browser-kit mcp status` before relying on `browser_*` tools, and choose providers only when relevant: default Chrome unless the operator explicitly requests optional Cloak.
 
 ## Secret Handling Contract
 

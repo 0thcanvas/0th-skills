@@ -96,10 +96,10 @@ test("detectStacks: Dockerfile without UI yields service", () => {
   assert.deepEqual(detectStacks(repo), ["service"]);
 });
 
-test("detectStacks: brief mentioning logged-in yields bb-browser-escape-hatch", () => {
+test("detectStacks: brief mentioning logged-in yields browser-kit-escape-hatch", () => {
   const repo = makeTempRepo();
   const stacks = detectStacks(repo, "verify the logged-in dashboard flow");
-  assert.ok(stacks.includes("bb-browser-escape-hatch"));
+  assert.ok(stacks.includes("browser-kit-escape-hatch"));
 });
 
 test("findLocalPathLeaksInText: flags machine-specific home paths", () => {
@@ -198,7 +198,7 @@ test("loadBrief: SHIP_GATE_BRIEF env var overrides the file", () => {
   }
 });
 
-test("detectStacks: brief.txt with logged-in trigger drives bb-browser-escape-hatch (end-to-end via loadBrief)", () => {
+test("detectStacks: brief.txt with logged-in trigger drives browser-kit-escape-hatch (end-to-end via loadBrief)", () => {
   const repo = makeTempRepo();
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
   fs.writeFileSync(
@@ -209,8 +209,8 @@ test("detectStacks: brief.txt with logged-in trigger drives bb-browser-escape-ha
   const brief = loadBrief(repo, "verification-report");
   const stacks = detectStacks(repo, brief);
   assert.ok(
-    stacks.includes("bb-browser-escape-hatch"),
-    `expected bb-browser-escape-hatch in detected stacks, got ${JSON.stringify(stacks)}`
+    stacks.includes("browser-kit-escape-hatch"),
+    `expected browser-kit-escape-hatch in detected stacks, got ${JSON.stringify(stacks)}`
   );
 });
 
@@ -390,6 +390,48 @@ test("validateReport: all expected stacks exercised plus PASS yields ok", () => 
     },
     ["web-app"]
   );
+  assert.equal(result.ok, true, result.reasons.join(", "));
+});
+
+test("validateReport: legacy bb-browser-escape-hatch report satisfies browser-kit-escape-hatch", () => {
+  const result = validateReport(
+    {
+      outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
+      stack_minimums_exercised: [
+        {
+          stack: "bb-browser-escape-hatch",
+          criterion: "logged-in route checked through Browser Kit",
+          tool: "browser-kit",
+          evidence_path: "verification-report/browser-kit.md",
+          exercised_at: "2026-05-03T12:00:00Z"
+        }
+      ]
+    },
+    ["browser-kit-escape-hatch"]
+  );
+
+  assert.equal(result.ok, true, result.reasons.join(", "));
+});
+
+test("validateReport: legacy expected bb-browser-escape-hatch canonicalizes to browser-kit-escape-hatch", () => {
+  const result = validateReport(
+    {
+      outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
+      stack_minimums_exercised: [
+        {
+          stack: "browser-kit-escape-hatch",
+          criterion: "logged-in route checked through Browser Kit",
+          tool: "browser-kit",
+          evidence_path: "verification-report/browser-kit.md",
+          exercised_at: "2026-05-03T12:00:00Z"
+        }
+      ]
+    },
+    ["bb-browser-escape-hatch"]
+  );
+
   assert.equal(result.ok, true, result.reasons.join(", "));
 });
 

@@ -151,7 +151,7 @@ evidence method: DOM/e2e test for behavior, screenshot inspection for layout/fit
 assertion/screenshot assertion for overlays, canvas, animations, and coordinate alignment. Do not
 let "tests passed" stand in for visual fit.
 
-**Persist the brief.** Write the verifier brief to `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` in the project root before dispatching. `/ship`'s gate script reads this file to detect bb-browser-escape-hatch matches independently of the verifier; without it, escape-hatch rows would not be enforced.
+**Persist the brief.** Write the verifier brief to `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` in the project root before dispatching. `/ship`'s gate script reads this file to detect browser-kit-escape-hatch matches independently of the verifier; without it, escape-hatch rows would not be enforced.
 
 Dispatch the verifier agent with:
 - Feature summary: what was built, which slices, acceptance criteria

@@ -22,3 +22,4 @@ This file (`FEEDBACK.md` at the repo root) is kept in the repo for a migration-o
 
 - /ship: counterpart review auto-detection missed Codex Desktop because CODEX_SANDBOX was absent, then silently defaulted to Codex instead of failing or using Claude (2026-05-05)
 - /research, /deep-research: Codex ran research in the main thread when named 0th workflow labels were treated as direct agent types; skills need explicit spawn_agent dispatch profiles (2026-05-16)
+- Browser Kit and computer-use: browser workflows encouraged opening new tabs/windows before checking reusable logged-in sessions; add session-reuse preflight before navigation (2026-05-16)

@@ -44,7 +44,7 @@ If resuming a debug session:
 - See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
 - See `../../references/working-artifacts.md` for throwaway timelines, causal graphs, HAR summaries,
   and other human-facing debug artifacts that should not become repo truth by default.
-- For MV3 Chrome-extension bugs (service worker state, storage, console), use `@0th/browser-kit` + `@0th/browser-kit/ext-debug` (via a `browser-kit session open --ext …` session) rather than ad-hoc CDP — see the browser-kit README for setup.
+- For MV3 Chrome-extension bugs (service worker state, storage, console), use Browser Kit (`@0th/browser-kit` + `@0th/browser-kit/ext-debug`) rather than ad-hoc CDP. Run `browser-kit mcp status` before relying on `browser_*` tools, open the session with `browser-kit session open --ext …`, list tabs before navigating, and reuse matching logged-in tabs when the bug depends on user state.
 
 ## Secret Handling
 
