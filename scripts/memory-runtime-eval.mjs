@@ -59,6 +59,25 @@ function appendJsonl(filePath, record) {
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
 }
 
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const text = fs.readFileSync(filePath, "utf8").trim();
+  if (!text) return [];
+  return text.split("\n").map((line) => JSON.parse(line));
+}
+
+function writeIncident(dir, filename, fields) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, filename), [
+    "---",
+    ...Object.entries(fields).map(([key, value]) => Array.isArray(value) ? `${key}: [${value.join(", ")}]` : `${key}: ${value}`),
+    "---",
+    "",
+    "## Correction evidence",
+    "This body must not be copied into Memory v2."
+  ].join("\n"));
+}
+
 export function runMemoryRuntimeEval() {
   const repo = tempRepo();
   const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-runtime-eval-state-"));
@@ -370,6 +389,98 @@ export function runMemoryRuntimeEval() {
     });
     assert(recalled.abstained === true, "missing memory did not abstain");
     return { abstained: true };
+  }));
+
+  results.push(fixture("non-repo-preflight-advisory", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-workspace-"));
+    const child = path.join(workspace, "child-repo");
+    fs.mkdirSync(child);
+    sh(child, ["git", "init", "-b", "main"]);
+    sh(child, ["git", "config", "user.email", "test@example.com"]);
+    sh(child, ["git", "config", "user.name", "Test User"]);
+    fs.writeFileSync(path.join(child, "README.md"), "child\n");
+    sh(child, ["git", "add", "."]);
+    sh(child, ["git", "commit", "-m", "initial"]);
+    const preflight = runPreflight({ cwd: workspace, repoStateFile: path.join(workspace, "state.json") });
+    assert(preflight.action === "not_a_repo", "non-repo preflight did not return advisory action");
+    assert(preflight.advisory.candidate_repos.some((entry) => entry.path === child), "child repo candidate missing");
+    return { action: preflight.action, candidate_count: preflight.advisory.candidate_repos.length };
+  }));
+
+  results.push(fixture("owner-context-global-evidence", () => {
+    const otherRepo = tempRepo();
+    const evidenceRel = "docs/goals/runtime-report.md";
+    fs.mkdirSync(path.join(repo, "docs/goals"), { recursive: true });
+    fs.writeFileSync(path.join(repo, evidenceRel), "runtime report\n");
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Runtime eval global evidence resolves through owner context.",
+        scope: "global",
+        source_id: "runtime-eval-owner-context",
+        evidence_path: evidenceRel,
+        confidence: "high"
+      }
+    });
+    const maintained = runMemoryMaintain({ cwd: otherRepo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(maintained.findings.global.missing_sources.length === 0, "owner-context global evidence was reported missing");
+    return { missing_global_sources: maintained.findings.global.missing_sources.length };
+  }));
+
+  results.push(fixture("raw-archived-relocation", () => {
+    const rawRel = "research/topic/raw/2026-05-19-note.md";
+    const archivedRel = "research/topic/raw/archived/2026-05-19-note.md";
+    fs.mkdirSync(path.dirname(path.join(repo, archivedRel)), { recursive: true });
+    fs.writeFileSync(path.join(repo, archivedRel), "archived\n");
+    appendMemoryClaim({
+      cwd: repo,
+      memoryFile,
+      updateBrief: false,
+      input: {
+        id: "runtime-eval-relocation",
+        type: "external_research",
+        claim: "Runtime eval raw notes can move to archived raw.",
+        scope: "repo",
+        evidence_path: rawRel,
+        confidence: "high"
+      }
+    });
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile, apply: true });
+    const claim = readJsonl(memoryFile).find((entry) => entry.id === "runtime-eval-relocation");
+    assert(claim.evidence_path === archivedRel, "relocation was not applied");
+    return { relocated_to: claim.evidence_path, actions: maintained.actions.map((entry) => entry.action) };
+  }));
+
+  results.push(fixture("retro-incident-import", () => {
+    const incidentDir = path.join(repo, "kb", "learning", "skill-incidents");
+    for (const index of [1, 2, 3]) {
+      writeIncident(incidentDir, `incident-${index}.md`, {
+        date: `2026-05-1${index}T12:00:00-05:00`,
+        skill: "general-agent",
+        classification: "verification-skipped",
+        severity: "moderate",
+        tags: ["visual-verification"]
+      });
+    }
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile, incidentDir, apply: true });
+    const incidents = readJsonl(memoryFile).filter((entry) => entry.type === "incident");
+    assert(incidents.length > 0, "incident pattern was not imported");
+    assert(!JSON.stringify(incidents).includes("This body must not be copied"), "incident body leaked into memory");
+    return { imported_actions: maintained.actions.filter((entry) => entry.action === "imported_incident_pattern").length };
+  }));
+
+  results.push(fixture("partial-readiness-and-hygiene", () => {
+    fs.writeFileSync(path.join(repo, "CLAUDE.md"), "Read index.md at session start. Always.\n");
+    fs.writeFileSync(path.join(repo, "error.log"), "generated log\n");
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(maintained.findings.instruction_drift.length > 0, "instruction drift not reported");
+    assert(maintained.findings.local_artifacts.length > 0, "local artifact noise not reported");
+    return {
+      instruction_drift: maintained.findings.instruction_drift.length,
+      local_artifacts: maintained.findings.local_artifacts.length
+    };
   }));
 
   const passed = results.filter((result) => result.pass).length;

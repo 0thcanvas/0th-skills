@@ -635,9 +635,12 @@ test("memory-maintain reports global stale claims, source-pack expiry, conflicts
       { id: "conflict-a", missing_id: "missing-link" }
     ]);
     assert.deepEqual(result.findings.global.conflicts[0].ids.sort(), ["conflict-a", "conflict-b"]);
-    assert.deepEqual(result.findings.global.missing_sources, [
-      { id: "conflict-b", missing_path: "missing/source-pack.jsonl" }
-    ]);
+    assert.deepEqual(
+      result.findings.global.missing_sources.map((entry) => ({ id: entry.id, missing_path: entry.missing_path })),
+      [{ id: "conflict-b", missing_path: "missing/source-pack.jsonl" }]
+    );
+    assert.equal(result.findings.global.missing_sources[0].field, "evidence_path");
+    assert.equal(result.findings.global.missing_sources[0].owner_context.owner_project_key, null);
   });
 });
 

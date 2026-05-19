@@ -10,7 +10,8 @@ import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { emitBriefRegenerationFailed, writeStderrLine } from "./lib/diagnostics.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
-import { resolveGlobalSourcePaths, resolveMemoryPaths, resolveRepoStatePaths, resolveTaskPaths } from "./runtime-state.mjs";
+import { aggregate as aggregateRetroIncidents } from "./retro-aggregator.mjs";
+import { resolveGlobalSourcePaths, resolveMemoryPaths, resolveRepoStatePaths, resolveStateRoot, resolveTaskPaths } from "./runtime-state.mjs";
 
 const gitFailuresLogged = new Set();
 
@@ -61,6 +62,80 @@ function pathExists(cwd, pointer) {
   return fs.existsSync(absolute);
 }
 
+function readOwnerRoot(record, {
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  if (record.owner_project_root) return String(record.owner_project_root);
+  if (!record.owner_project_key) return null;
+  const repoStateFile = path.join(
+    resolveStateRoot({ env, homeDir }),
+    "projects",
+    String(record.owner_project_key),
+    "repo",
+    "state.json"
+  );
+  try {
+    const state = JSON.parse(fs.readFileSync(repoStateFile, "utf8"));
+    return state.repo_root ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function ownerContextFor(cwd, record) {
+  const ownerRoot = readOwnerRoot(record);
+  return {
+    owner_project_key: record.owner_project_key ?? null,
+    owner_project_root: ownerRoot,
+    owner_project_identity: record.owner_project_identity ?? null,
+    fallback_cwd: path.resolve(cwd)
+  };
+}
+
+function sourcePointer(pointer) {
+  return /^https?:\/\//.test(pointer)
+    || pointer.startsWith("op://")
+    || pointer.startsWith("doppler://")
+    || pointer.startsWith("sources/");
+}
+
+function resolvePointerPath(cwd, record, pointer) {
+  if (!pointer || sourcePointer(String(pointer))) {
+    return {
+      exists: true,
+      absolute: null,
+      base: null,
+      owner_context: ownerContextFor(cwd, record)
+    };
+  }
+  const expanded = expandHome(String(pointer));
+  const normalized = normalizePathPointer(expanded);
+  const ownerRoot = readOwnerRoot(record);
+  const base = path.isAbsolute(normalized) ? null : ownerRoot ?? path.resolve(cwd);
+  const absolute = path.isAbsolute(normalized) ? normalized : path.join(base, normalized);
+  return {
+    exists: fs.existsSync(absolute),
+    absolute,
+    base,
+    owner_context: ownerContextFor(cwd, record)
+  };
+}
+
+function archivedRawCandidate(absolutePath) {
+  if (!absolutePath) return null;
+  const normalized = path.normalize(absolutePath);
+  const marker = `${path.sep}raw${path.sep}`;
+  if (!normalized.includes(marker) || normalized.includes(`${path.sep}raw${path.sep}archived${path.sep}`)) return null;
+  const candidate = normalized.replace(marker, `${path.sep}raw${path.sep}archived${path.sep}`);
+  return fs.existsSync(candidate) ? candidate : null;
+}
+
+function displayPointerFor(originalPointer, absolutePath) {
+  if (path.isAbsolute(String(originalPointer))) return absolutePath;
+  return String(originalPointer).replace(/(^|\/)raw\//, "$1raw/archived/");
+}
+
 function duplicateCandidates(claims) {
   const byText = new Map();
   for (const claim of claims) {
@@ -73,31 +148,140 @@ function duplicateCandidates(claims) {
     .map(([claim, ids]) => ({ claim, ids }));
 }
 
-function missingSourceCandidates(cwd, records) {
+function slugify(value) {
+  return String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "incident-pattern";
+}
+
+function pointerEntries(record) {
+  return [
+    ...(record.evidence_path ? [{ field: "evidence_path", pointer: record.evidence_path }] : []),
+    ...((record.evidence_paths ?? []).map((pointer) => ({ field: "evidence_paths", pointer }))),
+    ...((record.source_paths ?? []).map((pointer) => ({ field: "source_paths", pointer })))
+  ];
+}
+
+function sourceFindings(cwd, records) {
   return records.flatMap((record) => {
-    const pointers = [
-      ...(record.evidence_path ? [record.evidence_path] : []),
-      ...(record.evidence_paths ?? []),
-      ...(record.source_paths ?? [])
-    ];
-    return pointers
-      .filter((pointer) => !pathExists(cwd, pointer))
-      .map((pointer) => ({ id: record.id, missing_path: pointer }));
+    return pointerEntries(record).flatMap(({ field, pointer }) => {
+      const resolved = resolvePointerPath(cwd, record, pointer);
+      if (resolved.exists) return [];
+      const relocatedAbsolute = archivedRawCandidate(resolved.absolute);
+      const base = {
+        id: record.id,
+        field,
+        missing_path: pointer,
+        resolved_path: resolved.absolute,
+        owner_context: resolved.owner_context
+      };
+      if (relocatedAbsolute) {
+        return [{
+          ...base,
+          relocated_path: displayPointerFor(pointer, relocatedAbsolute),
+          relocated_absolute_path: relocatedAbsolute
+        }];
+      }
+      return [base];
+    });
   });
 }
 
+function missingSourceCandidates(cwd, records) {
+  return sourceFindings(cwd, records).filter((entry) => !entry.relocated_path);
+}
+
+function relocationCandidates(cwd, records) {
+  return sourceFindings(cwd, records).filter((entry) => entry.relocated_path);
+}
+
 function missingGlobalSourceCandidates(cwd, records) {
-  return records.flatMap((record) => {
-    const pointers = [
-      ...(record.evidence_path ? [record.evidence_path] : []),
-      ...(record.evidence_paths ?? []),
-      ...(record.source_paths ?? [])
-    ];
-    return pointers
-      .filter((pointer) => !String(pointer).startsWith("sources/"))
-      .filter((pointer) => !pathExists(cwd, pointer))
-      .map((pointer) => ({ id: record.id, missing_path: pointer }));
+  return missingSourceCandidates(cwd, records);
+}
+
+function globalRelocationCandidates(cwd, records) {
+  return relocationCandidates(cwd, records);
+}
+
+function rewritePointer(record, entry) {
+  if (entry.field === "evidence_path") {
+    return { ...record, evidence_path: entry.relocated_path };
+  }
+  const current = record[entry.field] ?? [];
+  return {
+    ...record,
+    [entry.field]: current.map((pointer) => pointer === entry.missing_path ? entry.relocated_path : pointer)
+  };
+}
+
+function applyRelocations({ claims, relocations, actions }) {
+  if (relocations.length === 0) return { mutated: false, claims };
+  const byId = new Map();
+  for (const entry of relocations) {
+    byId.set(entry.id, [...(byId.get(entry.id) ?? []), entry]);
+  }
+  let mutated = false;
+  const nextClaims = claims.map((claim) => {
+    let next = claim;
+    for (const entry of byId.get(claim.id) ?? []) {
+      next = rewritePointer(next, entry);
+      mutated = true;
+      actions.push({
+        action: "repaired_evidence_pointer",
+        id: claim.id,
+        field: entry.field,
+        from: entry.missing_path,
+        to: entry.relocated_path
+      });
+    }
+    return next;
   });
+  return { mutated, claims: nextClaims };
+}
+
+function defaultIncidentDir(env = process.env) {
+  return env.KB_ROOT ? path.join(env.KB_ROOT, "learning", "skill-incidents") : null;
+}
+
+function incidentPatternCandidates({ incidentDir, maintainedAt }) {
+  if (!incidentDir || !fs.existsSync(incidentDir)) return [];
+  const result = aggregateRetroIncidents({
+    directoryPath: incidentDir,
+    currentRunAt: maintainedAt
+  });
+  return result.patterns.map((pattern) => ({
+    ...pattern,
+    id: `incident-pattern-${slugify(`${pattern.bucketType}-${pattern.bucketKey}`)}`
+  }));
+}
+
+function importIncidentPatterns({ claims, patterns, maintainedAt, actions }) {
+  const existingIds = new Set(claims.map((claim) => claim.id));
+  const imported = [];
+  for (const pattern of patterns) {
+    if (existingIds.has(pattern.id)) continue;
+    const sourcePaths = pattern.priorEntries ?? [];
+    if (sourcePaths.length === 0) continue;
+    imported.push({
+      id: pattern.id,
+      type: "incident",
+      claim: `Recurring incident pattern: ${pattern.bucketKey} crossed ${pattern.count} entries (${pattern.bucketType}).`,
+      scope: "repo",
+      lifecycle_state: "active",
+      created_at: maintainedAt,
+      last_confirmed_at: maintainedAt,
+      confidence: "medium",
+      source_paths: sourcePaths
+    });
+    actions.push({ action: "imported_incident_pattern", id: pattern.id, bucket_key: pattern.bucketKey });
+    existingIds.add(pattern.id);
+  }
+  return {
+    mutated: imported.length > 0,
+    claims: imported.length > 0 ? [...claims, ...imported] : claims
+  };
 }
 
 function repoDrift({ cwd, repoStateFile }) {
@@ -116,6 +300,55 @@ function repoDrift({ cwd, repoStateFile }) {
     current_head: currentHead,
     repo_state_file: repoStateFile
   };
+}
+
+function instructionDriftFindings(cwd) {
+  return ["CLAUDE.md", "AGENTS.md"]
+    .map((name) => path.join(cwd, name))
+    .filter((filePath) => fs.existsSync(filePath))
+    .flatMap((filePath) => {
+      let text = "";
+      try {
+        text = fs.readFileSync(filePath, "utf8");
+      } catch {
+        return [];
+      }
+      const requiresLegacyKbStart = /Read\s+`?index\.md`?.{0,80}(session start|every session|Always)/is.test(text)
+        || /read the KB index at every session/i.test(text);
+      const namesMemoryV2 = /Memory v2 runtime is the canonical agent recall path/i.test(text)
+        || /generated briefs before browsing indexes/i.test(text);
+      if (!requiresLegacyKbStart || namesMemoryV2) return [];
+      return [{
+        file: filePath,
+        reason: "legacy_kb_startup_before_memory_v2",
+        recommendation: "Align startup instructions with the shared Memory v2 block: generated briefs first, markdown KB as fallback/source evidence."
+      }];
+    });
+}
+
+function isGitTracked(cwd, relativePath) {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", relativePath], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function localArtifactFindings(cwd) {
+  const candidates = ["error.log"];
+  return candidates
+    .filter((relativePath) => fs.existsSync(path.join(cwd, relativePath)))
+    .filter((relativePath) => !isGitTracked(cwd, relativePath))
+    .map((relativePath) => ({
+      path: path.join(cwd, relativePath),
+      reason: "generated_local_log",
+      recommendation: "Move generated tool logs to the Memory v2 state root or add an explicit ignore rule if this artifact is expected."
+    }));
 }
 
 function openLoopFindings(cwd, loops) {
@@ -251,6 +484,7 @@ function globalMaintenanceFindings({
     stale_claims: staleClaimCandidates(globalClaims, maintainedAt),
     duplicate_candidates: duplicateCandidates(globalClaims),
     missing_sources: missingGlobalSourceCandidates(cwd, globalClaims),
+    relocatable_sources: globalRelocationCandidates(cwd, globalClaims),
     expired_source_packs: expiredSourcePackCandidates(sourcePacks, maintainedAt),
     orphan_links: orphanLinkCandidates(globalClaims, knownIds),
     conflicts: conflictCandidates(globalClaims)
@@ -266,6 +500,7 @@ export function runMemoryMaintain({
   globalMemoryFile = null,
   globalBriefFile = null,
   sourceIndexFile = null,
+  incidentDir = null,
   includeGlobal = true,
   apply = false,
   maintainedAt = new Date().toISOString()
@@ -285,6 +520,7 @@ export function runMemoryMaintain({
   );
   const resolvedSourceIndexFile = sourceIndexFile ?? globalSourceDefaults.sourceIndexFile;
   const resolvedRepoStateFile = repoStateFile ?? resolveRepoStatePaths({ cwd }).repoStateFile;
+  const resolvedIncidentDir = incidentDir ?? defaultIncidentDir();
 
   return withFileLock(resolvedMemoryFile, (lockState) => {
     const claims = readJsonl(resolvedMemoryFile);
@@ -293,8 +529,12 @@ export function runMemoryMaintain({
     const sourcePacks = includeGlobal ? readJsonl(resolvedSourceIndexFile) : [];
     const duplicates = duplicateCandidates(claims);
     const missingSources = missingSourceCandidates(cwd, claims);
+    const relocatableSources = relocationCandidates(cwd, claims);
+    const incidentPatterns = incidentPatternCandidates({ incidentDir: resolvedIncidentDir, maintainedAt });
     const orphanOpenLoops = openLoopFindings(cwd, loops);
     const drift = repoDrift({ cwd, repoStateFile: resolvedRepoStateFile });
+    const instructionDrift = instructionDriftFindings(cwd);
+    const localArtifacts = localArtifactFindings(cwd);
     const needsReview = claims
       .filter((claim) => claim.lifecycle_state === "needs_review")
       .map((claim) => ({ id: claim.id, reason: claim.review?.reason ?? claim.review_caveat ?? "needs_review" }));
@@ -324,10 +564,48 @@ export function runMemoryMaintain({
         stale_claims: [],
         duplicate_candidates: [],
         missing_sources: [],
+        relocatable_sources: [],
         expired_source_packs: [],
         orphan_links: [],
         conflicts: []
       };
+
+    if (apply && relocatableSources.length > 0) {
+      const relocated = applyRelocations({
+        claims: updatedClaims,
+        relocations: relocatableSources,
+        actions
+      });
+      if (relocated.mutated) {
+        updatedClaims = relocated.claims;
+        writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
+        try {
+          brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+        } catch (err) {
+          briefError = err.message;
+          emitBriefRegenerationFailed(err);
+        }
+      }
+    }
+
+    if (apply && incidentPatterns.length > 0) {
+      const imported = importIncidentPatterns({
+        claims: updatedClaims,
+        patterns: incidentPatterns,
+        maintainedAt,
+        actions
+      });
+      if (imported.mutated) {
+        updatedClaims = imported.claims;
+        writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
+        try {
+          brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+        } catch (err) {
+          briefError = err.message;
+          emitBriefRegenerationFailed(err);
+        }
+      }
+    }
 
     if (apply && duplicates.length > 0) {
       // PR #21 review NEW1: pre-fix, every duplicate tail was
@@ -339,7 +617,7 @@ export function runMemoryMaintain({
       // is no work to do.
       const duplicateIds = new Set(duplicates.flatMap((entry) => entry.ids.slice(1)));
       let mutated = false;
-      updatedClaims = claims.map((claim) => {
+      updatedClaims = updatedClaims.map((claim) => {
         if (!duplicateIds.has(claim.id)) return claim;
         if (
           claim.lifecycle_state === "needs_review"
@@ -381,6 +659,16 @@ export function runMemoryMaintain({
           sourcePacks: latestSourcePacks,
           maintainedAt
         });
+        const relocated = applyRelocations({
+          claims: latestGlobalClaims,
+          relocations: latestFindings.relocatable_sources,
+          actions
+        });
+        let workingGlobalClaims = latestGlobalClaims;
+        if (relocated.mutated) {
+          workingGlobalClaims = relocated.claims;
+          writeJsonlAtomic(resolvedGlobalMemoryFile, workingGlobalClaims);
+        }
         const reasonsById = new Map();
 
         for (const entry of latestFindings.stale_claims) addReason(reasonsById, entry.id, "stale_global_claim");
@@ -394,12 +682,12 @@ export function runMemoryMaintain({
         }
 
         const marked = markNeedsReview({
-          claims: latestGlobalClaims,
+          claims: workingGlobalClaims,
           reasonsById,
           maintainedAt,
           actions
         });
-        if (marked.mutated) {
+        if (marked.mutated || relocated.mutated) {
           writeJsonlAtomic(resolvedGlobalMemoryFile, marked.claims);
           try {
             globalBrief = runBriefGeneration({
@@ -421,6 +709,7 @@ export function runMemoryMaintain({
       memory_file: resolvedMemoryFile,
       global_memory_file: includeGlobal ? resolvedGlobalMemoryFile : null,
       source_index_file: includeGlobal ? resolvedSourceIndexFile : null,
+      incident_dir: resolvedIncidentDir,
       task_file: resolvedTaskFile,
       repo_state_file: resolvedRepoStateFile,
       checked_at: maintainedAt,
@@ -429,9 +718,13 @@ export function runMemoryMaintain({
         needs_review: needsReview,
         duplicate_candidates: duplicates,
         missing_sources: missingSources,
+        relocatable_sources: relocatableSources,
+        incident_patterns: incidentPatterns,
         orphan_open_loops: orphanOpenLoops,
         supersession_candidates: supersessionCandidates,
         repo_drift: drift ? [drift] : [],
+        instruction_drift: instructionDrift,
+        local_artifacts: localArtifacts,
         global: globalFindings
       },
       actions,
@@ -471,6 +764,10 @@ function parseArgs(argv) {
     }
     if (token === "--source-index-file") {
       options.sourceIndexFile = argv[++index];
+      continue;
+    }
+    if (token === "--incident-dir") {
+      options.incidentDir = argv[++index];
       continue;
     }
     if (token === "--no-global") {
