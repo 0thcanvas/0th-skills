@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 import { runMemorySync } from "./memory-sync.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
@@ -42,16 +44,65 @@ function relationFor({ upstream, ahead, behind }) {
   return "up_to_date";
 }
 
+function childRepoCandidates(cwd) {
+  if (!fs.existsSync(cwd)) return [];
+  return fs.readdirSync(cwd, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const repoPath = path.join(cwd, entry.name);
+      return {
+        name: entry.name,
+        path: repoPath,
+        gitMarker: path.join(repoPath, ".git")
+      };
+    })
+    .filter((entry) => fs.existsSync(entry.gitMarker))
+    .map(({ name, path }) => ({ name, path }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
 export function runPreflight({
   cwd = process.cwd(),
   allowPull = true,
   memoryFile,
   repoStateFile
 } = {}) {
-  const repoRoot = runGit(cwd, ["rev-parse", "--show-toplevel"]);
+  const resolvedCwd = path.resolve(cwd);
+  const fetchedAt = new Date().toISOString();
+  const repoRoot = runGit(resolvedCwd, ["rev-parse", "--show-toplevel"], { allowFailure: true });
+  if (!repoRoot) {
+    const resolvedRepoStateFile = repoStateFile ?? resolveRepoStatePaths({ cwd: resolvedCwd }).repoStateFile;
+    const warning = "not a git repository; run preflight from a project checkout or choose a candidate child repo";
+    return {
+      repo_root: null,
+      cwd: resolvedCwd,
+      repo_state_file: resolvedRepoStateFile,
+      branch: null,
+      clean: null,
+      upstream: null,
+      upstream_relation: "not_a_repo",
+      ahead: null,
+      behind: null,
+      before_head: null,
+      after_head: null,
+      fetched_at: fetchedAt,
+      fetch_ok: false,
+      action: "not_a_repo",
+      memory_sync_failed: false,
+      drift_sync_failed: false,
+      repo_state_unreadable: false,
+      warnings: [warning],
+      advisory: {
+        kind: "not_a_git_repo",
+        message: warning,
+        candidate_repos: childRepoCandidates(resolvedCwd),
+        state_path: resolvedRepoStateFile
+      },
+      repo_state: null
+    };
+  }
   const branch = runGit(repoRoot, ["branch", "--show-current"]) || "DETACHED";
   const beforeHead = runGit(repoRoot, ["rev-parse", "HEAD"]);
-  const fetchedAt = new Date().toISOString();
   const resolvedRepoStateFile = repoStateFile ?? resolveRepoStatePaths({ cwd: repoRoot }).repoStateFile;
   const warnings = [];
   // PR #21 review: readRepoState now returns a structured `{ unreadable }`
