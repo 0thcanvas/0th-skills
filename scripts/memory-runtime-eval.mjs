@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { addEvidenceRecord } from "./evidence.mjs";
+import { compactMemoryClaims } from "./memory-compact.mjs";
 import { appendMemoryClaim } from "./memory-write.mjs";
 import { expandMemory, recallMemory } from "./memory-recall.mjs";
 import { runMemoryMaintain } from "./memory-maintain.mjs";
@@ -389,6 +390,48 @@ export function runMemoryRuntimeEval() {
     });
     assert(recalled.abstained === true, "missing memory did not abstain");
     return { abstained: true };
+  }));
+
+  results.push(fixture("memory-compaction", () => {
+    const briefFile = path.join(runtimeDir, "brief.md");
+    for (const id of ["runtime-eval-compact-a", "runtime-eval-compact-b"]) {
+      appendMemoryClaim({
+        cwd: repo,
+        memoryFile,
+        updateBrief: false,
+        input: {
+          id,
+          type: "observation",
+          claim: `${id} is old and should be compacted out of startup recall.`,
+          scope: "repo",
+          evidence_path: `docs/evals/${id}.md`,
+          confidence: "medium"
+        }
+      });
+    }
+    const compacted = compactMemoryClaims({
+      cwd: repo,
+      memoryFile,
+      briefFile,
+      ids: ["runtime-eval-compact-a", "runtime-eval-compact-b"],
+      input: {
+        id: "runtime-eval-compact-summary",
+        type: "observation",
+        claim: "Runtime eval compaction preserves old claims as superseded and keeps only the summary in the brief.",
+        scope: "repo",
+        evidence_path: "docs/evals/runtime-compaction.md",
+        confidence: "high"
+      }
+    });
+    const claims = readJsonl(memoryFile);
+    const brief = fs.readFileSync(briefFile, "utf8");
+    const original = claims.find((entry) => entry.id === "runtime-eval-compact-a");
+    const summary = claims.find((entry) => entry.id === "runtime-eval-compact-summary");
+    assert(original.lifecycle_state === "superseded", "compaction did not supersede the original claim");
+    assert(summary.supersedes.length === 2, "compaction summary did not link both old claims");
+    assert(!brief.includes("runtime-eval-compact-a is old"), "superseded claim remained in brief");
+    assert(brief.includes("Runtime eval compaction preserves"), "summary missing from brief");
+    return { summary_id: compacted.summary_id, compacted_ids: compacted.compacted_ids };
   }));
 
   results.push(fixture("non-repo-preflight-advisory", () => {

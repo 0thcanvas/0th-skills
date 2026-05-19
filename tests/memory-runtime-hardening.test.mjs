@@ -732,6 +732,7 @@ test("runtime eval exercises memory behavior fixtures end to end", () => {
       "stale-global-maintenance",
       "no-obsidian-dependency",
       "abstention",
+      "memory-compaction",
       "non-repo-preflight-advisory",
       "owner-context-global-evidence",
       "raw-archived-relocation",

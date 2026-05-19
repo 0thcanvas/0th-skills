@@ -8,14 +8,18 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 const SECTIONS = [
-  ["Active Decisions", (claim) => claim.type === "decision" && claim.lifecycle_state !== "archived"],
-  ["Vocabulary", (claim) => claim.type === "vocabulary" && claim.lifecycle_state !== "archived"],
-  ["Recurring Incidents", (claim) => claim.type === "incident" && claim.lifecycle_state !== "archived"],
-  ["Known Root Causes", (claim) => claim.type === "root_cause" && claim.lifecycle_state !== "archived"],
+  ["Active Decisions", (claim) => claim.type === "decision" && activeForBrief(claim)],
+  ["Vocabulary", (claim) => claim.type === "vocabulary" && activeForBrief(claim)],
+  ["Recurring Incidents", (claim) => claim.type === "incident" && activeForBrief(claim)],
+  ["Known Root Causes", (claim) => claim.type === "root_cause" && activeForBrief(claim)],
   ["Repo State Warnings", (claim) => claim.type === "repo_state" && claim.lifecycle_state === "needs_review"],
-  ["External Research", (claim) => claim.type === "external_research" && claim.lifecycle_state !== "archived"],
-  ["Observations", (claim) => claim.type === "observation" && claim.lifecycle_state !== "archived"]
+  ["External Research", (claim) => claim.type === "external_research" && activeForBrief(claim)],
+  ["Observations", (claim) => claim.type === "observation" && activeForBrief(claim)]
 ];
+
+function activeForBrief(claim) {
+  return !["archived", "superseded"].includes(claim.lifecycle_state);
+}
 
 function evidenceFor(claim) {
   if (claim.evidence_path) return claim.evidence_path;
