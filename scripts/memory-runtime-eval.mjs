@@ -472,6 +472,35 @@ export function runMemoryRuntimeEval() {
     return { missing_global_sources: maintained.findings.global.missing_sources.length };
   }));
 
+  results.push(fixture("owner-context-repair", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "0th-owner-repair-workspace-"));
+    const child = path.join(workspace, "skills");
+    fs.mkdirSync(child, { recursive: true });
+    const evidenceRel = "docs/goals/runtime-owner-repair.md";
+    fs.mkdirSync(path.join(workspace, "docs/goals"), { recursive: true });
+    fs.writeFileSync(path.join(workspace, evidenceRel), "owner repair\n");
+    appendJsonl(globalMemoryFile, {
+      id: "runtime-eval-owner-repair",
+      type: "external_research",
+      claim: "Runtime eval owner repair attaches ancestor workspace context.",
+      scope: "global",
+      lifecycle_state: "active",
+      created_at: "2026-05-19T00:00:00.000Z",
+      last_confirmed_at: "2026-05-19T00:00:00.000Z",
+      source_id: "runtime-eval-owner-repair",
+      evidence_path: evidenceRel,
+      confidence: "high"
+    });
+    const childRepoStateFile = path.join(workspace, "repo-state.json");
+    const dryRun = runMemoryMaintain({ cwd: child, memoryFile, taskFile, repoStateFile: childRepoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(dryRun.findings.global.owner_context_candidates.length === 1, "owner context repair candidate missing");
+    const applied = runMemoryMaintain({ cwd: child, memoryFile, taskFile, repoStateFile: childRepoStateFile, globalMemoryFile, sourceIndexFile, apply: true });
+    const repaired = readJsonl(globalMemoryFile).find((entry) => entry.id === "runtime-eval-owner-repair");
+    assert(repaired.owner_project_root === workspace, "owner context was not repaired");
+    assert(applied.actions.some((entry) => entry.action === "repaired_owner_context"), "repair action missing");
+    return { owner_project_root: repaired.owner_project_root };
+  }));
+
   results.push(fixture("raw-archived-relocation", () => {
     const rawRel = "research/topic/raw/2026-05-19-note.md";
     const archivedRel = "research/topic/raw/archived/2026-05-19-note.md";

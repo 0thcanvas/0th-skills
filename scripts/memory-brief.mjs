@@ -16,6 +16,7 @@ const SECTIONS = [
   ["External Research", (claim) => claim.type === "external_research" && activeForBrief(claim)],
   ["Observations", (claim) => claim.type === "observation" && activeForBrief(claim)]
 ];
+const DEFAULT_MAX_SECTION_ITEMS = 8;
 
 function activeForBrief(claim) {
   return !["archived", "superseded"].includes(claim.lifecycle_state);
@@ -35,9 +36,13 @@ function itemFor(claim) {
 }
 
 export function generateBrief(claims, {
-  title = "Project Memory Brief"
+  title = "Project Memory Brief",
+  maxSectionItems = DEFAULT_MAX_SECTION_ITEMS
 } = {}) {
   const sorted = [...claims].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
+  const itemLimit = Number.isFinite(Number(maxSectionItems)) && Number(maxSectionItems) > 0
+    ? Math.floor(Number(maxSectionItems))
+    : Infinity;
   const lines = [
     `# ${title}`,
     "",
@@ -51,7 +56,10 @@ export function generateBrief(claims, {
       lines.push("- None recorded.");
       continue;
     }
-    lines.push(...sectionClaims.map(itemFor));
+    lines.push(...sectionClaims.slice(0, itemLimit).map(itemFor));
+    if (sectionClaims.length > itemLimit) {
+      lines.push(`- ${sectionClaims.length - itemLimit} more omitted; use \`memory recall --query "${title}"\` to inspect the full set.`);
+    }
   }
 
   return `${lines.join("\n")}\n`;
@@ -61,7 +69,8 @@ export function runBriefGeneration({
   cwd = process.cwd(),
   memoryFile = null,
   outputFile = null,
-  scope = "repo"
+  scope = "repo",
+  maxSectionItems = DEFAULT_MAX_SECTION_ITEMS
 } = {}) {
   const defaults = resolveMemoryPaths({ cwd, scope });
   const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
@@ -70,7 +79,8 @@ export function runBriefGeneration({
   );
   const claims = readJsonl(resolvedMemoryFile);
   const brief = generateBrief(claims, {
-    title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief"
+    title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief",
+    maxSectionItems
   });
   // PR #21 review NEW4: tmp+rename so a crash or concurrent reader cannot
   // observe a truncated brief. The brief is derived state, but agents
@@ -98,6 +108,10 @@ function parseArgs(argv) {
     }
     if (token === "--output") {
       options.outputFile = argv[++index];
+      continue;
+    }
+    if (token === "--max-section-items") {
+      options.maxSectionItems = Number(argv[++index]);
       continue;
     }
     throw new Error(`Unknown option: ${token}`);

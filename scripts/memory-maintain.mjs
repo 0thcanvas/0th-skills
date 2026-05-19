@@ -11,7 +11,7 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 import { emitBriefRegenerationFailed, writeStderrLine } from "./lib/diagnostics.mjs";
 import { runBriefGeneration } from "./memory-brief.mjs";
 import { aggregate as aggregateRetroIncidents } from "./retro-aggregator.mjs";
-import { resolveGlobalSourcePaths, resolveMemoryPaths, resolveRepoStatePaths, resolveStateRoot, resolveTaskPaths } from "./runtime-state.mjs";
+import { resolveGlobalSourcePaths, resolveMemoryPaths, resolveProjectIdentity, resolveRepoStatePaths, resolveStateRoot, resolveTaskPaths } from "./runtime-state.mjs";
 
 const gitFailuresLogged = new Set();
 
@@ -148,6 +148,50 @@ function duplicateCandidates(claims) {
     .map(([claim, ids]) => ({ claim, ids }));
 }
 
+function compactableClaims(claims) {
+  return claims.filter((claim) => !["archived", "superseded"].includes(claim.lifecycle_state));
+}
+
+function compactionCandidates(claims) {
+  const byId = new Map(claims.map((claim) => [claim.id, claim]));
+  const candidates = [];
+  const seen = new Set();
+  const activeClaims = compactableClaims(claims);
+
+  for (const entry of duplicateCandidates(activeClaims)) {
+    const ids = entry.ids.sort();
+    const key = ids.join("\0");
+    seen.add(key);
+    candidates.push({
+      reason: "duplicate_claim_text",
+      ids,
+      suggested_type: byId.get(ids[0])?.type ?? "observation",
+      suggested_evidence_path: byId.get(ids.at(-1))?.evidence_path ?? byId.get(ids[0])?.evidence_path ?? null
+    });
+  }
+
+  for (const claim of activeClaims) {
+    const supersedes = normalizeIds(claim.supersedes);
+    if (supersedes.length === 0) continue;
+    const activeSupersededIds = supersedes
+      .filter((id) => byId.has(id))
+      .filter((id) => !["archived", "superseded"].includes(byId.get(id).lifecycle_state));
+    if (activeSupersededIds.length === 0) continue;
+    const ids = [...new Set([...activeSupersededIds, claim.id])].sort();
+    const key = ids.join("\0");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    candidates.push({
+      reason: "declared_supersession_chain",
+      ids,
+      suggested_type: claim.type,
+      suggested_evidence_path: claim.evidence_path ?? null
+    });
+  }
+
+  return candidates.sort((a, b) => a.reason.localeCompare(b.reason) || a.ids.join(",").localeCompare(b.ids.join(",")));
+}
+
 function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -187,6 +231,69 @@ function sourceFindings(cwd, records) {
       return [base];
     });
   });
+}
+
+function ancestorDirs(start) {
+  const dirs = [];
+  let current = path.resolve(start);
+  const home = os.homedir();
+  while (true) {
+    dirs.push(current);
+    if (current === home || current === path.dirname(current)) break;
+    current = path.dirname(current);
+  }
+  return dirs;
+}
+
+function ownerContextRepairCandidates(cwd, missingSources) {
+  return missingSources.flatMap((entry) => {
+    const pointer = String(entry.missing_path ?? "");
+    if (!pointer || path.isAbsolute(pointer) || sourcePointer(pointer)) return [];
+    if (entry.owner_context?.owner_project_root) return [];
+    const normalized = normalizePathPointer(expandHome(pointer));
+    return ancestorDirs(cwd).flatMap((candidateRoot) => {
+      const resolvedPath = path.join(candidateRoot, normalized);
+      if (!fs.existsSync(resolvedPath)) return [];
+      if (path.resolve(candidateRoot) === path.resolve(cwd)) return [];
+      const identity = resolveProjectIdentity({ cwd: candidateRoot });
+      return [{
+        id: entry.id,
+        field: entry.field,
+        missing_path: entry.missing_path,
+        owner_project_key: identity.project_key,
+        owner_project_root: identity.repo_root,
+        owner_project_identity: identity.identity,
+        resolved_path: resolvedPath
+      }];
+    });
+  });
+}
+
+function applyOwnerContextRepairs({ claims, repairs, actions }) {
+  if (repairs.length === 0) return { mutated: false, claims };
+  const byId = new Map();
+  for (const repair of repairs) {
+    if (!byId.has(repair.id)) byId.set(repair.id, repair);
+  }
+  let mutated = false;
+  const nextClaims = claims.map((claim) => {
+    const repair = byId.get(claim.id);
+    if (!repair) return claim;
+    mutated = true;
+    actions.push({
+      action: "repaired_owner_context",
+      id: claim.id,
+      owner_project_root: repair.owner_project_root,
+      evidence_path: repair.missing_path
+    });
+    return {
+      ...claim,
+      owner_project_key: repair.owner_project_key,
+      owner_project_root: repair.owner_project_root,
+      owner_project_identity: repair.owner_project_identity
+    };
+  });
+  return { mutated, claims: nextClaims };
 }
 
 function missingSourceCandidates(cwd, records) {
@@ -339,11 +446,25 @@ function isGitTracked(cwd, relativePath) {
   }
 }
 
+function isGitIgnored(cwd, relativePath) {
+  try {
+    execFileSync("git", ["check-ignore", "--quiet", relativePath], {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "ignore", "ignore"]
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function localArtifactFindings(cwd) {
   const candidates = ["error.log"];
   return candidates
     .filter((relativePath) => fs.existsSync(path.join(cwd, relativePath)))
     .filter((relativePath) => !isGitTracked(cwd, relativePath))
+    .filter((relativePath) => !isGitIgnored(cwd, relativePath))
     .map((relativePath) => ({
       path: path.join(cwd, relativePath),
       reason: "generated_local_log",
@@ -480,10 +601,13 @@ function globalMaintenanceFindings({
     ...globalClaims.map((claim) => claim.id).filter(Boolean),
     ...sourcePacks.map((pack) => pack.id).filter(Boolean)
   ]);
+  const missingSources = missingGlobalSourceCandidates(cwd, globalClaims);
   return {
     stale_claims: staleClaimCandidates(globalClaims, maintainedAt),
     duplicate_candidates: duplicateCandidates(globalClaims),
-    missing_sources: missingGlobalSourceCandidates(cwd, globalClaims),
+    compaction_candidates: compactionCandidates(globalClaims),
+    missing_sources: missingSources,
+    owner_context_candidates: ownerContextRepairCandidates(cwd, missingSources),
     relocatable_sources: globalRelocationCandidates(cwd, globalClaims),
     expired_source_packs: expiredSourcePackCandidates(sourcePacks, maintainedAt),
     orphan_links: orphanLinkCandidates(globalClaims, knownIds),
@@ -528,8 +652,10 @@ export function runMemoryMaintain({
     const globalClaims = includeGlobal ? readJsonl(resolvedGlobalMemoryFile) : [];
     const sourcePacks = includeGlobal ? readJsonl(resolvedSourceIndexFile) : [];
     const duplicates = duplicateCandidates(claims);
+    const compactable = compactionCandidates(claims);
     const missingSources = missingSourceCandidates(cwd, claims);
     const relocatableSources = relocationCandidates(cwd, claims);
+    const ownerContextCandidates = ownerContextRepairCandidates(cwd, missingSources);
     const incidentPatterns = incidentPatternCandidates({ incidentDir: resolvedIncidentDir, maintainedAt });
     const orphanOpenLoops = openLoopFindings(cwd, loops);
     const drift = repoDrift({ cwd, repoStateFile: resolvedRepoStateFile });
@@ -563,7 +689,9 @@ export function runMemoryMaintain({
       : {
         stale_claims: [],
         duplicate_candidates: [],
+        compaction_candidates: [],
         missing_sources: [],
+        owner_context_candidates: [],
         relocatable_sources: [],
         expired_source_packs: [],
         orphan_links: [],
@@ -578,6 +706,24 @@ export function runMemoryMaintain({
       });
       if (relocated.mutated) {
         updatedClaims = relocated.claims;
+        writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
+        try {
+          brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
+        } catch (err) {
+          briefError = err.message;
+          emitBriefRegenerationFailed(err);
+        }
+      }
+    }
+
+    if (apply && ownerContextCandidates.length > 0) {
+      const repaired = applyOwnerContextRepairs({
+        claims: updatedClaims,
+        repairs: ownerContextCandidates,
+        actions
+      });
+      if (repaired.mutated) {
+        updatedClaims = repaired.claims;
         writeJsonlAtomic(resolvedMemoryFile, updatedClaims);
         try {
           brief = runBriefGeneration({ cwd, memoryFile: resolvedMemoryFile, outputFile: resolvedBriefFile });
@@ -669,13 +815,25 @@ export function runMemoryMaintain({
           workingGlobalClaims = relocated.claims;
           writeJsonlAtomic(resolvedGlobalMemoryFile, workingGlobalClaims);
         }
+        const repairedOwners = applyOwnerContextRepairs({
+          claims: workingGlobalClaims,
+          repairs: latestFindings.owner_context_candidates,
+          actions
+        });
+        const repairedOwnerIds = new Set(latestFindings.owner_context_candidates.map((entry) => entry.id));
+        if (repairedOwners.mutated) {
+          workingGlobalClaims = repairedOwners.claims;
+          writeJsonlAtomic(resolvedGlobalMemoryFile, workingGlobalClaims);
+        }
         const reasonsById = new Map();
 
         for (const entry of latestFindings.stale_claims) addReason(reasonsById, entry.id, "stale_global_claim");
         for (const entry of latestFindings.duplicate_candidates) {
           for (const id of entry.ids.slice(1)) addReason(reasonsById, id, "duplicate_candidate");
         }
-        for (const entry of latestFindings.missing_sources) addReason(reasonsById, entry.id, "missing_source");
+        for (const entry of latestFindings.missing_sources) {
+          if (!repairedOwnerIds.has(entry.id)) addReason(reasonsById, entry.id, "missing_source");
+        }
         for (const entry of latestFindings.orphan_links) addReason(reasonsById, entry.id, "orphan_link");
         for (const entry of latestFindings.conflicts) {
           for (const id of entry.ids) addReason(reasonsById, id, "subject_key_conflict");
@@ -687,7 +845,7 @@ export function runMemoryMaintain({
           maintainedAt,
           actions
         });
-        if (marked.mutated || relocated.mutated) {
+        if (marked.mutated || relocated.mutated || repairedOwners.mutated) {
           writeJsonlAtomic(resolvedGlobalMemoryFile, marked.claims);
           try {
             globalBrief = runBriefGeneration({
@@ -717,7 +875,9 @@ export function runMemoryMaintain({
       findings: {
         needs_review: needsReview,
         duplicate_candidates: duplicates,
+        compaction_candidates: compactable,
         missing_sources: missingSources,
+        owner_context_candidates: ownerContextCandidates,
         relocatable_sources: relocatableSources,
         incident_patterns: incidentPatterns,
         orphan_open_loops: orphanOpenLoops,
