@@ -7,7 +7,7 @@ import { visibleLockState, withFileLock } from "./lib/lock.mjs";
 import { isInvokedAsCli } from "./lib/cli.mjs";
 import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
-import { resolveEvidencePaths } from "./runtime-state.mjs";
+import { resolveEvidencePaths, resolveProjectIdentity } from "./runtime-state.mjs";
 
 export const EVIDENCE_EVENT_TYPES = [
   "decision",
@@ -88,6 +88,8 @@ export function normalizeEvidenceRecord(input, {
   const topic = input.topic ? String(input.topic).trim() : "";
   const subjectKey = input.subject_key ? String(input.subject_key).trim() : "";
   const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
+  const ownerProjectRoot = input.owner_project_root ? String(input.owner_project_root).trim() : "";
+  const ownerProjectIdentity = input.owner_project_identity ? String(input.owner_project_identity).trim() : "";
 
   if (!eventType) throw new Error("event_type is required");
   if (!summary) throw new Error("summary is required");
@@ -108,7 +110,9 @@ export function normalizeEvidenceRecord(input, {
     sourceId,
     topic,
     subjectKey,
-    ownerProjectKey
+    ownerProjectKey,
+    ownerProjectRoot,
+    ownerProjectIdentity
   ], "evidence contains secret-like content; redact it before writing");
 
   const record = {
@@ -128,8 +132,20 @@ export function normalizeEvidenceRecord(input, {
   if (topic) record.topic = topic;
   if (subjectKey) record.subject_key = subjectKey;
   if (ownerProjectKey) record.owner_project_key = ownerProjectKey;
+  if (ownerProjectRoot) record.owner_project_root = ownerProjectRoot;
+  if (ownerProjectIdentity) record.owner_project_identity = ownerProjectIdentity;
 
   return record;
+}
+
+function withOwnerContext(input, cwd) {
+  const identity = resolveProjectIdentity({ cwd });
+  return {
+    ...input,
+    owner_project_key: input.owner_project_key ?? identity.project_key,
+    owner_project_root: input.owner_project_root ?? identity.repo_root,
+    owner_project_identity: input.owner_project_identity ?? identity.identity
+  };
 }
 
 export function addEvidenceRecord({
@@ -144,7 +160,7 @@ export function addEvidenceRecord({
   }).evidenceFile;
   return withFileLock(resolvedEvidenceFile, (lockState) => {
     const existingEvidence = readJsonl(resolvedEvidenceFile);
-    const record = normalizeEvidenceRecord(input, { existingEvidence, now });
+    const record = normalizeEvidenceRecord(withOwnerContext(input, cwd), { existingEvidence, now });
     writeJsonlAtomic(resolvedEvidenceFile, [...existingEvidence, record]);
     return {
       evidence_file: resolvedEvidenceFile,
@@ -232,6 +248,14 @@ function parseArgs(argv) {
     }
     if (token === "--owner-project-key") {
       options.input.owner_project_key = rest[++index];
+      continue;
+    }
+    if (token === "--owner-project-root") {
+      options.input.owner_project_root = rest[++index];
+      continue;
+    }
+    if (token === "--owner-project-identity") {
+      options.input.owner_project_identity = rest[++index];
       continue;
     }
     if (token === "--summary") {

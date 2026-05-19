@@ -8,14 +8,19 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 import { resolveMemoryPaths } from "./runtime-state.mjs";
 
 const SECTIONS = [
-  ["Active Decisions", (claim) => claim.type === "decision" && claim.lifecycle_state !== "archived"],
-  ["Vocabulary", (claim) => claim.type === "vocabulary" && claim.lifecycle_state !== "archived"],
-  ["Recurring Incidents", (claim) => claim.type === "incident" && claim.lifecycle_state !== "archived"],
-  ["Known Root Causes", (claim) => claim.type === "root_cause" && claim.lifecycle_state !== "archived"],
+  ["Active Decisions", (claim) => claim.type === "decision" && activeForBrief(claim)],
+  ["Vocabulary", (claim) => claim.type === "vocabulary" && activeForBrief(claim)],
+  ["Recurring Incidents", (claim) => claim.type === "incident" && activeForBrief(claim)],
+  ["Known Root Causes", (claim) => claim.type === "root_cause" && activeForBrief(claim)],
   ["Repo State Warnings", (claim) => claim.type === "repo_state" && claim.lifecycle_state === "needs_review"],
-  ["External Research", (claim) => claim.type === "external_research" && claim.lifecycle_state !== "archived"],
-  ["Observations", (claim) => claim.type === "observation" && claim.lifecycle_state !== "archived"]
+  ["External Research", (claim) => claim.type === "external_research" && activeForBrief(claim)],
+  ["Observations", (claim) => claim.type === "observation" && activeForBrief(claim)]
 ];
+const DEFAULT_MAX_SECTION_ITEMS = 8;
+
+function activeForBrief(claim) {
+  return !["archived", "superseded"].includes(claim.lifecycle_state);
+}
 
 function evidenceFor(claim) {
   if (claim.evidence_path) return claim.evidence_path;
@@ -31,9 +36,13 @@ function itemFor(claim) {
 }
 
 export function generateBrief(claims, {
-  title = "Project Memory Brief"
+  title = "Project Memory Brief",
+  maxSectionItems = DEFAULT_MAX_SECTION_ITEMS
 } = {}) {
   const sorted = [...claims].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? "")));
+  const itemLimit = Number.isFinite(Number(maxSectionItems)) && Number(maxSectionItems) > 0
+    ? Math.floor(Number(maxSectionItems))
+    : Infinity;
   const lines = [
     `# ${title}`,
     "",
@@ -47,7 +56,10 @@ export function generateBrief(claims, {
       lines.push("- None recorded.");
       continue;
     }
-    lines.push(...sectionClaims.map(itemFor));
+    lines.push(...sectionClaims.slice(0, itemLimit).map(itemFor));
+    if (sectionClaims.length > itemLimit) {
+      lines.push(`- ${sectionClaims.length - itemLimit} more omitted; use \`memory recall --query "${title}"\` to inspect the full set.`);
+    }
   }
 
   return `${lines.join("\n")}\n`;
@@ -57,7 +69,8 @@ export function runBriefGeneration({
   cwd = process.cwd(),
   memoryFile = null,
   outputFile = null,
-  scope = "repo"
+  scope = "repo",
+  maxSectionItems = DEFAULT_MAX_SECTION_ITEMS
 } = {}) {
   const defaults = resolveMemoryPaths({ cwd, scope });
   const resolvedMemoryFile = memoryFile ?? defaults.memoryFile;
@@ -66,7 +79,8 @@ export function runBriefGeneration({
   );
   const claims = readJsonl(resolvedMemoryFile);
   const brief = generateBrief(claims, {
-    title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief"
+    title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief",
+    maxSectionItems
   });
   // PR #21 review NEW4: tmp+rename so a crash or concurrent reader cannot
   // observe a truncated brief. The brief is derived state, but agents
@@ -94,6 +108,10 @@ function parseArgs(argv) {
     }
     if (token === "--output") {
       options.outputFile = argv[++index];
+      continue;
+    }
+    if (token === "--max-section-items") {
+      options.maxSectionItems = Number(argv[++index]);
       continue;
     }
     throw new Error(`Unknown option: ${token}`);

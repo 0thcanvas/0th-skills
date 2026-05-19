@@ -9,7 +9,7 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 import { emitBriefRegenerationFailed } from "./lib/diagnostics.mjs";
 import { readJsonFileArg } from "./lib/json-arg.mjs";
 import { assertNoSecretLikeText } from "./lib/redaction.mjs";
-import { resolveMemoryPaths } from "./runtime-state.mjs";
+import { resolveMemoryPaths, resolveProjectIdentity } from "./runtime-state.mjs";
 
 export const MEMORY_TYPES = [
   "decision",
@@ -94,6 +94,8 @@ export function normalizeMemoryClaim(input, {
   const topic = input.topic ? String(input.topic).trim() : "";
   const subjectKey = input.subject_key ? String(input.subject_key).trim() : "";
   const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
+  const ownerProjectRoot = input.owner_project_root ? String(input.owner_project_root).trim() : "";
+  const ownerProjectIdentity = input.owner_project_identity ? String(input.owner_project_identity).trim() : "";
 
   if (!type) throw new Error("type is required");
   assertAllowed("type", type, MEMORY_TYPES);
@@ -135,7 +137,9 @@ export function normalizeMemoryClaim(input, {
     sourceId,
     topic,
     subjectKey,
-    ownerProjectKey
+    ownerProjectKey,
+    ownerProjectRoot,
+    ownerProjectIdentity
   ], "memory claim contains secret-like content; redact it before writing");
 
   const claim = {
@@ -168,8 +172,20 @@ export function normalizeMemoryClaim(input, {
   if (topic) claim.topic = topic;
   if (subjectKey) claim.subject_key = subjectKey;
   if (ownerProjectKey) claim.owner_project_key = ownerProjectKey;
+  if (ownerProjectRoot) claim.owner_project_root = ownerProjectRoot;
+  if (ownerProjectIdentity) claim.owner_project_identity = ownerProjectIdentity;
 
   return claim;
+}
+
+function withOwnerContext(input, cwd) {
+  const identity = resolveProjectIdentity({ cwd });
+  return {
+    ...input,
+    owner_project_key: input.owner_project_key ?? identity.project_key,
+    owner_project_root: input.owner_project_root ?? identity.repo_root,
+    owner_project_identity: input.owner_project_identity ?? identity.identity
+  };
 }
 
 export function appendMemoryClaim({
@@ -194,7 +210,7 @@ export function appendMemoryClaim({
   );
   return withFileLock(resolvedMemoryFile, (lockState) => {
     const existingClaims = readJsonl(resolvedMemoryFile);
-    const claim = normalizeMemoryClaim(input, { existingClaims, now });
+    const claim = normalizeMemoryClaim(withOwnerContext(input, cwd), { existingClaims, now });
     const nextClaims = [...existingClaims, claim];
     writeJsonlAtomic(resolvedMemoryFile, nextClaims);
 
@@ -305,6 +321,14 @@ function parseArgs(argv) {
     }
     if (token === "--owner-project-key") {
       options.input.owner_project_key = argv[++index];
+      continue;
+    }
+    if (token === "--owner-project-root") {
+      options.input.owner_project_root = argv[++index];
+      continue;
+    }
+    if (token === "--owner-project-identity") {
+      options.input.owner_project_identity = argv[++index];
       continue;
     }
     if (token === "--lifecycle-state") {

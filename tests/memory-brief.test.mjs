@@ -137,3 +137,20 @@ test("memory brief can generate the global startup brief without reading project
     assert.equal(fs.existsSync(path.join(stateRoot, "projects")), false);
   });
 });
+
+test("memory brief caps long sections and points agents back to recall", () => {
+  const claims = Array.from({ length: 10 }, (_, index) => ({
+    id: `decision-${String(index).padStart(2, "0")}`,
+    type: "decision",
+    claim: `Decision ${index} should not all flood startup context.`,
+    lifecycle_state: "active",
+    evidence_path: `docs/decisions/${index}.md`
+  }));
+
+  const brief = generateBrief(claims, { maxSectionItems: 3 });
+
+  assert.match(brief, /Decision 0 should/);
+  assert.match(brief, /Decision 2 should/);
+  assert.doesNotMatch(brief, /Decision 3 should/);
+  assert.match(brief, /7 more omitted; use `memory recall --query "Active Decisions"`/);
+});

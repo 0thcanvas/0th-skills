@@ -61,6 +61,20 @@ function spawnNode(args, options) {
   });
 }
 
+function writeIncident(dir, filename, frontmatter, body = "") {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, filename), [
+    "---",
+    ...Object.entries(frontmatter).map(([key, value]) => {
+      if (Array.isArray(value)) return `${key}: [${value.join(", ")}]`;
+      return `${key}: ${value}`;
+    }),
+    "---",
+    "",
+    body
+  ].join("\n"));
+}
+
 test("unified memory entrypoint routes normal agent commands", () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");
@@ -111,6 +125,8 @@ test("unified memory entrypoint reports project and global runtime diagnostics",
     assert.equal(result.readiness.recall_ready, false);
     assert.equal(typeof result.readiness.project_memory_file_exists, "boolean");
     assert.equal(typeof result.readiness.global_memory_file_exists, "boolean");
+    assert.equal(result.readiness.subsystems.project_claims_ready, false);
+    assert.equal(result.readiness.subsystems.source_packs_ready, false);
 
     for (const filePath of [
       result.project.memory_file,
@@ -125,7 +141,9 @@ test("unified memory entrypoint reports project and global runtime diagnostics",
     assert.equal(initialized.readiness.project_memory_file_exists, true);
     assert.equal(initialized.readiness.global_memory_file_exists, true);
     assert.equal(initialized.readiness.project_task_file_exists, true);
+    assert.equal(initialized.readiness.claim_recall_ready, true);
     assert.equal(initialized.readiness.recall_ready, true);
+    assert.equal(initialized.readiness.subsystems.source_packs_ready, false);
   } finally {
     if (previous === undefined) {
       delete process.env.OTH_SKILLS_STATE_DIR;
@@ -306,6 +324,29 @@ test("global evidence records preserve routing provenance fields", () => {
   assert.equal(record.owner_project_key, "0th-skills");
 });
 
+test("memory claims automatically record owner project context for later evidence resolution", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+
+  appendMemoryClaim({
+    cwd: repo,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      type: "decision",
+      claim: "Relative evidence belongs to the project that wrote the claim.",
+      scope: "repo",
+      evidence_path: "docs/decisions/owner-context.md",
+      confidence: "high"
+    }
+  });
+
+  const [claim] = readJsonl(memoryFile);
+  assert.match(claim.owner_project_key, /^[a-z0-9-]+-[a-f0-9]{12}$/);
+  assert.equal(claim.owner_project_root, fs.realpathSync(repo));
+  assert.equal(claim.owner_project_identity, fs.realpathSync(repo));
+});
+
 test("locked writes preserve concurrent memory claims", async () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");
@@ -462,10 +503,272 @@ test("maintenance reports stale memory, duplicate claims, missing sources, and o
   const claims = readJsonl(memoryFile);
 
   assert.equal(report.findings.duplicate_candidates.length, 1);
+  assert.equal(report.findings.compaction_candidates.some((entry) => entry.reason === "duplicate_claim_text"), true);
   assert.equal(report.findings.missing_sources.length, 2);
   assert.equal(report.findings.orphan_open_loops.length, 1);
   assert.deepEqual(applied.actions.map((action) => action.id), ["two"]);
   assert.equal(claims.find((claim) => claim.id === "two").lifecycle_state, "needs_review");
+});
+
+test("maintenance resolves global relative evidence through owner context instead of current cwd", () => {
+  const ownerRepo = initRepo();
+  const otherRepo = initRepo();
+  const stateRoot = path.join(tempDir(), "state");
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  const evidenceRel = "docs/goals/report.md";
+  fs.mkdirSync(path.join(ownerRepo, "docs/goals"), { recursive: true });
+  fs.writeFileSync(path.join(ownerRepo, evidenceRel), "report\n");
+
+  try {
+    appendMemoryClaim({
+      cwd: ownerRepo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Global evidence should resolve against its owner project.",
+        scope: "global",
+        source_id: "owner-context-test",
+        evidence_path: evidenceRel,
+        confidence: "high"
+      }
+    });
+
+    const report = runMemoryMaintain({ cwd: otherRepo });
+
+    assert.equal(report.findings.global.missing_sources.length, 0);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+});
+
+test("maintenance suggests and applies owner-context repair for legacy global relative evidence", () => {
+  const workspace = tempDir("0th-memory-workspace-");
+  const repo = path.join(workspace, "skills");
+  fs.mkdirSync(repo, { recursive: true });
+  const stateRoot = path.join(tempDir(), "state");
+  const previous = process.env.OTH_SKILLS_STATE_DIR;
+  process.env.OTH_SKILLS_STATE_DIR = stateRoot;
+  const evidenceRel = "docs/goals/report.md";
+  fs.mkdirSync(path.join(workspace, "docs/goals"), { recursive: true });
+  fs.writeFileSync(path.join(workspace, evidenceRel), "report\n");
+
+  try {
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        id: "legacy-global-ownerless",
+        type: "external_research",
+        claim: "Legacy global evidence can gain owner context later.",
+        scope: "global",
+        source_id: "legacy-owner-context-test",
+        evidence_path: evidenceRel,
+        owner_project_key: "",
+        owner_project_root: "",
+        owner_project_identity: "",
+        confidence: "high"
+      }
+    });
+    const globalMemoryFile = path.join(stateRoot, "global", "memory", "claims.jsonl");
+    let claims = readJsonl(globalMemoryFile).map((claim) => {
+      if (claim.id !== "legacy-global-ownerless") return claim;
+      const { owner_project_key, owner_project_root, owner_project_identity, ...rest } = claim;
+      return rest;
+    });
+    fs.writeFileSync(globalMemoryFile, claims.map((claim) => JSON.stringify(claim)).join("\n") + "\n");
+
+    const report = runMemoryMaintain({ cwd: repo });
+    assert.equal(report.findings.global.missing_sources.length, 1);
+    assert.deepEqual(report.findings.global.owner_context_candidates.map((entry) => entry.owner_project_root), [workspace]);
+
+    const applied = runMemoryMaintain({ cwd: repo, apply: true });
+    claims = readJsonl(globalMemoryFile);
+    const repaired = claims.find((claim) => claim.id === "legacy-global-ownerless");
+
+    assert.equal(applied.actions.some((action) => action.action === "repaired_owner_context"), true);
+    assert.equal(repaired.owner_project_root, workspace);
+    assert.equal(runMemoryMaintain({ cwd: repo }).findings.global.missing_sources.length, 0);
+  } finally {
+    if (previous === undefined) {
+      delete process.env.OTH_SKILLS_STATE_DIR;
+    } else {
+      process.env.OTH_SKILLS_STATE_DIR = previous;
+    }
+  }
+});
+
+test("maintenance reports and applies raw-to-archived evidence relocation", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+  const taskFile = path.join(repo, "tasks.jsonl");
+  const sourceIndexFile = path.join(repo, "sources.jsonl");
+  const rawRel = "obsidian/0thcanvas/research/topic/raw/2026-05-19-note.md";
+  const archivedRel = "obsidian/0thcanvas/research/topic/raw/archived/2026-05-19-note.md";
+  fs.mkdirSync(path.dirname(path.join(repo, archivedRel)), { recursive: true });
+  fs.writeFileSync(path.join(repo, archivedRel), "archived note\n");
+
+  appendMemoryClaim({
+    cwd: repo,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      id: "archived-evidence",
+      type: "external_research",
+      claim: "Archived raw notes remain valid evidence after compile.",
+      scope: "repo",
+      evidence_path: rawRel,
+      confidence: "high"
+    }
+  });
+
+  const report = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, sourceIndexFile });
+  assert.equal(report.findings.missing_sources.length, 0);
+  assert.deepEqual(report.findings.relocatable_sources.map((entry) => entry.relocated_path), [archivedRel]);
+
+  const applied = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, sourceIndexFile, apply: true });
+  const [claim] = readJsonl(memoryFile);
+
+  assert.equal(claim.evidence_path, archivedRel);
+  assert.deepEqual(applied.actions.map((action) => action.action), ["repaired_evidence_pointer"]);
+});
+
+test("maintenance imports recurring retro incident patterns without reading correction bodies", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+  const taskFile = path.join(repo, "tasks.jsonl");
+  const sourceIndexFile = path.join(repo, "sources.jsonl");
+  const incidentDir = path.join(repo, "kb", "learning", "skill-incidents");
+
+  for (const index of [1, 2, 3]) {
+    writeIncident(
+      incidentDir,
+      `2026-05-${10 + index}-visual-${index}.md`,
+      {
+        date: `2026-05-${10 + index}T12:00:00-05:00`,
+        skill: "general-agent",
+        classification: "verification-skipped",
+        severity: "moderate",
+        tags: ["visual-verification"]
+      },
+      "## Correction evidence\nThis body must not be copied into Memory v2 claims.\n"
+    );
+  }
+
+  const dryRun = runMemoryMaintain({
+    cwd: repo,
+    memoryFile,
+    taskFile,
+    sourceIndexFile,
+    incidentDir,
+    maintainedAt: "2026-05-19T00:00:00.000Z"
+  });
+  assert.equal(dryRun.findings.incident_patterns.length >= 1, true);
+
+  const applied = runMemoryMaintain({
+    cwd: repo,
+    memoryFile,
+    taskFile,
+    sourceIndexFile,
+    incidentDir,
+    maintainedAt: "2026-05-19T00:00:00.000Z",
+    apply: true
+  });
+  const secondApply = runMemoryMaintain({
+    cwd: repo,
+    memoryFile,
+    taskFile,
+    sourceIndexFile,
+    incidentDir,
+    maintainedAt: "2026-05-19T00:00:00.000Z",
+    apply: true
+  });
+  const imported = readJsonl(memoryFile).filter((claim) => claim.type === "incident");
+
+  assert.equal(applied.actions.some((action) => action.action === "imported_incident_pattern"), true);
+  assert.equal(secondApply.actions.some((action) => action.action === "imported_incident_pattern"), false);
+  assert.equal(imported.length > 0, true);
+  assert.equal(JSON.stringify(imported).includes("This body must not be copied"), false);
+  assert.equal(imported.every((claim) => claim.source_paths.length >= 3), true);
+});
+
+test("maintenance surfaces instruction drift and generated local log noise as advisory findings", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+  const taskFile = path.join(repo, "tasks.jsonl");
+  const sourceIndexFile = path.join(repo, "sources.jsonl");
+  fs.writeFileSync(path.join(repo, "CLAUDE.md"), "Read index.md at session start. Always.\n");
+  fs.writeFileSync(path.join(repo, "error.log"), "generated tool output\n");
+
+  const report = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, sourceIndexFile });
+
+  assert.equal(report.findings.instruction_drift.length, 1);
+  assert.match(report.findings.instruction_drift[0].recommendation, /Memory v2/);
+  assert.equal(report.findings.local_artifacts.length, 1);
+  assert.match(report.findings.local_artifacts[0].recommendation, /state root|ignore/);
+});
+
+test("maintenance does not report generated local logs once they are deliberately gitignored", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+  const taskFile = path.join(repo, "tasks.jsonl");
+  const sourceIndexFile = path.join(repo, "sources.jsonl");
+  fs.writeFileSync(path.join(repo, ".gitignore"), "error.log\n");
+  fs.writeFileSync(path.join(repo, "error.log"), "generated tool output\n");
+
+  const report = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, sourceIndexFile });
+
+  assert.deepEqual(report.findings.local_artifacts, []);
+});
+
+test("maintenance suggests compaction for declared supersession chains", () => {
+  const repo = initRepo();
+  const memoryFile = path.join(repo, "claims.jsonl");
+  const taskFile = path.join(repo, "tasks.jsonl");
+  const sourceIndexFile = path.join(repo, "sources.jsonl");
+
+  appendMemoryClaim({
+    cwd: repo,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      id: "old-dispatch-memory",
+      type: "observation",
+      claim: "Old dispatch memory is replaced by a root-cause claim.",
+      scope: "repo",
+      evidence_path: "docs/old.md",
+      confidence: "medium"
+    }
+  });
+  appendMemoryClaim({
+    cwd: repo,
+    memoryFile,
+    updateBrief: false,
+    input: {
+      id: "new-dispatch-memory",
+      type: "root_cause",
+      claim: "New dispatch memory should summarize the old observation.",
+      scope: "repo",
+      evidence_path: "docs/new.md",
+      supersedes: ["old-dispatch-memory"],
+      confidence: "high"
+    }
+  });
+
+  const report = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, sourceIndexFile });
+
+  assert.deepEqual(report.findings.compaction_candidates, [
+    {
+      reason: "declared_supersession_chain",
+      ids: ["new-dispatch-memory", "old-dispatch-memory"],
+      suggested_type: "root_cause",
+      suggested_evidence_path: "docs/new.md"
+    }
+  ]);
 });
 
 test("open-loop lifecycle keeps audit history and can list across project runtime dirs", () => {
@@ -544,7 +847,14 @@ test("runtime eval exercises memory behavior fixtures end to end", () => {
       "source-pack-fidelity",
       "stale-global-maintenance",
       "no-obsidian-dependency",
-      "abstention"
+      "abstention",
+      "memory-compaction",
+      "non-repo-preflight-advisory",
+      "owner-context-global-evidence",
+      "owner-context-repair",
+      "raw-archived-relocation",
+      "retro-incident-import",
+      "partial-readiness-and-hygiene"
     ]
   );
 });

@@ -77,12 +77,28 @@ export function runMemoryDoctor({
     project_state_dir_exists: exists(resolveProjectStateDir({ cwd, env, homeDir })),
     project_memory_file_exists: exists(projectMemory.memoryFile),
     project_brief_file_exists: exists(projectMemory.briefFile),
+    project_evidence_file_exists: exists(projectEvidence.evidenceFile),
     project_task_file_exists: exists(projectTasks.taskFile),
+    project_repo_state_file_exists: exists(projectRepo.repoStateFile),
     global_state_dir_exists: exists(resolveGlobalStateDir({ env, homeDir })),
     global_memory_file_exists: exists(globalMemory.memoryFile),
     global_brief_file_exists: exists(globalMemory.briefFile),
+    global_evidence_file_exists: exists(globalEvidence.evidenceFile),
     global_source_index_file_exists: exists(globalSources.sourceIndexFile)
   };
+  readiness.subsystems = {
+    project_claims_ready: readiness.project_memory_file_exists,
+    project_tasks_ready: readiness.project_task_file_exists,
+    project_evidence_ready: readiness.project_evidence_file_exists,
+    project_repo_state_ready: readiness.project_repo_state_file_exists,
+    global_claims_ready: readiness.global_memory_file_exists,
+    global_evidence_ready: readiness.global_evidence_file_exists,
+    source_packs_ready: readiness.global_source_index_file_exists
+  };
+  readiness.claim_recall_ready = Boolean(
+    readiness.project_memory_file_exists &&
+    readiness.global_memory_file_exists
+  );
   readiness.recall_ready = Boolean(
     readiness.project_memory_file_exists &&
     readiness.project_task_file_exists &&

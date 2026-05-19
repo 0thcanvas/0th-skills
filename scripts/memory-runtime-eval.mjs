@@ -6,6 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 import { addEvidenceRecord } from "./evidence.mjs";
+import { compactMemoryClaims } from "./memory-compact.mjs";
 import { appendMemoryClaim } from "./memory-write.mjs";
 import { expandMemory, recallMemory } from "./memory-recall.mjs";
 import { runMemoryMaintain } from "./memory-maintain.mjs";
@@ -57,6 +58,25 @@ function assert(condition, message) {
 function appendJsonl(filePath, record) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
+function readJsonl(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  const text = fs.readFileSync(filePath, "utf8").trim();
+  if (!text) return [];
+  return text.split("\n").map((line) => JSON.parse(line));
+}
+
+function writeIncident(dir, filename, fields) {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, filename), [
+    "---",
+    ...Object.entries(fields).map(([key, value]) => Array.isArray(value) ? `${key}: [${value.join(", ")}]` : `${key}: ${value}`),
+    "---",
+    "",
+    "## Correction evidence",
+    "This body must not be copied into Memory v2."
+  ].join("\n"));
 }
 
 export function runMemoryRuntimeEval() {
@@ -370,6 +390,169 @@ export function runMemoryRuntimeEval() {
     });
     assert(recalled.abstained === true, "missing memory did not abstain");
     return { abstained: true };
+  }));
+
+  results.push(fixture("memory-compaction", () => {
+    const briefFile = path.join(runtimeDir, "brief.md");
+    for (const id of ["runtime-eval-compact-a", "runtime-eval-compact-b"]) {
+      appendMemoryClaim({
+        cwd: repo,
+        memoryFile,
+        updateBrief: false,
+        input: {
+          id,
+          type: "observation",
+          claim: `${id} is old and should be compacted out of startup recall.`,
+          scope: "repo",
+          evidence_path: `docs/evals/${id}.md`,
+          confidence: "medium"
+        }
+      });
+    }
+    const compacted = compactMemoryClaims({
+      cwd: repo,
+      memoryFile,
+      briefFile,
+      ids: ["runtime-eval-compact-a", "runtime-eval-compact-b"],
+      input: {
+        id: "runtime-eval-compact-summary",
+        type: "observation",
+        claim: "Runtime eval compaction preserves old claims as superseded and keeps only the summary in the brief.",
+        scope: "repo",
+        evidence_path: "docs/evals/runtime-compaction.md",
+        confidence: "high"
+      }
+    });
+    const claims = readJsonl(memoryFile);
+    const brief = fs.readFileSync(briefFile, "utf8");
+    const original = claims.find((entry) => entry.id === "runtime-eval-compact-a");
+    const summary = claims.find((entry) => entry.id === "runtime-eval-compact-summary");
+    assert(original.lifecycle_state === "superseded", "compaction did not supersede the original claim");
+    assert(summary.supersedes.length === 2, "compaction summary did not link both old claims");
+    assert(!brief.includes("runtime-eval-compact-a is old"), "superseded claim remained in brief");
+    assert(brief.includes("Runtime eval compaction preserves"), "summary missing from brief");
+    return { summary_id: compacted.summary_id, compacted_ids: compacted.compacted_ids };
+  }));
+
+  results.push(fixture("non-repo-preflight-advisory", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "0th-memory-workspace-"));
+    const child = path.join(workspace, "child-repo");
+    fs.mkdirSync(child);
+    sh(child, ["git", "init", "-b", "main"]);
+    sh(child, ["git", "config", "user.email", "test@example.com"]);
+    sh(child, ["git", "config", "user.name", "Test User"]);
+    fs.writeFileSync(path.join(child, "README.md"), "child\n");
+    sh(child, ["git", "add", "."]);
+    sh(child, ["git", "commit", "-m", "initial"]);
+    const preflight = runPreflight({ cwd: workspace, repoStateFile: path.join(workspace, "state.json") });
+    assert(preflight.action === "not_a_repo", "non-repo preflight did not return advisory action");
+    assert(preflight.advisory.candidate_repos.some((entry) => entry.path === child), "child repo candidate missing");
+    return { action: preflight.action, candidate_count: preflight.advisory.candidate_repos.length };
+  }));
+
+  results.push(fixture("owner-context-global-evidence", () => {
+    const otherRepo = tempRepo();
+    const evidenceRel = "docs/goals/runtime-report.md";
+    fs.mkdirSync(path.join(repo, "docs/goals"), { recursive: true });
+    fs.writeFileSync(path.join(repo, evidenceRel), "runtime report\n");
+    appendMemoryClaim({
+      cwd: repo,
+      updateBrief: false,
+      input: {
+        type: "external_research",
+        claim: "Runtime eval global evidence resolves through owner context.",
+        scope: "global",
+        source_id: "runtime-eval-owner-context",
+        evidence_path: evidenceRel,
+        confidence: "high"
+      }
+    });
+    const maintained = runMemoryMaintain({ cwd: otherRepo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(maintained.findings.global.missing_sources.length === 0, "owner-context global evidence was reported missing");
+    return { missing_global_sources: maintained.findings.global.missing_sources.length };
+  }));
+
+  results.push(fixture("owner-context-repair", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "0th-owner-repair-workspace-"));
+    const child = path.join(workspace, "skills");
+    fs.mkdirSync(child, { recursive: true });
+    const evidenceRel = "docs/goals/runtime-owner-repair.md";
+    fs.mkdirSync(path.join(workspace, "docs/goals"), { recursive: true });
+    fs.writeFileSync(path.join(workspace, evidenceRel), "owner repair\n");
+    appendJsonl(globalMemoryFile, {
+      id: "runtime-eval-owner-repair",
+      type: "external_research",
+      claim: "Runtime eval owner repair attaches ancestor workspace context.",
+      scope: "global",
+      lifecycle_state: "active",
+      created_at: "2026-05-19T00:00:00.000Z",
+      last_confirmed_at: "2026-05-19T00:00:00.000Z",
+      source_id: "runtime-eval-owner-repair",
+      evidence_path: evidenceRel,
+      confidence: "high"
+    });
+    const childRepoStateFile = path.join(workspace, "repo-state.json");
+    const dryRun = runMemoryMaintain({ cwd: child, memoryFile, taskFile, repoStateFile: childRepoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(dryRun.findings.global.owner_context_candidates.length === 1, "owner context repair candidate missing");
+    const applied = runMemoryMaintain({ cwd: child, memoryFile, taskFile, repoStateFile: childRepoStateFile, globalMemoryFile, sourceIndexFile, apply: true });
+    const repaired = readJsonl(globalMemoryFile).find((entry) => entry.id === "runtime-eval-owner-repair");
+    assert(repaired.owner_project_root === workspace, "owner context was not repaired");
+    assert(applied.actions.some((entry) => entry.action === "repaired_owner_context"), "repair action missing");
+    return { owner_project_root: repaired.owner_project_root };
+  }));
+
+  results.push(fixture("raw-archived-relocation", () => {
+    const rawRel = "research/topic/raw/2026-05-19-note.md";
+    const archivedRel = "research/topic/raw/archived/2026-05-19-note.md";
+    fs.mkdirSync(path.dirname(path.join(repo, archivedRel)), { recursive: true });
+    fs.writeFileSync(path.join(repo, archivedRel), "archived\n");
+    appendMemoryClaim({
+      cwd: repo,
+      memoryFile,
+      updateBrief: false,
+      input: {
+        id: "runtime-eval-relocation",
+        type: "external_research",
+        claim: "Runtime eval raw notes can move to archived raw.",
+        scope: "repo",
+        evidence_path: rawRel,
+        confidence: "high"
+      }
+    });
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile, apply: true });
+    const claim = readJsonl(memoryFile).find((entry) => entry.id === "runtime-eval-relocation");
+    assert(claim.evidence_path === archivedRel, "relocation was not applied");
+    return { relocated_to: claim.evidence_path, actions: maintained.actions.map((entry) => entry.action) };
+  }));
+
+  results.push(fixture("retro-incident-import", () => {
+    const incidentDir = path.join(repo, "kb", "learning", "skill-incidents");
+    for (const index of [1, 2, 3]) {
+      writeIncident(incidentDir, `incident-${index}.md`, {
+        date: `2026-05-1${index}T12:00:00-05:00`,
+        skill: "general-agent",
+        classification: "verification-skipped",
+        severity: "moderate",
+        tags: ["visual-verification"]
+      });
+    }
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile, incidentDir, apply: true });
+    const incidents = readJsonl(memoryFile).filter((entry) => entry.type === "incident");
+    assert(incidents.length > 0, "incident pattern was not imported");
+    assert(!JSON.stringify(incidents).includes("This body must not be copied"), "incident body leaked into memory");
+    return { imported_actions: maintained.actions.filter((entry) => entry.action === "imported_incident_pattern").length };
+  }));
+
+  results.push(fixture("partial-readiness-and-hygiene", () => {
+    fs.writeFileSync(path.join(repo, "CLAUDE.md"), "Read index.md at session start. Always.\n");
+    fs.writeFileSync(path.join(repo, "error.log"), "generated log\n");
+    const maintained = runMemoryMaintain({ cwd: repo, memoryFile, taskFile, repoStateFile, globalMemoryFile, sourceIndexFile });
+    assert(maintained.findings.instruction_drift.length > 0, "instruction drift not reported");
+    assert(maintained.findings.local_artifacts.length > 0, "local artifact noise not reported");
+    return {
+      instruction_drift: maintained.findings.instruction_drift.length,
+      local_artifacts: maintained.findings.local_artifacts.length
+    };
   }));
 
   const passed = results.filter((result) => result.pass).length;

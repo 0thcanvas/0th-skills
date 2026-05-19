@@ -198,3 +198,32 @@ test("preflight captures a memory-sync failure into warnings, doesn't reverse th
   assert.match(joined, /memory[ _-]?sync/i, `expected memory-sync warning, got: ${joined}`);
   assert.match(joined, /corrupt|JSONL|claims\.jsonl/i);
 });
+
+test("preflight from a non-repo workspace returns a structured advisory with child repo candidates", () => {
+  const workspace = tempDir("0th-preflight-workspace-");
+  const childRepo = path.join(workspace, "skills");
+  fs.mkdirSync(childRepo);
+  sh(childRepo, ["git", "init", "-b", "main"]);
+  sh(childRepo, ["git", "config", "user.email", "test@example.com"]);
+  sh(childRepo, ["git", "config", "user.name", "Test User"]);
+  writeFile(childRepo, "memory.txt", "initial\n");
+  commit(childRepo, "initial");
+
+  const repoStateFile = path.join(workspace, "state", "repo-state.json");
+  const result = runPreflight({ cwd: workspace, repoStateFile });
+
+  assert.equal(result.action, "not_a_repo");
+  assert.equal(result.upstream_relation, "not_a_repo");
+  assert.equal(result.repo_root, null);
+  assert.equal(result.cwd, workspace);
+  assert.equal(result.repo_state_file, repoStateFile);
+  assert.equal(result.repo_state, null);
+  assert.match(result.warnings.join("\n"), /not a git repository/i);
+  assert.deepEqual(result.advisory.candidate_repos, [
+    {
+      name: "skills",
+      path: childRepo
+    }
+  ]);
+  assert.equal(result.advisory.state_path, repoStateFile);
+});
