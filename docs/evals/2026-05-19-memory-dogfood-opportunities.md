@@ -5,9 +5,9 @@ Scope: 0th Canvas workspace plus the 0th-skills Memory v2 runtime.
 
 ## Verified Signals
 
-- `memory.mjs runtime-eval` from `/Users/mini/0thcanvas/skills` passed all 11 fixtures: recall/expand, stale sync, manual HEAD drift, open-loop resume, user correction retention, global recall, conflict surfacing, source-pack fidelity, stale global maintenance, no-Obsidian dependency, and abstention.
+- `memory.mjs runtime-eval` from the 0th-skills repo root passed all 11 fixtures: recall/expand, stale sync, manual HEAD drift, open-loop resume, user correction retention, global recall, conflict surfacing, source-pack fidelity, stale global maintenance, no-Obsidian dependency, and abstention.
 - The 0th-skills project memory brief is usable and small, but the open-loop brief still carries a P1 dogfood item: record cases where startup recall, repo preflight, open-loop tracking, stale-memory maintenance, or write-gate behavior is missing or noisy.
-- Running Memory v2 from `/Users/mini/0thcanvas` fails repo preflight because the workspace root is not a git repo, while running from `/Users/mini/0thcanvas/skills` succeeds. The workspace-root case is common enough that Memory v2 should either explain the project/root mismatch better or help the agent choose an actual repo.
+- Running Memory v2 from the workspace root fails repo preflight because the workspace root is not a git repo, while running from the 0th-skills repo root succeeds. The workspace-root case is common enough that Memory v2 should either explain the project/root mismatch better or help the agent choose an actual repo.
 - The workspace `AGENTS.md` still instructs agents to read the markdown KB index at every session start, while the 0th-skills memory block says Memory v2 runtime is canonical and markdown is fallback/source evidence. That instruction drift can make agents do manual KB browsing before generated recall.
 - `memory maintain` from the workspace found claims whose evidence paths point at raw KB files that were later moved to `raw/archived/`. Evidence pointers are currently brittle across KB compile/archive moves.
 - `memory maintain` from the skills repo found a global claim with a relative evidence path that is missing when checked from the skills cwd. Global claims need either absolute evidence paths, owner project roots, or source-pack-backed pointers.
