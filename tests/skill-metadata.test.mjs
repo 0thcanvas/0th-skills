@@ -190,6 +190,26 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
   );
 });
 
+test("counterpart-review helper leaves driver choice to config", () => {
+  const source = read(path.join(repoRoot, "agents", "ask-counterpart-review.md"));
+
+  assert.match(
+    source,
+    /Do not choose a driver during normal workflow/,
+    "helper should tell agents not to choose between configured reviewers"
+  );
+  assert.match(
+    source,
+    /without `--driver`/,
+    "normal helper invocation should avoid explicit driver overrides"
+  );
+  assert.match(
+    source,
+    /configured counterpart route/,
+    "helper should route through config instead of model-name deliberation"
+  );
+});
+
 test("shared memory contract defines required types and lifecycle states", () => {
   const source = read(memoryContractPath);
 
