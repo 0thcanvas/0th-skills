@@ -88,7 +88,7 @@ question `best TS TOML parser`.
 - Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses the `0th_researcher` workflow profile for focused source-cited research cycles
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
-- Codex-hosted counterpart review defaults to the `agy` driver, which shells out to Antigravity CLI print mode. If `agy` is not on `PATH`, set `AGY_BIN`; the observed selected model label is `Claude Opus 4.6 (Thinking)`.
+- Codex-hosted counterpart review defaults to the `agy` driver, which shells out to Antigravity CLI print mode using the model selected in Antigravity. If `agy` is not on `PATH`, set `AGY_BIN` before invoking the companion process.
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
 - On Codex-hosted runs, explicit requests for legacy Claude Code review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable

@@ -23,7 +23,7 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 - **Branch per feature, PR to land.** Always. The PR is the inspection point.
 - **TDD for testable work, before/after for everything else.** No code without verification.
 - **Verification before shipping.** After all slices pass, the verifier exercises the feature as a real user. Only PASS proceeds to /ship.
-- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Counterpart is determined by `~/.0th/reviewer-config.json`. Default: Claude→Codex, Codex→Agy. Agy runs Antigravity CLI print mode, currently selected locally as Claude Opus 4.6 (Thinking).
+- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Counterpart is determined by `~/.0th/reviewer-config.json`. Default: Claude→Codex, Codex→Agy. Agy runs Antigravity CLI print mode using the model selected in Antigravity.
 - **Scale to uncertainty.** Low uncertainty = /build. Medium = /think then /build. High = /think with divergent design exploration.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.
