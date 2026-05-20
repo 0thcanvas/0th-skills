@@ -194,7 +194,7 @@ test("loadAndValidateConfig: accepts a valid config", () => {
     version: 1,
     counterparts: {
       claude: "codex",
-      codex: "claude"
+      codex: "agy"
     }
   };
   fs.writeFileSync(cfgPath, JSON.stringify(valid));
@@ -337,13 +337,14 @@ test("stripPreamble: handles AGENT RESPONSE header", () => {
 // Constants
 // ===========================================================================
 
-test("DRIVER_ALLOWLIST contains codex and claude", () => {
+test("DRIVER_ALLOWLIST contains codex, claude, and agy", () => {
   assert.ok(DRIVER_ALLOWLIST.includes("codex"));
   assert.ok(DRIVER_ALLOWLIST.includes("claude"));
+  assert.ok(DRIVER_ALLOWLIST.includes("agy"));
 });
 
-test("DRIVER_ALLOWLIST has exactly 2 entries", () => {
-  assert.equal(DRIVER_ALLOWLIST.length, 2);
+test("DRIVER_ALLOWLIST has exactly 3 entries", () => {
+  assert.equal(DRIVER_ALLOWLIST.length, 3);
 });
 
 test("KNOWN_HOSTS contains the supported hosts", () => {
@@ -356,7 +357,7 @@ test("DEFAULT_CONFIG has version 1", () => {
   assert.equal(DEFAULT_CONFIG.version, 1);
 });
 
-test("DEFAULT_CONFIG maps claude to codex and codex to claude", () => {
+test("DEFAULT_CONFIG maps claude to codex and codex to agy", () => {
   assert.equal(DEFAULT_CONFIG.counterparts.claude, "codex");
-  assert.equal(DEFAULT_CONFIG.counterparts.codex, "claude");
+  assert.equal(DEFAULT_CONFIG.counterparts.codex, "agy");
 });

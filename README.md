@@ -1,6 +1,6 @@
 # 0th Skills
 
-Lightweight development workflow for solo builders using Claude Code and Codex.
+Lightweight development workflow for solo builders using Codex, Antigravity, and Claude Code where still needed.
 
 ## Skills
 
@@ -88,9 +88,10 @@ question `best TS TOML parser`.
 - Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses the `0th_researcher` workflow profile for focused source-cited research cycles
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
+- Codex-hosted counterpart review defaults to the `agy` driver, which shells out to Antigravity CLI print mode. If `agy` is not on `PATH`, set `AGY_BIN`; the observed selected model label is `Claude Opus 4.6 (Thinking)`.
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
-- On Codex-hosted runs, explicit requests for Claude review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
+- On Codex-hosted runs, explicit requests for legacy Claude Code review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
 
 ### Agent types
 
@@ -139,6 +140,11 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 - Confirm the plugin exposes the ten skills under `codex-skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
+### Antigravity CLI
+
+- Install `agy` with `agy install`, or set `AGY_BIN=/absolute/path/to/agy` before invoking `scripts/counterpart-companion.mjs`
+- The `agy` driver is intentionally single-shot for now: Antigravity supports `--conversation`, but print-mode resume currently emits prior assistant transcript text along with the new response
+
 ### Claude Code
 
 - Use the repo as the Claude plugin directory so Claude can read `CLAUDE.md`, `agents/`, and `skills/`
@@ -163,6 +169,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### 0.3.2
 
+- Added an `agy` counterpart-review driver for Antigravity CLI and made Codex-hosted review default to Agy instead of Claude Code.
 - Made Browser Kit the named managed wrapper around `bb-browser` across workspace, build, debug, verifier, and stack-minimum guidance.
 - Added explicit session-reuse and safety-overlay rules: check existing tabs before navigation, pass a tab to `browser_open`, and use `browser_tab_new` only for intentional fresh tabs.
 - Renamed the verifier escape-hatch stack id to `browser-kit-escape-hatch` while keeping `/ship` compatibility for older `bb-browser-escape-hatch` reports.
