@@ -142,7 +142,7 @@ The goal is host-native parity, not identical files. When a behavior cannot be m
 
 ### Antigravity CLI
 
-- Install `agy` with `agy install`, or set `AGY_BIN=/absolute/path/to/agy` before invoking `scripts/counterpart-companion.mjs`
+- Once `agy` is available on `PATH`, run `agy install` to complete shell setup, or set `AGY_BIN=/absolute/path/to/agy` before invoking `scripts/counterpart-companion.mjs`
 - The `agy` driver is intentionally single-shot for now: Antigravity supports `--conversation`, but print-mode resume currently emits prior assistant transcript text along with the new response
 
 ### Claude Code

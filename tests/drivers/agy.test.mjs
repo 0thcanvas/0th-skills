@@ -18,10 +18,28 @@ test("driver has the correct name", async () => {
   assert.equal(driver.name, "agy");
 });
 
-test("driver bin defaults to 'agy' when AGY_BIN is not set", async () => {
+test("driver bin is configured", async () => {
   const driver = await loadDriver();
   assert.equal(typeof driver.bin, "string");
   assert.ok(driver.bin.length > 0);
+});
+
+test("driver bin defaults to 'agy' when AGY_BIN is not set before import", () => {
+  const driverPath = path.resolve(__dirname, "..", "..", "scripts", "drivers", "agy.mjs");
+  const env = { ...process.env };
+  delete env.AGY_BIN;
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `import driver from ${JSON.stringify(driverPath)}; console.log(driver.bin);`
+    ],
+    { encoding: "utf8", env }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), "agy");
 });
 
 test("driver bin honors AGY_BIN when set before import", () => {
