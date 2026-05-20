@@ -72,6 +72,8 @@ scope creep specifically — look for what was changed that wasn't asked for.
 
 ### 2. Invoke the Counterpart
 
+Do not choose a driver during normal workflow. Invoke the companion without `--driver` and let the configured counterpart route decide.
+
 ```bash
 node "${COUNTERPART_COMPANION_SCRIPT:-${CLAUDE_PLUGIN_ROOT:-${CODEX_PLUGIN_ROOT:-${OTH_SKILLS_ROOT}}}/scripts/counterpart-companion.mjs}" \
   task --key "<review-key>" "<prompt>"

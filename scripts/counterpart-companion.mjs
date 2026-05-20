@@ -11,21 +11,23 @@ import { resolveDefaultStateDir } from "./companion-state.mjs";
 // Constants (exported for testing)
 // ---------------------------------------------------------------------------
 
-export const DRIVER_ALLOWLIST = ["codex", "claude"];
+export const DRIVER_ALLOWLIST = ["codex", "claude", "agy"];
 
+// Agy is a review driver, not a host environment that invokes this script.
 export const KNOWN_HOSTS = ["claude", "codex"];
 
 export const DEFAULT_CONFIG = {
   version: 1,
   counterparts: {
     claude: "codex",
-    codex: "claude"
+    codex: "agy"
   }
 };
 
 const BIN_ENV_VARS = {
   codex: "CODEX_BIN",
-  claude: "CLAUDE_BIN"
+  claude: "CLAUDE_BIN",
+  agy: "AGY_BIN"
 };
 
 // ---------------------------------------------------------------------------
