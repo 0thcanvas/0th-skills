@@ -63,11 +63,10 @@ If resuming an ongoing research thread:
 - For technical, AI-agent, finance, or stock research where practitioner discourse matters,
   treat X/Twitter as a first-class source bucket for current claims, names, links, dissent,
   replies, threads, and market/operator sentiment.
-- Use OpenCLI as the preferred read path for X/Twitter research when the user's logged-in
-  browser session is needed and the task maps to an existing adapter command.
 - Use OpenCLI for session-backed or login-gated read research when the task maps to an existing
-  adapter command. Examples: authenticated dashboards, closed communities, or other sites where
-  the user's logged-in browser session is the evidence boundary.
+  adapter command. This includes X/Twitter research that needs the user's logged-in browser session,
+  authenticated dashboards, closed communities, or other sites where session state is the evidence
+  boundary.
 - Keep OpenCLI read-only by default. Do not use posting, liking, following, deleting, or other
   write commands unless the user explicitly asks for that action.
 - Treat OpenCLI output as user-visible/session evidence, not canonical provider metadata. Note

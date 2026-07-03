@@ -44,8 +44,8 @@ test("each skill declares Claude direct-invocation metadata", () => {
   }
 });
 
-test("skill descriptions advertise trigger conditions up front", () => {
-  for (const skillName of [...skillNames, "zoom-out"]) {
+test("model-invoked skill descriptions advertise trigger conditions up front", () => {
+  for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
@@ -53,6 +53,19 @@ test("skill descriptions advertise trigger conditions up front", () => {
       source,
       /^description:\s*"Use when /m,
       `${skillName} should start its description with a clear Use when trigger`
+    );
+  }
+});
+
+test("user-invoked skill descriptions stay human-facing", () => {
+  for (const root of [skillsRoot, codexSkillsRoot]) {
+    const source = read(path.join(root, "zoom-out", "SKILL.md"));
+
+    assert.match(source, /^disable-model-invocation:\s*true$/m);
+    assert.doesNotMatch(
+      source,
+      /^description:\s*"Use when /m,
+      "user-invoked zoom-out should not spend description text on model trigger phrasing"
     );
   }
 });
@@ -75,7 +88,7 @@ test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
 });
 
 test("Codex skill entrypoints delegate to shared workflows without Claude-only frontmatter", () => {
-  for (const skillName of [...skillNames, "zoom-out"]) {
+  for (const skillName of skillNames) {
     const codexSkillPath = path.join(codexSkillsRoot, skillName, "SKILL.md");
     const source = read(codexSkillPath);
 
@@ -91,6 +104,19 @@ test("Codex skill entrypoints delegate to shared workflows without Claude-only f
       `${skillName} Codex entrypoint should link to the shared workflow`
     );
   }
+
+  const zoomOutSource = read(path.join(codexSkillsRoot, "zoom-out", "SKILL.md"));
+  assert.doesNotMatch(
+    zoomOutSource,
+    /^description:\s*"Use when /m,
+    "zoom-out Codex entrypoint is user-invoked, so its description should stay human-facing"
+  );
+  assert.doesNotMatch(zoomOutSource, /^argument-hint:/m, "zoom-out Codex entrypoint should omit argument-hint");
+  assert.match(
+    zoomOutSource,
+    /\(\.\.\/\.\.\/skills\/zoom-out\/SKILL\.md\)/,
+    "zoom-out Codex entrypoint should link to the shared workflow"
+  );
 });
 
 test("skill reference links resolve to real files", () => {
