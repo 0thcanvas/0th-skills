@@ -45,6 +45,6 @@ Keep the routing contract visible across the host surfaces that load or mirror 0
 
 ### 6. Close Repo Hygiene Before Ship
 Remove or finish unrelated experimental skill state before the routing PR ships.
-- [ ] The experimental visual-study skill is either completed with wrapper metadata and tests or moved out of the tracked plugin working tree.
-- [ ] Existing wrapper, metadata, block-sync, routing, and ship-gate tests pass after the specialist-routing changes.
-- [ ] The final PR separates routing changes from unrelated experimental work unless the user explicitly widens scope.
+- [x] The experimental visual-study skill is either completed with wrapper metadata and tests or moved out of the tracked plugin working tree.
+- [x] Existing wrapper, metadata, block-sync, routing, and ship-gate tests pass after the specialist-routing changes.
+- [x] The final PR separates routing changes from unrelated experimental work unless the user explicitly widens scope.
