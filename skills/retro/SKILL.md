@@ -10,6 +10,10 @@ Capture this session's user corrections, agent misfires, and tool/skill issues i
 
 This skill implements the contract in [`docs/decisions/2026-05-03-skill-incident-log.md`](../../docs/decisions/2026-05-03-skill-incident-log.md). Read that decision before acting; it defines the schema, classification taxonomy, threshold rules, and privacy contract that this prompt enforces.
 
+Also see `../../references/workflow-verification.md` for `retro_open_loop_closeout`, especially
+when a session involved skipped verification, blocked real-environment evidence, stale open loops,
+or repeated tool failures.
+
 ## Direct Invocation
 
 If the user invoked this skill directly, treat `$ARGUMENTS` as a hint about which corrections to focus on. If `$ARGUMENTS` is empty, scan the entire current conversation for corrections worth logging.
@@ -37,6 +41,8 @@ The same script is also invoked from the "process the skill feedback" flow (see 
 - End of a session that contained one or more user corrections, agent misfires, or tool/skill issues
 - Anytime the user asks to "log a retro," "log incidents," or "process this session's misses"
 - When you want to check whether recent patterns have crossed the ≥ 3 threshold
+- When `retro_open_loop_closeout` is triggered by skipped verification, blocked proof, or repeated
+  tool failure and the session produced a correction or agent misfire worth preserving
 
 Skip this when the session had no corrections — there's nothing to log.
 

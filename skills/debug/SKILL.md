@@ -42,6 +42,8 @@ If resuming a debug session:
 ## Reference Files
 
 - See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
+- See `../../references/workflow-verification.md` for `context_handoff`, `blocked_real_env`, and
+  `retro_open_loop_closeout` when a bug depends on large logs or unavailable real environments.
 - See `../../references/working-artifacts.md` for throwaway timelines, causal graphs, HAR summaries,
   and other human-facing debug artifacts that should not become repo truth by default.
 - For MV3 Chrome-extension bugs (service worker state, storage, console), use Browser Kit (`@0th/browser-kit` + `@0th/browser-kit/ext-debug`) rather than ad-hoc CDP. Run `browser-kit mcp status` before relying on `browser_*` tools, open the session with `browser-kit session open --ext …`, list tabs before navigating, and reuse matching logged-in tabs when the bug depends on user state.
@@ -105,7 +107,9 @@ When a loop is managed verification and its failure should be surfaced back thro
 5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
 6. **Read `CONTEXT.md`** at the project root if it exists — use its vocabulary to align your hypothesis and report with the project's domain terms.
 7. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
-8. Codex dispatch profiles: on Codex-hosted runs, `0th_explorer` and `0th_test_runner` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
+8. Use `context_handoff` for large logs or multi-step investigations: summary, source pointers,
+   unresolved gaps, and next read targets.
+9. Codex dispatch profiles: on Codex-hosted runs, `0th_explorer` and `0th_test_runner` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
 
 Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
 
@@ -135,6 +139,10 @@ STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED
 ```
 
 Write findings to KB if the root cause was non-obvious.
+
+If the bug cannot be reproduced because browser, simulator, sandbox, or session evidence is
+unavailable, report `blocked_real_env` rather than treating weaker evidence as proof. At closeout,
+apply `retro_open_loop_closeout` when verification was skipped, blocked, or needs follow-up.
 
 If you hit the 3-strike boundary or start rationalizing a shortcut, read `references/root-cause-patterns.md` before proceeding.
 

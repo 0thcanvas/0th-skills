@@ -20,7 +20,7 @@ const codexDescriptions = {
   retro: "Use when session lessons need logging.",
   ship: "Use when work needs PR shipping.",
   think: "Use when ideas need decisions.",
-  "zoom-out": "Use when asked to map unfamiliar code."
+  "zoom-out": "Higher-level map of unfamiliar code."
 };
 
 const codexWrapperNotes = {

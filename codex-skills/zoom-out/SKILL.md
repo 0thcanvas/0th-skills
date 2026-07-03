@@ -1,6 +1,6 @@
 ---
 name: zoom-out
-description: "Use when asked to map unfamiliar code."
+description: "Higher-level map of unfamiliar code."
 disable-model-invocation: true
 ---
 
