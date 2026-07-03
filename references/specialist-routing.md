@@ -79,6 +79,42 @@ Native 0th fallback: continue through normal /build with explicit visual invaria
 and product acceptance requirements. Do not call frontend/product acceptance satisfied from tests
 alone when screenshots, design QA, or browser QA were required.
 
+### `ios_app_real_env_verification`
+
+Use this capability when an iOS app change needs simulator build/run/debug, real app launch proof,
+UI screenshots, logs, performance evidence, leak evidence, or Simulator interaction. Build iOS Apps
+is the preferred adapter when it is available; its XcodeBuildMCP-backed workflow owns simulator
+setup, launch, screenshots, UI inspection, and log capture details.
+
+Expected receipt evidence:
+- Project/workspace, scheme, and simulator target used
+- Build result and real app launch confirmation
+- UI screenshots or UI description for the changed surface
+- Relevant logs, interaction notes, or error output
+- Performance, ETTrace, or leak evidence when requested
+- Gaps, blocked simulator state, or missing signing/runtime requirements
+
+Native 0th fallback: run code review and compile-only validation such as local SwiftPM or
+`xcodebuild` compile/test proof when available. Compile-only validation is not real app launch
+evidence, and it must not claim simulator proof, UI screenshots, or logs from a running app.
+
+### `swiftui_ui_patterns`
+
+Use this capability when a SwiftUI change needs platform pattern guidance, view refactoring,
+Observation/state-flow review, Liquid Glass adoption, performance reasoning, or preview/simulator
+feedback. Build iOS Apps is the preferred adapter family when it is available.
+
+Expected receipt evidence:
+- SwiftUI pattern or refactor guidance applied
+- Deployment-target or API-availability notes when relevant
+- Compile/test output for the affected target
+- Preview, simulator, UI screenshots, performance, or leak evidence when the proof tier requires it
+- Gaps or platform assumptions that still need human or runtime confirmation
+
+Native 0th fallback: follow local codebase conventions and current Apple documentation when needed,
+then validate with compile/test proof. Do not present SwiftUI compile success as simulator UI proof
+unless the app or preview actually ran and returned real app launch or rendered UI evidence.
+
 ## Fallback
 
 If an adapter is missing, use the native 0th fallback for the work that 0th can honestly do. For

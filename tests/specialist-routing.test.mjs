@@ -87,3 +87,27 @@ test("visual and frontend work route through adapter evidence instead of copied 
   assert.match(build, /visual target or frontend builder capability/);
   assert.match(build, /screenshots, design QA, or browser QA/);
 });
+
+test("iOS and SwiftUI work distinguish compile proof from simulator proof", () => {
+  const routing = read("references/specialist-routing.md");
+  const build = read("skills/build/SKILL.md");
+
+  for (const fragment of [
+    "ios_app_real_env_verification",
+    "swiftui_ui_patterns",
+    "Build iOS Apps",
+    "XcodeBuildMCP",
+    "simulator build/run/debug",
+    "UI screenshots",
+    "logs",
+    "performance",
+    "leak",
+    "compile-only validation",
+    "real app launch"
+  ]) {
+    assert.ok(routing.includes(fragment), `iOS routing should include "${fragment}"`);
+  }
+
+  assert.match(build, /iOS simulator capability/);
+  assert.match(build, /compile\/test proof does not claim simulator proof/);
+});

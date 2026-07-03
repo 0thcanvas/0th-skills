@@ -27,9 +27,9 @@ Add the first complete adapter path for product design and frontend application 
 
 ### 3. Route iOS And SwiftUI Work End To End
 Add a complete adapter path for iOS app and SwiftUI specialist capabilities.
-- [ ] iOS work can request simulator build/run/debug, UI screenshots, logs, performance, leak, or SwiftUI pattern evidence.
-- [ ] Native 0th fallback covers code review and compile/test proof, but does not claim simulator proof when simulator adapters are unavailable.
-- [ ] Proof outcomes distinguish compile-only validation from real app launch and UI evidence.
+- [x] iOS work can request simulator build/run/debug, UI screenshots, logs, performance, leak, or SwiftUI pattern evidence.
+- [x] Native 0th fallback covers code review and compile/test proof, but does not claim simulator proof when simulator adapters are unavailable.
+- [x] Proof outcomes distinguish compile-only validation from real app launch and UI evidence.
 
 ### 4. Route Logged-In Browser And Private-Surface Work End To End
 Add a complete adapter path for session-backed browser and login-dependent research or verification.

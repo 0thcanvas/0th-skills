@@ -126,6 +126,11 @@ visual checks. Product acceptance may consume specialist evidence only when the 
 requested screenshots, design QA, or browser QA. If the adapter is missing, native /build fallback
 must still name the visual target, visual invariant, browser evidence, and any product-quality gap.
 
+For iOS or SwiftUI work, route to an iOS simulator capability when the selected proof tier needs
+simulator build/run/debug, UI screenshots, logs, performance, leak, or real app launch evidence.
+Native compile/test proof does not claim simulator proof; if the adapter cannot provide the runtime
+receipt, keep the proof result at compile-only validation or `BLOCKED_REAL_ENV` as appropriate.
+
 ### 2c. Build Per Slice
 
 For each slice (or the single task if no plan):
