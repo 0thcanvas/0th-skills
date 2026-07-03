@@ -52,7 +52,7 @@ The verifier's structured report at `${VERIFICATION_REPORT_DIR:-verification-rep
 }
 ```
 
-`/ship`'s gate script reads this file, runs detection logic to compute the expected stack set for the repo, and refuses PR creation if any expected stack is absent from `stack_minimums_exercised` or if `outcome` ≠ `PASS`. `/ship` also requires `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` to show that the chosen proof tier was actually satisfied; a green test run is not enough when the contract requires a real runtime, logged-in browser, external sandbox, or live surface.
+`/ship`'s gate script reads this file, runs detection logic to compute the expected stack set for the repo, and refuses PR creation if any expected stack is absent from `stack_minimums_exercised` or if `outcome` ≠ `PASS`. `/ship` also requires `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` to show that the chosen proof tier was actually satisfied; a green test run is not enough when the contract requires a real runtime, logged-in browser, external sandbox, or live surface. The result tier may be higher than the contract, but not lower.
 
 The gate also reads `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` (written by `/build` when dispatching the verifier) so it can independently detect browser-kit-escape-hatch matches without trusting the verifier's claim. The env var `SHIP_GATE_BRIEF` overrides the file for ad-hoc runs.
 

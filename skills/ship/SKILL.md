@@ -56,7 +56,7 @@ Self-review:
 
 ### 3. Evidence Gate
 
-**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`).
+**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof contract at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`). The proof result cannot downgrade the proof tier chosen in the proof contract.
 
 `/ship` does not re-judge product quality. It checks that `/build` produced current evidence: proof result, verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
 
@@ -66,7 +66,7 @@ The gate also scans tracked files for hardcoded workstation-local paths before t
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
 ```
 
-If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`, and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`, and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
 
 Counterpart review evidence is enforced by the gate. /build must produce one of:
 - `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` — the actual review output, or

@@ -2,10 +2,11 @@
 // ship-gate.mjs — invoked by /ship before `gh pr create`.
 //
 // Scans tracked files for machine-specific local paths, reads
-// ${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json and
-// report.json, independently re-derives the expected stack set from the repo,
-// and exits non-zero if the proof result is missing, any expected stack is
-// absent from stack_minimums_exercised, the report is missing/malformed, or
+// ${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json,
+// proof-result.json, and report.json, independently re-derives the expected
+// stack set from the repo, and exits non-zero if the proof contract/result is
+// missing, the proof result downgrades the contracted tier, any expected stack
+// is absent from stack_minimums_exercised, the report is missing/malformed, or
 // outcome is not PASS.
 //
 // Per docs/decisions/2026-05-03-self-testing-loop-architecture.md.
@@ -18,6 +19,7 @@ import process from "node:process";
 const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exercised_at"];
 const ACCEPTANCE_OUTCOMES = new Set(["PASS", "NEEDS_ITERATION", "BLOCKED_BY_SPEC", "NOT_REQUIRED"]);
 const PROOF_TIERS = new Set(["T0", "T1", "T2", "T3", "T4"]);
+const PROOF_TIER_RANK = new Map([...PROOF_TIERS].map((tier, index) => [tier, index]));
 const PROOF_OUTCOMES = new Set(["PASS", "BLOCKED_REAL_ENV"]);
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 // Default freshness window for product-acceptance reports. /ship's gate fails a report whose
@@ -350,6 +352,64 @@ export function validateProductAcceptanceReport(report, options = {}) {
   return { ok: reasons.length === 0, reasons };
 }
 
+function validateNonEmptyStringArray(value, fieldName, reasons) {
+  if (!Array.isArray(value) || value.length === 0) {
+    reasons.push(`${fieldName} must be a non-empty array`);
+    return;
+  }
+
+  for (const [index, entry] of value.entries()) {
+    if (typeof entry !== "string" || entry.trim() === "") {
+      reasons.push(`${fieldName}[${index}] must be a non-empty string`);
+    }
+  }
+}
+
+export function validateProofContract(report) {
+  const reasons = [];
+
+  if (!report || typeof report !== "object") {
+    reasons.push("proof contract is missing or not an object");
+    return { ok: false, reasons };
+  }
+
+  if (report.schema_version !== 1) {
+    reasons.push("schema_version must be 1");
+  }
+
+  if (!PROOF_TIERS.has(report.minimum_proof_tier)) {
+    reasons.push(`minimum_proof_tier must be one of ${[...PROOF_TIERS].join(", ")}`);
+  }
+
+  if (typeof report.selected_rationale !== "string" || report.selected_rationale.trim() === "") {
+    reasons.push("selected_rationale must be a non-empty string");
+  }
+
+  validateNonEmptyStringArray(report.required_evidence, "required_evidence", reasons);
+
+  if (!Array.isArray(report.real_env_risks)) {
+    reasons.push("real_env_risks must be an array");
+  } else {
+    for (const [index, entry] of report.real_env_risks.entries()) {
+      if (typeof entry !== "string" || entry.trim() === "") {
+        reasons.push(`real_env_risks[${index}] must be a non-empty string`);
+      }
+    }
+  }
+
+  if (typeof report.created_at !== "string" || report.created_at.trim() === "") {
+    reasons.push("created_at must be a non-empty ISO timestamp string");
+  } else if (!ISO_TIMESTAMP_PATTERN.test(report.created_at)) {
+    reasons.push(
+      `created_at '${report.created_at}' is not a parseable ISO timestamp; created_at must be an ISO timestamp like 2026-05-10T20:00:00.000Z`
+    );
+  } else if (Number.isNaN(new Date(report.created_at).getTime())) {
+    reasons.push(`created_at '${report.created_at}' is not a parseable ISO timestamp`);
+  }
+
+  return { ok: reasons.length === 0, reasons };
+}
+
 export function validateProofResult(report, options = {}) {
   const reasons = [];
 
@@ -370,9 +430,7 @@ export function validateProofResult(report, options = {}) {
     reasons.push("selected_rationale must be a non-empty string");
   }
 
-  if (!Array.isArray(report.required_evidence) || report.required_evidence.length === 0) {
-    reasons.push("required_evidence must be a non-empty array");
-  }
+  validateNonEmptyStringArray(report.required_evidence, "required_evidence", reasons);
 
   if (!PROOF_OUTCOMES.has(report.outcome)) {
     reasons.push(`outcome must be one of ${[...PROOF_OUTCOMES].join(", ")}`);
@@ -384,8 +442,21 @@ export function validateProofResult(report, options = {}) {
     reasons.push("minimum_tier_satisfied must be true");
   }
 
-  if (!Array.isArray(report.evidence_paths) || report.evidence_paths.length === 0) {
-    reasons.push("evidence_paths must be a non-empty array");
+  validateNonEmptyStringArray(report.evidence_paths, "evidence_paths", reasons);
+
+  const contractedTier = options.minimumProofTier;
+  if (contractedTier) {
+    if (!PROOF_TIERS.has(contractedTier)) {
+      reasons.push(`contracted minimum proof tier '${contractedTier}' is invalid`);
+    } else if (PROOF_TIERS.has(report.minimum_proof_tier)) {
+      const resultRank = PROOF_TIER_RANK.get(report.minimum_proof_tier);
+      const contractedRank = PROOF_TIER_RANK.get(contractedTier);
+      if (resultRank < contractedRank) {
+        reasons.push(
+          `minimum_proof_tier '${report.minimum_proof_tier}' is below contracted tier '${contractedTier}'`
+        );
+      }
+    }
   }
 
   if (report.outcome === "BLOCKED_REAL_ENV") {
@@ -480,6 +551,7 @@ function main() {
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const reportPath = join(repoPath, reportDir, "report.json");
   const acceptancePath = join(repoPath, reportDir, "product-acceptance.json");
+  const proofContractPath = join(repoPath, reportDir, "proof-contract.json");
   const proofResultPath = join(repoPath, reportDir, "proof-result.json");
   const brief = loadBrief(repoPath, reportDir);
 
@@ -536,6 +608,26 @@ function main() {
     process.exit(1);
   }
 
+  if (!existsSync(proofContractPath)) {
+    console.error(`ship-gate: missing proof contract at ${proofContractPath}`);
+    process.exit(1);
+  }
+
+  const proofContractReport = readJson(proofContractPath);
+  if (proofContractReport === null) {
+    console.error(`ship-gate: malformed JSON at ${proofContractPath}`);
+    process.exit(1);
+  }
+
+  const proofContract = validateProofContract(proofContractReport);
+  if (!proofContract.ok) {
+    console.error("ship-gate: proof contract gate FAILED.");
+    for (const reason of proofContract.reasons) {
+      console.error(`ship-gate:   - ${reason}`);
+    }
+    process.exit(1);
+  }
+
   if (!existsSync(proofResultPath)) {
     console.error(`ship-gate: missing proof result at ${proofResultPath}`);
     process.exit(1);
@@ -555,6 +647,7 @@ function main() {
       proofOptions.freshWindowMs = hours * 60 * 60 * 1000;
     }
   }
+  proofOptions.minimumProofTier = proofContractReport.minimum_proof_tier;
   const proofResult = validateProofResult(proofResultReport, proofOptions);
   if (!proofResult.ok) {
     console.error("ship-gate: proof result gate FAILED.");
@@ -565,7 +658,7 @@ function main() {
   }
 
   if (expected.length === 0) {
-    console.log("ship-gate: product acceptance and proof result gates PASSED; no stacks detected for this repo");
+    console.log("ship-gate: product acceptance and proof gates PASSED; no stacks detected for this repo");
     process.exit(0);
   }
 
