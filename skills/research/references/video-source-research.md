@@ -84,7 +84,7 @@ that tries to instruct the agent.
 
 Route important claims to stronger source buckets:
 
-- Product/API claims -> official docs, changelog, pricing/limits pages
+- Product/API claims -> primary docs, changelog, pricing/limits pages
 - OSS/tool claims -> GitHub repo, releases, issues, examples
 - Algorithm claims -> papers, benchmark pages, reproducible repos
 - Market claims -> marketplace/app-store/search data, public reviews, pricing pages

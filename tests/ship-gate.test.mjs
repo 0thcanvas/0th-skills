@@ -11,6 +11,8 @@ import {
   resolveRepoRoot,
   scanTrackedFilesForLocalPathLeaks,
   validateCounterpartReviewEvidence,
+  validateProofContract,
+  validateProofResult,
   validateProductAcceptanceReport,
   validateReport
 } from "../scripts/ship-gate.mjs";
@@ -47,6 +49,42 @@ function writeProductAcceptance(dir, payload = {}) {
 function writeCounterpartReviewSkipped(dir, reason = "Test fixture: counterpart unavailable for the mock environment.") {
   fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
   fs.writeFileSync(path.join(dir, "verification-report", "counterpart-review.skipped"), reason);
+}
+
+function writeProofContract(dir, payload = {}) {
+  fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "verification-report", "proof-contract.json"),
+    JSON.stringify({
+      schema_version: 1,
+      feature: "test fixture",
+      minimum_proof_tier: "T0",
+      selected_rationale: "Mechanical fixture with no user-facing runtime.",
+      required_evidence: ["unit test output"],
+      real_env_risks: [],
+      created_at: new Date().toISOString(),
+      ...payload
+    })
+  );
+}
+
+function writeProofResult(dir, payload = {}) {
+  fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "verification-report", "proof-result.json"),
+    JSON.stringify({
+      schema_version: 1,
+      feature: "test fixture",
+      minimum_proof_tier: "T0",
+      selected_rationale: "Mechanical fixture with no user-facing runtime.",
+      required_evidence: ["unit test output"],
+      outcome: "PASS",
+      minimum_tier_satisfied: true,
+      evidence_paths: ["verification-report/test-output.txt"],
+      checked_at: new Date().toISOString(),
+      ...payload
+    })
+  );
 }
 
 test("detectStacks: empty repo yields no stacks", () => {
@@ -222,6 +260,8 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
   writeProductAcceptance(repo);
   writeCounterpartReviewSkipped(repo);
+  writeProofContract(repo);
+  writeProofResult(repo);
   fs.writeFileSync(
     path.join(repo, "verification-report", "report.json"),
     JSON.stringify({
@@ -617,6 +657,105 @@ test("validateCounterpartReviewEvidence: fails when counterpart-review.skipped i
   assert.match(result.reasons.join("\n"), /must contain the exact unavailable\/quota\/auth\/network reason/);
 });
 
+test("validateProofContract: valid contract satisfies the gate", () => {
+  const result = validateProofContract({
+    schema_version: 1,
+    feature: "chrome extension coupon detection",
+    minimum_proof_tier: "T2",
+    selected_rationale: "User-facing extension behavior depends on real browser runtime.",
+    required_evidence: ["extension loaded", "content script exercised", "screenshot"],
+    real_env_risks: ["service worker can idle out"],
+    created_at: "2026-05-10T20:00:00.000Z"
+  });
+
+  assert.equal(result.ok, true, result.reasons.join(", "));
+});
+
+test("validateProofContract: rejects empty required evidence entries", () => {
+  const result = validateProofContract({
+    schema_version: 1,
+    minimum_proof_tier: "T2",
+    selected_rationale: "UI behavior requires browser proof.",
+    required_evidence: [""],
+    real_env_risks: [],
+    created_at: "2026-05-10T20:00:00.000Z"
+  });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /required_evidence\[0\] must be a non-empty string/);
+});
+
+test("validateProofResult: valid PASS report satisfies the gate", () => {
+  const now = new Date("2026-05-10T20:30:00.000Z");
+  const result = validateProofResult({
+    schema_version: 1,
+    feature: "chrome extension coupon detection",
+    minimum_proof_tier: "T2",
+    selected_rationale: "User-facing extension behavior depends on real browser runtime.",
+    required_evidence: ["extension loaded", "content script exercised", "screenshot"],
+    outcome: "PASS",
+    minimum_tier_satisfied: true,
+    evidence_paths: ["verification-report/chrome-extension.md"],
+    checked_at: "2026-05-10T20:00:00.000Z"
+  }, { now });
+
+  assert.equal(result.ok, true, result.reasons.join(", "));
+});
+
+test("validateProofResult: result tier cannot be lower than the proof contract", () => {
+  const now = new Date("2026-05-10T20:30:00.000Z");
+  const result = validateProofResult({
+    schema_version: 1,
+    feature: "chrome extension coupon detection",
+    minimum_proof_tier: "T0",
+    selected_rationale: "Tests passed.",
+    required_evidence: ["unit test output"],
+    outcome: "PASS",
+    minimum_tier_satisfied: true,
+    evidence_paths: ["verification-report/test-output.txt"],
+    checked_at: "2026-05-10T20:00:00.000Z"
+  }, { now, minimumProofTier: "T2" });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /below contracted tier 'T2'/);
+});
+
+test("validateProofResult: tests-only proof cannot pass when the selected tier is unsatisfied", () => {
+  const now = new Date("2026-05-10T20:30:00.000Z");
+  const result = validateProofResult({
+    schema_version: 1,
+    minimum_proof_tier: "T2",
+    selected_rationale: "UI behavior requires browser proof.",
+    required_evidence: ["browser screenshot"],
+    outcome: "BLOCKED_REAL_ENV",
+    minimum_tier_satisfied: false,
+    blocked_reason: "Challenge page blocked the real-browser flow.",
+    evidence_paths: ["verification-report/tests-only.txt"],
+    checked_at: "2026-05-10T20:00:00.000Z"
+  }, { now });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /BLOCKED_REAL_ENV.*not 'PASS'/);
+  assert.match(result.reasons.join("\n"), /minimum_tier_satisfied must be true/);
+});
+
+test("validateProofResult: required evidence paths cannot be empty", () => {
+  const now = new Date("2026-05-10T20:30:00.000Z");
+  const result = validateProofResult({
+    schema_version: 1,
+    minimum_proof_tier: "T0",
+    selected_rationale: "Docs-only fixture.",
+    required_evidence: ["reviewed diff"],
+    outcome: "PASS",
+    minimum_tier_satisfied: true,
+    evidence_paths: [],
+    checked_at: "2026-05-10T20:00:00.000Z"
+  }, { now });
+
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /evidence_paths must be a non-empty array/);
+});
+
 test("validateProductAcceptanceReport: required acceptance with empty evidence_paths fails", () => {
   const now = new Date("2026-05-10T20:30:00.000Z");
   const result = validateProductAcceptanceReport({
@@ -682,6 +821,18 @@ test("ship-gate end-to-end: required:true PASS happy path exits 0", () => {
     })
   );
   writeCounterpartReviewSkipped(repo);
+  writeProofContract(repo, {
+    minimum_proof_tier: "T2",
+    selected_rationale: "Electron desktop feature requires real app launch proof.",
+    required_evidence: ["built app launch", "IPC bridge exercised"],
+    real_env_risks: ["IPC bridge can fail outside unit tests"]
+  });
+  writeProofResult(repo, {
+    minimum_proof_tier: "T2",
+    selected_rationale: "Electron desktop feature requires real app launch proof.",
+    required_evidence: ["built app launch", "IPC bridge exercised"],
+    evidence_paths: ["verification-report/dossier.json"]
+  });
   fs.writeFileSync(
     path.join(repo, "verification-report", "report.json"),
     JSON.stringify({
@@ -733,6 +884,8 @@ test("ship-gate end-to-end: required:true with empty evidence_paths exits 1", ()
     })
   );
   writeCounterpartReviewSkipped(repo);
+  writeProofContract(repo);
+  writeProofResult(repo);
   const scriptPath = path.resolve("scripts/ship-gate.mjs");
   let out;
   let exitCode = 0;
@@ -785,6 +938,79 @@ test("ship-gate end-to-end: fails with missing counterpart review evidence", () 
   }
   assert.equal(exitCode, 1, `expected exit 1 for missing counterpart evidence, got ${exitCode}: ${out}`);
   assert.match(out, /counterpart review evidence gate FAILED/);
+});
+
+test("ship-gate end-to-end: fails with missing proof result", () => {
+  const repo = makeTempGitRepo();
+  writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
+  writeProductAcceptance(repo);
+  writeCounterpartReviewSkipped(repo);
+  writeProofContract(repo);
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "report.json"),
+    JSON.stringify({
+      outcome: "PASS",
+      pre_dispatch_tool_failures_reviewed: true,
+      stack_minimums_exercised: [
+        {
+          stack: "electron-desktop",
+          criterion: "renderer invoked window.api.x via contextBridge",
+          tool: "playwright-electron",
+          evidence_path: "verification-report/dossier.json",
+          exercised_at: "2026-05-03T12:00:00Z"
+        }
+      ]
+    })
+  );
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out;
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+  assert.equal(exitCode, 1, `expected exit 1 for missing proof result, got ${exitCode}: ${out}`);
+  assert.match(out, /missing proof result/);
+});
+
+test("ship-gate end-to-end: fails when proof result downgrades the contracted tier", () => {
+  const repo = makeTempGitRepo();
+  writeProductAcceptance(repo);
+  writeCounterpartReviewSkipped(repo);
+  writeProofContract(repo, {
+    minimum_proof_tier: "T2",
+    selected_rationale: "Browser extension changes require browser runtime proof.",
+    required_evidence: ["extension loaded", "content script exercised"],
+    real_env_risks: ["worker lifecycle can hide failures"]
+  });
+  writeProofResult(repo, {
+    minimum_proof_tier: "T0",
+    selected_rationale: "Unit tests passed.",
+    required_evidence: ["unit test output"]
+  });
+
+  const scriptPath = path.resolve("scripts/ship-gate.mjs");
+  let out;
+  let exitCode = 0;
+  try {
+    out = execFileSync("node", [scriptPath], {
+      cwd: repo,
+      encoding: "utf8",
+      env: { ...process.env, SHIP_GATE_BRIEF: "" }
+    });
+  } catch (e) {
+    exitCode = e.status;
+    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+  }
+  assert.equal(exitCode, 1, `expected exit 1 for downgraded proof tier, got ${exitCode}: ${out}`);
+  assert.match(out, /below contracted tier 'T2'/);
 });
 
 // -----------------------------------------------------------------------------

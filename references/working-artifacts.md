@@ -24,8 +24,9 @@ hardcoding a home path. Resolve the state root using the same order as Memory v2
 `$OTH_SKILLS_STATE_DIR`, then `$XDG_STATE_HOME`, then `~/.0th/skills/...`.
 
 Use checkout-local `${VERIFICATION_REPORT_DIR:-verification-report}` for gate-consumed evidence.
-This is an explicit exception: `/build`, `/ship`, and `ship-gate` read verifier briefs, structured
-reports, product acceptance, and counterpart-review evidence from `verification-report`.
+This is an explicit exception: `/build`, `/ship`, and `ship-gate` read proof contracts, proof
+results, verifier briefs, structured reports, product acceptance, and counterpart-review evidence
+from `verification-report`.
 
 ## Lifecycle Choices
 

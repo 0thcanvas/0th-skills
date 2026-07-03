@@ -7,11 +7,14 @@ Use this file when you need concrete source-routing and query-shaping patterns b
 - Brand name -> capability:
   `Canva Magic Grab` -> `object extraction from designed images`, `editable field extraction`, `template-aware segmentation`
 - API question -> source buckets:
-  official docs, SDK examples, changelog, rate-limit docs, maintainer issues
+  primary docs, SDK examples, changelog, rate-limit docs, maintainer issues
 - OSS landscape -> source buckets:
   GitHub repos, maintainer issues, benchmark pages, recent papers, practitioner writeups
 - Practitioner/video research -> source buckets:
-  YouTube or transcript sources for claim discovery, then official docs/GitHub/marketplaces/forums for validation
+  YouTube or transcript sources for claim discovery, then primary docs/GitHub/marketplaces/forums for validation
+- Technical, AI-agent, finance, or stock research -> source buckets:
+  primary sources for truth, X/Twitter via OpenCLI for current practitioner and market discourse,
+  GitHub/papers/docs/filings/direct artifacts for validation
 
 ## Re-query Patterns
 
@@ -22,6 +25,9 @@ Use this file when you need concrete source-routing and query-shaping patterns b
 - `site:youtube.com <audience> <pain or workflow>`
 - `site:youtube.com <capability> demo case study`
 - `"<domain or tool>" "<pain or workflow>" "transcript"`
+- OpenCLI X/Twitter reads: `twitter search <topic or ticker>`, `twitter tweets <account>`,
+  `twitter thread <post-url-or-id>` when technical discourse, stock chatter, replies, or
+  current names are part of the answer
 
 Re-query when:
 
@@ -31,12 +37,14 @@ Re-query when:
 
 ## Source-Bucket Heuristics
 
-- Official docs for product truth, constraints, pricing, launch claims, and API shape
+- Primary docs for product truth, constraints, pricing, launch claims, and API shape
 - GitHub for maintenance signals, real examples, issue heat, and implementation details
 - Papers for algorithms, baselines, and benchmark framing
 - Specs for standards behavior
 - Video/transcript sources for demos, practitioner vocabulary, tool mentions, and workflow pain
 - Blogs/forums for operational pain, workarounds, and edge cases
+- X/Twitter via OpenCLI for live technical/AI-agent discourse, finance and stock-research
+  chatter, active names, claim discovery, dissent, and post/reply/thread evidence
 
 Primary sources should anchor the conclusion. Secondary sources should explain reality around them, not replace them.
 

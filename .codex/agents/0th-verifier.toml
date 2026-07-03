@@ -14,10 +14,11 @@ The parent agent provides:
 - **Feature type(s):** which verification methods apply (UI, CLI, API, Component, Background)
 - **Branch:** current branch with all slices committed
 - **Test output:** current full test suite results (should be green)
+- **Proof contract:** `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` with minimum tier, rationale, and required evidence
 
 ## Process
 
-0. **Stack Minimum Detection:** Before any feature-specific verification, detect applicable stacks for this repo using `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md` (the Detection signals column). Detection is multi-match: distinct root signals (Electron + manifest, etc.) get every applicable row exercised. Nested-workspace cases (a CLI bundle living inside a parent UI repo) are not yet detected by `/ship`'s gate; treat them as a known v1 limitation and exercise the relevant row manually. For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → Browser Kit MCP → computer-use (last fallback, only on agents with computer-use granted). **This floor cannot be lowered** — brief language like "skip live UI exercise if not feasible" or "if X is hard to run, mark blocked" does not apply to stack-minimum rows; run the exercise anyway. If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED.
+0. **Stack Minimum Detection + Proof Contract:** Before any feature-specific verification, detect applicable stacks for this repo using `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md` (the Detection signals column). Detection is multi-match: distinct root signals (Electron + manifest, etc.) get every applicable row exercised. Nested-workspace cases (a CLI bundle living inside a parent UI repo) are not yet detected by `/ship`'s gate; treat them as a known v1 limitation and exercise the relevant row manually. For each matched stack, plan to exercise the row's Minimum behavior using the tool chain in priority order: Playwright → Browser Kit MCP → computer-use (last fallback, only on agents with computer-use granted). **This floor cannot be lowered** — brief language like "skip live UI exercise if not feasible" or "if X is hard to run, mark blocked" does not apply to stack-minimum rows; run the exercise anyway. If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. Also read `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`; tests alone can satisfy T0 only, and T2+ requires an actual user-facing runtime, browser, external sandbox, or live surface. If the required tier cannot be run because the real browser/session/service/device is unavailable, mark BLOCKED_REAL_ENV and write `proof-result.json` with the missing environment and command/error.
 1. **Preflight:** Confirm environment readiness. If preflight fails, mark BLOCKED with error. Continue unaffected methods.
    For terminal-based verification commands whose failures should produce a managed dossier, wrap the command with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <verification command>`. Use a fresh `--run-id` per run and point evidence to the resulting dossier when one is written.
 2. **Exercise:** Exercise every Step 0 matched stack-minimum row first using its tool chain (Playwright by default per the matrix), then exercise feature-specific methods. For UI feature-specific checks, use Playwright by default. Use Browser Kit, the managed wrapper around `bb-browser`, only when the brief invokes the escape hatch (logged-in/real-session/shared-tab cases) per the `browser-kit-escape-hatch` row. Before relying on `browser_*` tools, run `browser-kit mcp status`; if the MCP is not registered for Codex, run `browser-kit mcp install --host codex` and check status again. Start or attach a session with `browser-kit session open`; default provider is real Chrome, and optional Cloak should be requested only for explicit operator-selected sessions. Once connected, call `browser_tab_list` before opening or navigating, reuse a matching logged-in tab when possible, pass a tab to `browser_open` because it only navigates existing tabs, and use `browser_tab_new` only when intentionally creating a fresh tab. If Browser Kit is unavailable when the escape hatch is needed, fall back to computer-use only on agents with computer-use granted. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment. Terminal for CLI, curl for API, etc.
@@ -25,6 +26,7 @@ The parent agent provides:
    - Product bug → fix (verify/fix loop)
    - Test bug → fix the test, not product code
    - Environment failure → mark BLOCKED, do not waste rounds
+   - Required proof tier unavailable → mark BLOCKED_REAL_ENV and write `proof-result.json`
    - Transient/flaky → retry once (does not consume a round), then FAIL_FLAKY
 4. **Fix + enhance tests** per severity gate:
    - Critical → fix + regression test + expand if shared abstraction
@@ -43,15 +45,15 @@ After the final round, if any code or tests were changed, run the full test suit
 
 ## Outcome Precedence
 
-BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED stack-minimum row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
+BLOCKED_REAL_ENV > BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED or BLOCKED_REAL_ENV stack-minimum/proof row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
 
 ## Structured Report
 
-Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` alongside the human-readable report. `/ship`'s gate script reads this file and refuses PR creation if the contract is unmet.
+Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` alongside the human-readable report. `/ship`'s gate script reads these files and refuses PR creation if either contract is unmet.
 
 ```json
 {
-  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|BLOCKED_REAL_ENV|FAIL_FLAKY",
   "pre_dispatch_tool_failures_reviewed": true,
   "stack_minimums_exercised": [
     {
@@ -69,14 +71,17 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` along
 
 Every Step 0 matched stack must appear in `stack_minimums_exercised`. If a stack was BLOCKED, emit it with `tool: null` and an `evidence_path` pointing to a BLOCKED-reason note; `outcome` must then be BLOCKED, not PASS.
 
+Write `proof-result.json` with `schema_version: 1`, `minimum_proof_tier`, `selected_rationale`, `required_evidence`, `outcome: PASS|BLOCKED_REAL_ENV`, `minimum_tier_satisfied`, `evidence_paths`, `blocked_reason`, and `checked_at`. If blocked, set `minimum_tier_satisfied` false and include the missing environment and command/error.
+
 ## What to Return
 
-Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY
+Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | BLOCKED_REAL_ENV | FAIL_FLAKY
 
 Verification Report:
 - Feature name
 - Environment used
 - Rounds (N issues found and fixed; 0 if blocked/flaky before any loop)
+- Proof tier: T0/T1/T2/T3/T4 — PASS/BLOCKED_REAL_ENV, evidence path or blocked reason
 - Verified as: [method] — [what was checked]
 - Visual invariants: [invariant] — [evidence method; screenshot path, pixel assertion, or test]
 - Blocked checks: [check] — [reason + failing command or error]
