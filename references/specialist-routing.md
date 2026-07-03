@@ -115,6 +115,42 @@ Native 0th fallback: follow local codebase conventions and current Apple documen
 then validate with compile/test proof. Do not present SwiftUI compile success as simulator UI proof
 unless the app or preview actually ran and returned real app launch or rendered UI evidence.
 
+### `logged_in_browser_access`
+
+Use this capability when verification or investigation depends on the user's authenticated browser
+state, browser extension context, private dashboard, shared tab, or current browser session. Browser
+Kit is the preferred managed adapter for bb-browser-backed Chrome sessions when available; bb-browser
+or other host browser automation may be used when Browser Kit is unavailable or the task requires
+arbitrary page state inspection.
+
+Expected receipt evidence:
+- Session source, adapter, and whether an existing current browser session was reused
+- Tested URL or surface
+- Actions performed and interaction/read evidence
+- Screenshots, DOM/UI notes, console/network/log evidence, or copied user-visible text as needed
+- Access limitations, challenges, stale tabs, or login/session blockers
+
+Native 0th fallback: use non-session tests, public pages, or open-web search only for claims that do
+not require authenticated state. If the proof needs a logged-in/private surface, public search is not
+a substitute; record `adapter_unavailable`, partial evidence, or `BLOCKED_REAL_ENV`.
+
+### `session_backed_reading`
+
+Use this capability when research needs user-visible content from login-gated or adapter-backed
+surfaces. OpenCLI is the preferred read path when an adapter command exists. Browser Kit, bb-browser,
+or browser automation are fallback/debug paths when the adapter is missing, pagination or metadata is
+ambiguous, or arbitrary page state must be inspected.
+
+Expected receipt evidence:
+- Adapter command or browser path used
+- Account, query, post, dashboard, or tested URL or surface read
+- Interaction/read evidence and pagination or missing-metadata notes
+- Whether the content is user-visible/session evidence rather than canonical provider metadata
+- Access limitations or adapter gaps
+
+Native 0th fallback: use public/open-web research only for public claims. For private-session claims,
+public search is not a substitute; mark the session-backed evidence unavailable or partial.
+
 ## Fallback
 
 If an adapter is missing, use the native 0th fallback for the work that 0th can honestly do. For

@@ -131,6 +131,11 @@ simulator build/run/debug, UI screenshots, logs, performance, leak, or real app 
 Native compile/test proof does not claim simulator proof; if the adapter cannot provide the runtime
 receipt, keep the proof result at compile-only validation or `BLOCKED_REAL_ENV` as appropriate.
 
+For logged-in, private-surface, shared-tab, or browser-extension work, route to a logged-in browser capability
+before treating public/open-web evidence as enough. The receipt must name the session
+source, tested URL or surface, and interaction/read evidence. If the selected proof tier needs
+authenticated state, public search is not a substitute.
+
 ### 2c. Build Per Slice
 
 For each slice (or the single task if no plan):

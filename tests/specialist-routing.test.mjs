@@ -111,3 +111,28 @@ test("iOS and SwiftUI work distinguish compile proof from simulator proof", () =
   assert.match(build, /iOS simulator capability/);
   assert.match(build, /compile\/test proof does not claim simulator proof/);
 });
+
+test("logged-in browser work preserves private-session evidence boundaries", () => {
+  const routing = read("references/specialist-routing.md");
+  const build = read("skills/build/SKILL.md");
+  const research = read("skills/research/SKILL.md");
+
+  for (const fragment of [
+    "logged_in_browser_access",
+    "session_backed_reading",
+    "Browser Kit",
+    "bb-browser",
+    "OpenCLI",
+    "current browser session",
+    "tested URL or surface",
+    "interaction/read evidence",
+    "public search is not a substitute"
+  ]) {
+    assert.ok(routing.includes(fragment), `browser routing should include "${fragment}"`);
+  }
+
+  assert.match(build, /logged-in browser capability/);
+  assert.match(build, /public search is not a substitute/);
+  assert.match(research, /\.\.\/\.\.\/references\/specialist-routing\.md/);
+  assert.match(research, /session-backed read receipt/);
+});

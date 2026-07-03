@@ -33,9 +33,9 @@ Add a complete adapter path for iOS app and SwiftUI specialist capabilities.
 
 ### 4. Route Logged-In Browser And Private-Surface Work End To End
 Add a complete adapter path for session-backed browser and login-dependent research or verification.
-- [ ] Logged-in/session-backed tasks route to browser capability providers before opening fresh sessions.
-- [ ] Browser receipts include session source, tested URL or surface, interaction/read evidence, and known access limitations.
-- [ ] Missing browser adapters produce explicit unavailable or partial-evidence outcomes instead of replacing private-session proof with public search.
+- [x] Logged-in/session-backed tasks route to browser capability providers before opening fresh sessions.
+- [x] Browser receipts include session source, tested URL or surface, interaction/read evidence, and known access limitations.
+- [x] Missing browser adapters produce explicit unavailable or partial-evidence outcomes instead of replacing private-session proof with public search.
 
 ### 5. Preserve Host And Manifest Parity
 Keep the routing contract visible across the host surfaces that load or mirror 0th behavior.
