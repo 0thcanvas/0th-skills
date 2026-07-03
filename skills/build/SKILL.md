@@ -52,6 +52,8 @@ If resuming ongoing work:
 - See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
 - See `../../references/proof-tiers.md` (workspace-shared) before coding to choose the minimum proof tier and write the proof contract.
 - See `../../references/real-env-recipes.md` (workspace-shared) when the selected proof tier needs UI, browser extension, session-backed, sandbox, or live-surface evidence.
+- See `../../references/specialist-routing.md` when a specialist plugin or tool can provide part of
+  the proof, product, design, browser, iOS, or framework-specific evidence.
 - See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
   review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`.
 
@@ -107,7 +109,18 @@ Proof contract shape:
 }
 ```
 
-### 2b. Build Per Slice
+### 2b. Specialist Routing
+
+When a slice needs a specialist plugin or tool, create a specialist handoff envelope from
+`../../references/specialist-routing.md` before delegating. Route at the capability/workflow
+boundary; a plugin may own its internal workflow, but 0th owns the surrounding gates.
+
+Require a specialist return receipt before claiming the delegated work is complete. Specialist work
+does not satisfy proof by itself: check the receipt, then re-run the proof and product acceptance gates
+that depend on that evidence. If the adapter is unavailable or the receipt is incomplete, record the
+adapter state and keep the selected proof tier honest instead of silently downgrading it.
+
+### 2c. Build Per Slice
 
 For each slice (or the single task if no plan):
 

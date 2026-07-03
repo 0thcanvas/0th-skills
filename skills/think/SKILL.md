@@ -44,6 +44,8 @@ If this is a new session on ongoing work:
 ## Template Files
 
 - See `templates/decision-record.md` for the canonical short-form decision record scaffold.
+- See `../../references/specialist-routing.md` when a design decision may delegate work to a
+  specialist plugin or tool.
 - See `../../references/working-artifacts.md` for the draft lane: exploratory decision drafts and
   HTML comparisons are temporary working artifacts, while aligned `/think` decisions still write to
   `docs/decisions/`.
@@ -74,6 +76,10 @@ Prefer multiple choice when possible. One question per message.
 ### 3. Explore Approaches
 
 Propose 2-3 approaches with tradeoffs. Lead with your recommendation and why.
+
+If an approach needs a specialist plugin or tool, choose the capability from
+`../../references/specialist-routing.md`. Decide the workflow boundary and required return evidence;
+do not plan the plugin's internal skill sequence.
 
 For hard design questions (multiple valid architectures, non-obvious tradeoffs):
 - Spawn 3+ agents with deliberately different constraints
