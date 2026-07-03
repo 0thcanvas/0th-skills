@@ -136,3 +136,22 @@ test("logged-in browser work preserves private-session evidence boundaries", () 
   assert.match(research, /\.\.\/\.\.\/references\/specialist-routing\.md/);
   assert.match(research, /session-backed read receipt/);
 });
+
+test("host-facing docs and Codex wrappers expose the specialist routing contract compactly", () => {
+  const claude = read("CLAUDE.md");
+  const readme = read("README.md");
+
+  assert.match(claude, /0th remains the workflow orchestrator/);
+  assert.match(claude, /references\/specialist-routing\.md/);
+  assert.match(readme, /Specialist Routing/);
+  assert.match(readme, /capability\/workflow boundary/);
+
+  for (const skillName of ["think", "plan", "build", "research", "ship"]) {
+    const wrapper = read(`codex-skills/${skillName}/SKILL.md`);
+    const shared = read(`skills/${skillName}/SKILL.md`);
+
+    assert.match(wrapper, /shared workflow/);
+    assert.match(shared, /\.\.\/\.\.\/references\/specialist-routing\.md/);
+    assert.doesNotMatch(wrapper, /visual_product_design|ios_app_real_env_verification|logged_in_browser_access/);
+  }
+});

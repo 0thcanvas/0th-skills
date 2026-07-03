@@ -39,9 +39,9 @@ Add a complete adapter path for session-backed browser and login-dependent resea
 
 ### 5. Preserve Host And Manifest Parity
 Keep the routing contract visible across the host surfaces that load or mirror 0th behavior.
-- [ ] Host-facing instructions summarize the orchestrator principle and capability-routing rule without duplicating plugin bodies.
-- [ ] Agent manifests and wrapper descriptions remain compact and route through the shared contract.
-- [ ] Tests cover host parity so Claude, Codex, and generated wrappers do not drift on specialist-routing behavior.
+- [x] Host-facing instructions summarize the orchestrator principle and capability-routing rule without duplicating plugin bodies.
+- [x] Agent manifests and wrapper descriptions remain compact and route through the shared contract.
+- [x] Tests cover host parity so Claude, Codex, and generated wrappers do not drift on specialist-routing behavior.
 
 ### 6. Close Repo Hygiene Before Ship
 Remove or finish unrelated experimental skill state before the routing PR ships.
