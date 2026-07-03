@@ -64,3 +64,26 @@ test("specialist routing is guarded by build and ship gates", () => {
   assert.match(ship, /proof contract depends on specialist evidence/);
   assert.match(ship, /adapter_unavailable/);
 });
+
+test("visual and frontend work route through adapter evidence instead of copied plugin internals", () => {
+  const routing = read("references/specialist-routing.md");
+  const build = read("skills/build/SKILL.md");
+
+  for (const fragment of [
+    "visual_product_design",
+    "frontend_app_builder",
+    "Product Design",
+    "Build Web Apps",
+    "visual target",
+    "design QA",
+    "browser QA",
+    "screenshots"
+  ]) {
+    assert.ok(routing.includes(fragment), `visual/frontend routing should include "${fragment}"`);
+  }
+
+  assert.match(routing, /plugin-owned internal workflow/);
+  assert.match(routing, /do not copy the plugin body/);
+  assert.match(build, /visual target or frontend builder capability/);
+  assert.match(build, /screenshots, design QA, or browser QA/);
+});

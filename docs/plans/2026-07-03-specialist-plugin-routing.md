@@ -21,9 +21,9 @@ Deliver the base orchestrator contract that every specialist route must obey.
 
 ### 2. Route Visual And Frontend Work End To End
 Add the first complete adapter path for product design and frontend application work.
-- [ ] Visual/product work routes to a visual target or frontend builder capability before implementation when the task needs design judgment.
-- [ ] Returned evidence can satisfy or augment product acceptance only when screenshots, design QA, or browser QA are present.
-- [ ] Missing visual/frontend adapters fall back to native 0th flow with explicit visual-target and browser-evidence requirements.
+- [x] Visual/product work routes to a visual target or frontend builder capability before implementation when the task needs design judgment.
+- [x] Returned evidence can satisfy or augment product acceptance only when screenshots, design QA, or browser QA are present.
+- [x] Missing visual/frontend adapters fall back to native 0th flow with explicit visual-target and browser-evidence requirements.
 
 ### 3. Route iOS And SwiftUI Work End To End
 Add a complete adapter path for iOS app and SwiftUI specialist capabilities.

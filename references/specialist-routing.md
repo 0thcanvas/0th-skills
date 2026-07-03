@@ -42,6 +42,43 @@ Specialist work does not satisfy proof by itself. Before 0th advances, require a
   requested proof or product gate.
 - `adapter_satisfied_contract`: the adapter returned the required evidence for the delegated scope.
 
+## Adapter Families
+
+### `visual_product_design`
+
+Use this capability when the task needs product design judgment, UX shaping, visual target creation,
+ideation, image-to-code, or design QA. Product Design is the preferred adapter when it is available.
+Its plugin-owned internal workflow can decide which internal skills to invoke. 0th rule: do not copy the plugin body; 0th only names the capability, handoff envelope, required evidence, and fallback.
+
+Expected receipt evidence:
+- Design brief or visual target
+- Selected direction or concept, when applicable
+- Generated or implemented artifact, when applicable
+- Screenshots or design QA notes
+- Gaps, blocked decisions, or unresolved product concerns
+
+Native 0th fallback: require an explicit visual target from the user, repo, screenshot, or plan before
+implementation. If no visual target exists and design judgment is the point of the task, stop for
+clarification instead of inventing taste.
+
+### `frontend_app_builder`
+
+Use this capability when the task needs high-fidelity frontend concept-to-code work, rendered
+frontend QA, browser QA, responsive evidence, or screenshot-backed visual checks. Build Web Apps is
+the preferred adapter when it is available. Its plugin-owned internal workflow owns concepting,
+implementation, and browser inspection details.
+
+Expected receipt evidence:
+- Implemented surface or patch summary
+- Browser-tested URL or local surface
+- Screenshots across required viewports, when visual fidelity matters
+- Browser QA notes, console errors, and interaction evidence
+- Gaps, unsupported states, or fidelity concerns
+
+Native 0th fallback: continue through normal /build with explicit visual invariant, browser evidence,
+and product acceptance requirements. Do not call frontend/product acceptance satisfied from tests
+alone when screenshots, design QA, or browser QA were required.
+
 ## Fallback
 
 If an adapter is missing, use the native 0th fallback for the work that 0th can honestly do. For

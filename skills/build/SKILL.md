@@ -120,6 +120,12 @@ does not satisfy proof by itself: check the receipt, then re-run the proof and p
 that depend on that evidence. If the adapter is unavailable or the receipt is incomplete, record the
 adapter state and keep the selected proof tier honest instead of silently downgrading it.
 
+For visual/product/frontend work, route to a visual target or frontend builder capability when the
+task needs design judgment, high-fidelity implementation, rendered browser QA, or screenshot-backed
+visual checks. Product acceptance may consume specialist evidence only when the receipt includes the
+requested screenshots, design QA, or browser QA. If the adapter is missing, native /build fallback
+must still name the visual target, visual invariant, browser evidence, and any product-quality gap.
+
 ### 2c. Build Per Slice
 
 For each slice (or the single task if no plan):
