@@ -63,7 +63,10 @@ Steps:
    If no existing mechanism fits, propose a new one.
 4. **Cross-domain hints** per sub-problem: "What other fields solve this same abstract problem?"
    List 2-3 adjacent fields with mature solutions.
-5. **Assign source buckets** per sub-problem: arXiv, GitHub, official docs, forums, general web.
+5. **Assign source buckets** per sub-problem: arXiv, GitHub, primary docs, forums, general web,
+   video/transcript sources, X/Twitter via OpenCLI for technical/AI-agent/finance/stock
+   practitioner discourse, or other session-backed sites via OpenCLI when logged-in/user-visible
+   discussion is the evidence source.
 6. **Present the full frame** to the user for approval. Format:
 
 ```
@@ -101,6 +104,12 @@ For each sub-problem x source bucket combination, dispatch the host-native searc
 - **Question:** the sub-problem, phrased for the source bucket.
 - **Source bucket:** the assigned bucket.
 - **Context:** which sub-problem this serves.
+
+When the source bucket is X/Twitter via OpenCLI or another session-backed site via OpenCLI, use
+read-only adapter commands when available, for example `twitter profile`, `twitter tweets`,
+`twitter search`, or `twitter thread`. Do not use write actions unless the user explicitly asks.
+Treat results as user-visible/session evidence; note pagination, missing metadata, and
+search/operator limits.
 
 Each web-researcher returns <= 30 lines. Write each result to:
 ```

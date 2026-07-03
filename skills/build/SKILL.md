@@ -29,6 +29,7 @@ What: [one sentence]
 Input: [direct instruction / decision record path / plan path]
 Branch: <branch-name>
 Verification: TDD / before-after (for non-testable work)
+Proof tier: T0 / T1 / T2 / T3 / T4
 ```
 
 Create the branch immediately:
@@ -49,6 +50,8 @@ If resuming ongoing work:
 - See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
 - See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
 - See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
+- See `../../references/proof-tiers.md` (workspace-shared) before coding to choose the minimum proof tier and write the proof contract.
+- See `../../references/real-env-recipes.md` (workspace-shared) when the selected proof tier needs UI, browser extension, session-backed, sandbox, or live-surface evidence.
 - See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
   review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`.
 
@@ -73,6 +76,38 @@ Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op in
 - On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious. Capture the explorer's JSON-fenced `READ_SET` block (files, symbols, tests, plus any `verified_claims` it confirmed or contradicted) and pass it to `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/read-set-reconcile.mjs" --read-set <json-path>` so claims you actually verified get flipped to `active` (with a fresh `last_confirmed_at`) and contradictions get marked `needs_review` with evidence. On Claude-hosted runs, the built-in `Explore` agent does not emit the JSON contract — extract files/symbols/tests by hand and write the JSON yourself before running the reconciler, or skip reconciliation for that exploration.
 
 ### 2. Build Per Slice
+
+### 2a. Write The Proof Contract
+
+Before coding, choose the minimum proof tier from `../../references/proof-tiers.md` and write
+`${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` (default path:
+`verification-report/proof-contract.json`).
+
+Rules:
+- Choose the tier by the seam where bugs would escape, not by what is easiest to run.
+- Tests alone can satisfy `T0`; they cannot satisfy `T2+` by themselves.
+- Browser extensions, visual UI, desktop/mobile surfaces, logged-in flows, external sandboxes, and
+  live/destructive surfaces require the corresponding real-environment evidence named in
+  `../../references/real-env-recipes.md`.
+- If the correct proof tier cannot run, the outcome is `BLOCKED_REAL_ENV`; do not downgrade the tier
+  just to finish.
+- `T4` live/prod/destructive proof requires explicit human approval for the exact live action.
+
+Proof contract shape:
+
+```json
+{
+  "schema_version": 1,
+  "feature": "<short feature name>",
+  "minimum_proof_tier": "T0|T1|T2|T3|T4",
+  "selected_rationale": "<why this tier is the floor>",
+  "required_evidence": ["<evidence item>", "<evidence item>"],
+  "real_env_risks": ["<what could make tests insufficient>"],
+  "created_at": "2026-05-10T20:00:00.000Z"
+}
+```
+
+### 2b. Build Per Slice
 
 For each slice (or the single task if no plan):
 
@@ -156,18 +191,22 @@ let "tests passed" stand in for visual fit.
 Dispatch the verifier agent with:
 - Feature summary: what was built, which slices, acceptance criteria
 - Stack-minimums: list of matched stack ids and the Minimum behavior the verifier must exercise per row
+- Proof contract: contents of `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`
 - Feature type(s): infer from build context — which feature-specific verification methods apply, additive to the stack-minimums
 - Current branch and test output
 
 On Claude-hosted runs, dispatch `0th:verifier`. On Codex-hosted runs, dispatch `0th_verifier` explicitly.
 
-The verifier exercises the feature as a real user (browser for UI, terminal for CLI, curl for API) and reports one of four outcomes:
+The verifier exercises the feature as a real user (browser for UI, terminal for CLI, curl for API),
+writes `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and reports one of five
+outcomes:
 
 | Outcome | Meaning | Action |
 |---------|---------|--------|
 | **PASS** | All applicable checks ran and passed | Proceed to /ship |
 | **FAIL_UNRESOLVED** | Issues remain after 3 rounds | Stop. Report to user. |
 | **BLOCKED** | Applicable checks could not run | Stop. Report to user. |
+| **BLOCKED_REAL_ENV** | The selected proof tier needs a real environment that was unavailable or blocked | Stop. Report exact blocker and partial evidence. |
 | **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
 
 **Only PASS allows product acceptance and handoff to /ship.** Any other outcome requires user intervention.
@@ -272,6 +311,7 @@ STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED
 Slices: N/N complete
 Tests: X passing, 0 failing
 Verification: PASS (N issues found and fixed)
+Proof tier: T0/T1/T2/T3/T4 satisfied (evidence paths)
 Product acceptance: PASS | NOT_REQUIRED (rounds, issues fixed, deferred items)
 Counterpart review: clean | N blockers fixed | skipped — <exact unavailable reason>
 Visual invariants: [checked invariant + evidence method/path, if visual work]

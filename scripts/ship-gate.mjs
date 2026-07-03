@@ -2,10 +2,11 @@
 // ship-gate.mjs — invoked by /ship before `gh pr create`.
 //
 // Scans tracked files for machine-specific local paths, reads
-// ${VERIFICATION_REPORT_DIR:-verification-report}/report.json, independently
-// re-derives the expected stack set from the repo, and exits non-zero if any
-// expected stack is absent from stack_minimums_exercised, the report is
-// missing/malformed, or outcome is not PASS.
+// ${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json and
+// report.json, independently re-derives the expected stack set from the repo,
+// and exits non-zero if the proof result is missing, any expected stack is
+// absent from stack_minimums_exercised, the report is missing/malformed, or
+// outcome is not PASS.
 //
 // Per docs/decisions/2026-05-03-self-testing-loop-architecture.md.
 
@@ -16,6 +17,8 @@ import process from "node:process";
 
 const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exercised_at"];
 const ACCEPTANCE_OUTCOMES = new Set(["PASS", "NEEDS_ITERATION", "BLOCKED_BY_SPEC", "NOT_REQUIRED"]);
+const PROOF_TIERS = new Set(["T0", "T1", "T2", "T3", "T4"]);
+const PROOF_OUTCOMES = new Set(["PASS", "BLOCKED_REAL_ENV"]);
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 // Default freshness window for product-acceptance reports. /ship's gate fails a report whose
 // `reviewed_at` is older than this window — staleness was the contract the decision/plan
@@ -24,6 +27,8 @@ const ACCEPTANCE_FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 // Skew tolerance for clock differences between the machine that wrote `reviewed_at` and
 // the machine running the gate (CI vs local laptop).
 const ACCEPTANCE_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const PROOF_RESULT_FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+const PROOF_RESULT_FUTURE_SKEW_MS = 5 * 60 * 1000;
 export const STACK_ALIASES = new Map([
   ["bb-browser-escape-hatch", "browser-kit-escape-hatch"]
 ]);
@@ -345,6 +350,78 @@ export function validateProductAcceptanceReport(report, options = {}) {
   return { ok: reasons.length === 0, reasons };
 }
 
+export function validateProofResult(report, options = {}) {
+  const reasons = [];
+
+  if (!report || typeof report !== "object") {
+    reasons.push("proof result is missing or not an object");
+    return { ok: false, reasons };
+  }
+
+  if (report.schema_version !== 1) {
+    reasons.push("schema_version must be 1");
+  }
+
+  if (!PROOF_TIERS.has(report.minimum_proof_tier)) {
+    reasons.push(`minimum_proof_tier must be one of ${[...PROOF_TIERS].join(", ")}`);
+  }
+
+  if (typeof report.selected_rationale !== "string" || report.selected_rationale.trim() === "") {
+    reasons.push("selected_rationale must be a non-empty string");
+  }
+
+  if (!Array.isArray(report.required_evidence) || report.required_evidence.length === 0) {
+    reasons.push("required_evidence must be a non-empty array");
+  }
+
+  if (!PROOF_OUTCOMES.has(report.outcome)) {
+    reasons.push(`outcome must be one of ${[...PROOF_OUTCOMES].join(", ")}`);
+  } else if (report.outcome !== "PASS") {
+    reasons.push(`proof result outcome is '${report.outcome}', not 'PASS'`);
+  }
+
+  if (report.minimum_tier_satisfied !== true) {
+    reasons.push("minimum_tier_satisfied must be true");
+  }
+
+  if (!Array.isArray(report.evidence_paths) || report.evidence_paths.length === 0) {
+    reasons.push("evidence_paths must be a non-empty array");
+  }
+
+  if (report.outcome === "BLOCKED_REAL_ENV") {
+    if (typeof report.blocked_reason !== "string" || report.blocked_reason.trim() === "") {
+      reasons.push("blocked_reason must be a non-empty string when outcome is BLOCKED_REAL_ENV");
+    }
+  }
+
+  if (typeof report.checked_at !== "string" || report.checked_at.trim() === "") {
+    reasons.push("checked_at must be a non-empty ISO timestamp string");
+  } else if (!ISO_TIMESTAMP_PATTERN.test(report.checked_at)) {
+    reasons.push(
+      `checked_at '${report.checked_at}' is not a parseable ISO timestamp; checked_at must be an ISO timestamp like 2026-05-10T20:00:00.000Z`
+    );
+  } else {
+    const checkedAt = new Date(report.checked_at);
+    if (Number.isNaN(checkedAt.getTime())) {
+      reasons.push(`checked_at '${report.checked_at}' is not a parseable ISO timestamp`);
+    } else {
+      const now = options.now ?? new Date();
+      const ageMs = now.getTime() - checkedAt.getTime();
+      const freshWindowMs = options.freshWindowMs ?? PROOF_RESULT_FRESH_WINDOW_MS;
+      const futureSkewMs = options.futureSkewMs ?? PROOF_RESULT_FUTURE_SKEW_MS;
+      if (ageMs < -futureSkewMs) {
+        reasons.push(`checked_at '${report.checked_at}' is in the future relative to ${now.toISOString()}`);
+      } else if (ageMs > freshWindowMs) {
+        const ageHours = (ageMs / (60 * 60 * 1000)).toFixed(1);
+        const windowHours = (freshWindowMs / (60 * 60 * 1000)).toFixed(1);
+        reasons.push(`checked_at '${report.checked_at}' is ${ageHours}h old, exceeds freshness window of ${windowHours}h`);
+      }
+    }
+  }
+
+  return { ok: reasons.length === 0, reasons };
+}
+
 export function validateCounterpartReviewEvidence(repoPath, reportDir) {
   // /build must either produce a counterpart-review.md (the actual review output) or
   // a counterpart-review.skipped file containing a non-empty unavailable/quota/auth/network
@@ -403,6 +480,7 @@ function main() {
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
   const reportPath = join(repoPath, reportDir, "report.json");
   const acceptancePath = join(repoPath, reportDir, "product-acceptance.json");
+  const proofResultPath = join(repoPath, reportDir, "proof-result.json");
   const brief = loadBrief(repoPath, reportDir);
 
   const localPathLeaks = scanTrackedFilesForLocalPathLeaks(repoPath);
@@ -458,8 +536,36 @@ function main() {
     process.exit(1);
   }
 
+  if (!existsSync(proofResultPath)) {
+    console.error(`ship-gate: missing proof result at ${proofResultPath}`);
+    process.exit(1);
+  }
+
+  const proofResultReport = readJson(proofResultPath);
+  if (proofResultReport === null) {
+    console.error(`ship-gate: malformed JSON at ${proofResultPath}`);
+    process.exit(1);
+  }
+
+  const proofOptions = {};
+  const proofFreshWindowEnv = process.env.PROOF_RESULT_FRESH_WINDOW_HOURS;
+  if (proofFreshWindowEnv) {
+    const hours = Number(proofFreshWindowEnv);
+    if (Number.isFinite(hours) && hours > 0) {
+      proofOptions.freshWindowMs = hours * 60 * 60 * 1000;
+    }
+  }
+  const proofResult = validateProofResult(proofResultReport, proofOptions);
+  if (!proofResult.ok) {
+    console.error("ship-gate: proof result gate FAILED.");
+    for (const reason of proofResult.reasons) {
+      console.error(`ship-gate:   - ${reason}`);
+    }
+    process.exit(1);
+  }
+
   if (expected.length === 0) {
-    console.log("ship-gate: product acceptance gate PASSED; no stacks detected for this repo");
+    console.log("ship-gate: product acceptance and proof result gates PASSED; no stacks detected for this repo");
     process.exit(0);
   }
 

@@ -3,7 +3,7 @@ name: verifier
 description: |
   Verify a completed feature by exercising it as a real user. Dispatched by /build
   after all slices pass. Uses browser automation for UI, terminal for CLI, curl for API.
-  Reports Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY.
+  Reports Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | BLOCKED_REAL_ENV | FAIL_FLAKY.
 model: opus
 ---
 
@@ -16,6 +16,7 @@ The parent agent provides:
 - **Feature type(s):** which verification methods apply (UI, CLI, API, Component, Background)
 - **Branch:** current branch with all slices committed
 - **Test output:** current full test suite results (should be green)
+- **Proof contract:** `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` with minimum tier, rationale, and required evidence
 
 You do NOT have the parent's conversation history. Everything you need is in the prompt.
 
@@ -30,6 +31,8 @@ For each matched stack, plan to exercise the row's Minimum behavior using the to
 **This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
 
 If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. BLOCKED applies when no chain tool exists for the stack, secrets/env are missing, or an external service is unavailable — never when a tool is merely inconvenient.
+
+Also read `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` before feature-specific verification. It declares the minimum proof tier that must be satisfied for this feature. Tests alone can satisfy T0 only; T2+ requires an actual user-facing runtime, browser, external sandbox, or live surface according to the contract. If the required proof tier cannot be run in the correct environment because the real browser/session/service/device is unavailable, mark the run BLOCKED_REAL_ENV and write a proof result with the blocked reason.
 
 ### 1. Preflight
 
@@ -64,6 +67,7 @@ For each finding, classify before acting:
 | Product bug | Fix it (verify→fix loop) |
 | Test bug | Fix the test, not the product code |
 | Environment/setup failure | Mark BLOCKED, do not waste rounds |
+| Required proof tier unavailable | Mark BLOCKED_REAL_ENV, write `proof-result.json` with the missing environment and command/error |
 | Transient/flaky | Retry once (does not consume a round), then mark FAIL_FLAKY |
 
 For product bugs, also classify severity:
@@ -128,15 +132,15 @@ The workspace should look the same after verification as it did before, minus th
 
 ## Outcome Precedence
 
-When results are mixed: BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED stack-minimum row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
+When results are mixed: BLOCKED_REAL_ENV > BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. A BLOCKED or BLOCKED_REAL_ENV stack-minimum/proof row (Step 0) prevents PASS for the whole run, regardless of feature-level results.
 
 ## Structured Report
 
-Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` alongside the human-readable report. `/ship`'s gate script reads this file and refuses PR creation if the contract is unmet.
+Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` alongside the human-readable report. `/ship`'s gate script reads these files and refuses PR creation if either contract is unmet.
 
 ```json
 {
-  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|BLOCKED_REAL_ENV|FAIL_FLAKY",
   "pre_dispatch_tool_failures_reviewed": true,
   "stack_minimums_exercised": [
     {
@@ -154,15 +158,34 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` along
 
 Every Step 0 matched stack must appear in `stack_minimums_exercised`. If a stack was BLOCKED (no usable tool, missing secret, unavailable service), emit it with `tool: null` and an `evidence_path` pointing to a BLOCKED-reason note; `outcome` must then be BLOCKED, not PASS.
 
+Write `proof-result.json` with this shape:
+
+```json
+{
+  "schema_version": 1,
+  "minimum_proof_tier": "T0|T1|T2|T3|T4",
+  "selected_rationale": "<why this tier is the minimum honest proof>",
+  "required_evidence": ["<evidence required by proof-contract.json>"],
+  "outcome": "PASS|BLOCKED_REAL_ENV",
+  "minimum_tier_satisfied": true,
+  "evidence_paths": ["verification-report/<evidence-path>"],
+  "blocked_reason": "",
+  "checked_at": "<ISO 8601 timestamp>"
+}
+```
+
+If `outcome` is `BLOCKED_REAL_ENV`, set `minimum_tier_satisfied` to `false`, include the missing environment and failing command/error in `blocked_reason`, and keep any partial evidence paths that help the parent resume.
+
 ## What to Return
 
 ```
-Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | FAIL_FLAKY
+Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | BLOCKED_REAL_ENV | FAIL_FLAKY
 
 ── Verification Report ────────────────────────
 Feature: [feature name]
 Environment: [localhost:3000 → local DB, etc.]
 Rounds: [N] ([M] issues found and fixed; 0 if blocked/flaky before any loop)
+Proof tier: [T0/T1/T2/T3/T4] — [PASS/BLOCKED_REAL_ENV; evidence path or blocked reason]
 
 Verified as:
   [status] [method] — [what was checked]

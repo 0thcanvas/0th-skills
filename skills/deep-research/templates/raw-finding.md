@@ -2,7 +2,7 @@
 date: YYYY-MM-DD
 agent: {web-researcher|deep-researcher}
 sub-problem: "{sub-problem name}"
-source-bucket: {arxiv|github|web|official-docs|forums}
+source-bucket: {arxiv|github|web|primary-docs|forums|video-transcript|x-twitter|session-backed-opencli}
 provenance: {original|derivative}
 source_url: https://...
 tags: []

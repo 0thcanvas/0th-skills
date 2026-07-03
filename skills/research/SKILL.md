@@ -1,6 +1,6 @@
 ---
 name: research
-description: "Use when the answer lives outside the repo and needs source-aware research across docs, code, papers, specs, or practitioner evidence."
+description: "Use when the answer lives outside the repo and needs source-aware research across docs, code, papers, specs, X/Twitter technical or finance discourse, or other practitioner evidence."
 argument-hint: "[question]"
 ---
 
@@ -52,6 +52,25 @@ If resuming an ongoing research thread:
 - See `templates/output-shape.md` for the default decision-ready inline output shape.
 - See `templates/raw-findings-note.md` when the research is durable enough to persist into the KB.
 
+## Tool Routing
+
+- Use host-native research agents for open-web research: primary docs, product pages, GitHub,
+  papers, specs, public pages, and ordinary web search/fetch work.
+- For technical, AI-agent, finance, or stock research where practitioner discourse matters,
+  treat X/Twitter as a first-class source bucket for current claims, names, links, dissent,
+  replies, threads, and market/operator sentiment.
+- Use OpenCLI as the preferred read path for X/Twitter research when the user's logged-in
+  browser session is needed and the task maps to an existing adapter command.
+- Use OpenCLI for session-backed or login-gated read research when the task maps to an existing
+  adapter command. Examples: authenticated dashboards, closed communities, or other sites where
+  the user's logged-in browser session is the evidence boundary.
+- Keep OpenCLI read-only by default. Do not use posting, liking, following, deleting, or other
+  write commands unless the user explicitly asks for that action.
+- Treat OpenCLI output as user-visible/session evidence, not canonical provider metadata. Note
+  pagination, missing metadata, and search/operator limitations when they affect the verdict.
+- Use BB Browser or browser automation as a fallback/debug path when OpenCLI lacks an adapter
+  command, needs login/session diagnosis, or the task requires inspecting arbitrary page state.
+
 ## Process
 
 ### 1. Define the Real Question
@@ -67,7 +86,7 @@ Split the branded or user-facing term into underlying capabilities.
 
 Examples:
 - Product feature -> vendor name, feature name, underlying capability, adjacent terms
-- API/tooling -> official docs, SDKs, examples, migration notes, real-world usage
+- API/tooling -> primary docs, SDKs, examples, migration notes, real-world usage
 - OSS landscape -> task name, ecosystem names, benchmark terms, maintenance signals
 - Paper landscape -> task name, problem formulation, model family, benchmark dataset
 
@@ -77,14 +96,21 @@ If the first query is brand-shaped, generate capability-shaped queries before go
 
 Use the best source for each sub-question:
 
-- **Official docs / product pages** for product truth, API behavior, pricing, limits, launch claims
+- **Primary docs / product pages** for product truth, API behavior, pricing, limits, launch claims
 - **GitHub** for open-source tools, maintenance signals, implementation examples, issue discussions
 - **arXiv / papers** for algorithms, baselines, benchmark results, recent methods
 - **Specs / standards docs** for browser or protocol behavior
 - **video/transcript sources** for practitioner workflows, demos, tool mentions, and operator pain
 - **Forums / blogs** for practitioner reports, workflow pain, edge cases
+- **X/Twitter via OpenCLI** as a main practitioner and market discourse lane for technical,
+  AI-agent, finance, and stock research: current claims, names, links, dissent, sentiment,
+  and post/reply/thread evidence where user-visible content is enough
+- **Session-backed sites via OpenCLI** for other login-gated or adapter-backed public/private
+  practitioner discussion where the user's logged-in browser session is the evidence boundary
 
 Primary sources first. Commentary second.
+For stock or technical theses, use X/Twitter to surface leads and disagreement, then validate
+material claims through primary sources, filings, docs, repos, papers, or direct artifacts.
 Treat video sources as claim generators unless the video itself shows primary data
 or a reproducible artifact. Validate important claims through stronger source
 buckets before making recommendations.
@@ -145,7 +171,7 @@ For each important claim, ask:
 - Does another source disagree?
 
 Prefer:
-1. Official docs, primary repos, papers
+1. Primary docs, primary repos, papers
 2. Maintainer issues, benchmark pages, examples
 3. Independent blog posts, tutorials, videos/transcripts
 

@@ -17,6 +17,8 @@ test("build owns product acceptance and counterpart diff review before ship", ()
 
   assert.match(source, /Product Acceptance Loop/);
   assert.match(source, /verification-report\/product-acceptance\.json/);
+  assert.match(source, /verification-report\/proof-contract\.json/);
+  assert.match(source, /proof-result\.json/);
   assert.match(source, /decision record, plan acceptance criteria, explicit user brief, then repo standards/);
   assert.match(source, /Max 3 product acceptance rounds/);
   assert.match(source, /0th_experience_reviewer/);
@@ -29,6 +31,7 @@ test("ship stays a lightweight evidence checker instead of starting substantive 
 
   assert.match(source, /product acceptance report/);
   assert.match(source, /verification-report\/product-acceptance\.json/);
+  assert.match(source, /proof-result\.json/);
   assert.match(source, /does not re-judge product quality/);
   assert.doesNotMatch(source, /Send the branch diff to the counterpart reviewer/);
   assert.doesNotMatch(source, /If blockers exist: fix on the branch, push, re-run counterpart review/);
