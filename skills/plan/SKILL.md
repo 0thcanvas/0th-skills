@@ -44,6 +44,8 @@ If resuming ongoing work:
 - See `../../references/working-artifacts.md` for planning drafts and optional human-facing
   comparisons. Approved `/plan` outputs still save to `docs/plans/` unless the user explicitly asks
   for a throwaway planning artifact.
+- See `../../references/specialist-routing.md` when a slice needs a specialist capability under
+  0th workflow ownership.
 
 ## Process
 
@@ -79,6 +81,8 @@ Rules:
 - Describe behavior and acceptance criteria, NOT implementation steps
 - No file paths — describe contracts and interfaces
 - For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene slices, name the visual invariant that could fail and the required screenshot evidence, pixel assertion, or other visual evidence.
+- For specialist-capability slices, name the capability boundary, required handoff envelope, required
+  return receipt, and native 0th fallback if the adapter is unavailable.
 
 ### 4. Write the Plan
 

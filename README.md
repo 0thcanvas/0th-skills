@@ -70,6 +70,18 @@ skill." For example, `$build add a /health endpoint` gives the `build` skill a s
 `add a /health endpoint`, while `$research best TS TOML parser` gives the `research` skill the
 question `best TS TOML parser`.
 
+### Specialist Routing
+
+0th remains the workflow orchestrator when specialist plugins or tools are available. Route at the
+capability/workflow boundary, let plugin-owned workflows run their internal skill sequence, and use
+[`references/specialist-routing.md`](references/specialist-routing.md) for the handoff envelope,
+return receipt, fallback, and no-silent-downgrade rules.
+
+Specialist plugins may provide visual design, frontend QA, iOS simulator proof, SwiftUI guidance,
+logged-in browser access, session-backed reading, or framework guidance. Their evidence can satisfy
+0th gates only when the required receipt comes back; otherwise native 0th fallback continues with an
+explicit proof gap or blocker.
+
 ## Agents
 
 - Claude-specific agent manifests live under `agents/*.md`

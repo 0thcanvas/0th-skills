@@ -44,6 +44,8 @@ If resuming an ongoing research thread:
 
 - See `references/source-routing.md` for query-shaping examples and source-bucket heuristics.
 - See `references/video-source-research.md` when YouTube, talks, demos, podcasts, or transcripts are a major source bucket.
+- See `../../references/specialist-routing.md` when research depends on logged-in browser access,
+  session-backed reading, or another specialist adapter.
 - See `../../references/working-artifacts.md` for exploratory reports, HTML summaries, and decks:
   durable findings go to the KB/memory layer, while human-facing renderings are temporary unless promoted.
 
@@ -68,6 +70,10 @@ If resuming an ongoing research thread:
   write commands unless the user explicitly asks for that action.
 - Treat OpenCLI output as user-visible/session evidence, not canonical provider metadata. Note
   pagination, missing metadata, and search/operator limitations when they affect the verdict.
+- When using OpenCLI, Browser Kit, BB Browser, or another logged-in path, capture a session-backed read receipt:
+  adapter used, account/query/post/surface, tested URL or surface, interaction/read evidence,
+  pagination or missing-metadata notes, and access limitations.
+- If a claim depends on login-gated or private-session state, public search is not a substitute.
 - Use BB Browser or browser automation as a fallback/debug path when OpenCLI lacks an adapter
   command, needs login/session diagnosis, or the task requires inspecting arbitrary page state.
 

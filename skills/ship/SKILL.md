@@ -22,6 +22,8 @@ After /build completes. Or when you have changes on a branch ready to land.
 ## Template Files
 
 - See `templates/pr-body.md` for the default PR structure so the review context stays consistent.
+- See `../../references/specialist-routing.md` when the proof contract depends on specialist
+  evidence or adapter return receipts.
 - See `../../references/working-artifacts.md` for optional PR explainers or human-facing review
   cockpits. The PR body, git diff, and verification report remain the canonical shipping evidence.
 
@@ -59,6 +61,10 @@ Self-review:
 **Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof contract at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`). The proof result cannot downgrade the proof tier chosen in the proof contract.
 
 `/ship` does not re-judge product quality. It checks that `/build` produced current evidence: proof result, verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
+
+When the proof contract depends on specialist evidence, also check that specialist return receipts
+exist in the verifier or proof evidence and that no required adapter is left in `adapter_unavailable`
+or `adapter_ran_evidence_incomplete` without an explicit blocked or partial-evidence outcome.
 
 The gate also scans tracked files for hardcoded workstation-local paths before the stack check. This runs even when no app/runtime stack is detected, because portability leaks are still release blockers in docs-only or skills-only repos.
 
