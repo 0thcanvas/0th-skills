@@ -82,6 +82,15 @@ logged-in browser access, session-backed reading, or framework guidance. Their e
 0th gates only when the required receipt comes back; otherwise native 0th fallback continues with an
 explicit proof gap or blocker.
 
+### Workflow Verification
+
+Use [`references/workflow-verification.md`](references/workflow-verification.md) as the compact
+contract for the second half of the loop: `context_handoff` keeps long work summarized with source
+pointers, `proof_contract_required` keeps ship-bound work on the existing proof artifacts,
+`blocked_real_env` prevents tests from standing in for unavailable browser/simulator/session/sandbox
+proof, and `retro_open_loop_closeout` makes skipped verification, corrections, and unfinished work
+visible.
+
 ## Agents
 
 - Claude-specific agent manifests live under `agents/*.md`

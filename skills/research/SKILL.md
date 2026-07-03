@@ -46,6 +46,8 @@ If resuming an ongoing research thread:
 - See `references/video-source-research.md` when YouTube, talks, demos, podcasts, or transcripts are a major source bucket.
 - See `../../references/specialist-routing.md` when research depends on logged-in browser access,
   session-backed reading, or another specialist adapter.
+- See `../../references/workflow-verification.md` for `context_handoff` when research spans
+  multiple passes, agents, or source buckets.
 - See `../../references/working-artifacts.md` for exploratory reports, HTML summaries, and decks:
   durable findings go to the KB/memory layer, while human-facing renderings are temporary unless promoted.
 
@@ -141,6 +143,7 @@ For every sub-question in your map:
 - Send one focused question to the research subagent, with the target source bucket when you know it
 - Wait for the condensed ANSWER / KEY DETAILS / SOURCES block
 - Collect the returned findings into your local map, then decide what to query next
+- Preserve `context_handoff`: summary, source pointers, unresolved gaps, and next read targets
 
 Dispatch subagents in parallel when the sub-questions are independent. Dispatch sequentially only
 when a later query depends on vocabulary learned from an earlier one.
@@ -197,6 +200,8 @@ If the findings are durable, write them to the KB in the relevant domain's `raw/
 - Do not recommend tools without checking maintenance signals and recency
 - Do not cite papers you have not actually inspected
 - Do not pull raw page content into this conversation when the host-native research subagent can do the search/fetch cycle for you
+- Do not accumulate raw source context; keep source material in KB/source-pack/raw artifacts and
+  carry bounded summaries plus source pointers forward
 - If you find yourself query-looping without improving the vocabulary or source quality, pause and re-read `references/source-routing.md`
 
 ## Handoff

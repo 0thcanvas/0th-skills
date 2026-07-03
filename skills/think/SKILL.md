@@ -46,6 +46,8 @@ If this is a new session on ongoing work:
 - See `templates/decision-record.md` for the canonical short-form decision record scaffold.
 - See `../../references/specialist-routing.md` when a design decision may delegate work to a
   specialist plugin or tool.
+- See `../../references/workflow-verification.md` when a decision needs to name proof risk,
+  `blocked_real_env`, or context handoff expectations before planning.
 - See `../../references/working-artifacts.md` for the draft lane: exploratory decision drafts and
   HTML comparisons are temporary working artifacts, while aligned `/think` decisions still write to
   `docs/decisions/`.
@@ -68,6 +70,10 @@ Ask questions one at a time. For each question:
 - If the question can be answered by reading code, read the code instead of asking
 
 Focus on: purpose, constraints, what success looks like.
+
+When success depends on runtime evidence, name the expected proof tier and real-environment risk
+using `proof_contract_required` and `blocked_real_env` vocabulary. This prevents later plans from
+quietly treating tests as enough.
 
 Prefer multiple choice when possible. One question per message.
 

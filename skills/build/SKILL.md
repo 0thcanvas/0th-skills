@@ -52,6 +52,8 @@ If resuming ongoing work:
 - See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
 - See `../../references/proof-tiers.md` (workspace-shared) before coding to choose the minimum proof tier and write the proof contract.
 - See `../../references/real-env-recipes.md` (workspace-shared) when the selected proof tier needs UI, browser extension, session-backed, sandbox, or live-surface evidence.
+- See `../../references/workflow-verification.md` for `context_handoff`,
+  `proof_contract_required`, `blocked_real_env`, and `retro_open_loop_closeout`.
 - See `../../references/specialist-routing.md` when a specialist plugin or tool can provide part of
   the proof, product, design, browser, iOS, or framework-specific evidence.
 - See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
@@ -75,6 +77,8 @@ Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op in
 - Read relevant KB entries for this domain
 - Read `CONTEXT.md` at the project root if it exists — use its vocabulary for variable names, file names, and test descriptions
 - Understand the current codebase state
+- Use `context_handoff` from `../../references/workflow-verification.md` when context is large:
+  carry summary, source pointers, unresolved gaps, and next read targets instead of raw dumps.
 - On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious. Capture the explorer's JSON-fenced `READ_SET` block (files, symbols, tests, plus any `verified_claims` it confirmed or contradicted) and pass it to `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/read-set-reconcile.mjs" --read-set <json-path>` so claims you actually verified get flipped to `active` (with a fresh `last_confirmed_at`) and contradictions get marked `needs_review` with evidence. On Claude-hosted runs, the built-in `Explore` agent does not emit the JSON contract — extract files/symbols/tests by hand and write the JSON yourself before running the reconciler, or skip reconciliation for that exploration.
 
 ### 2. Build Per Slice
@@ -86,6 +90,8 @@ Before coding, choose the minimum proof tier from `../../references/proof-tiers.
 `verification-report/proof-contract.json`).
 
 Rules:
+- `proof_contract_required`: ship-bound implementation work requires a pre-implementation
+  `proof-contract.json`; docs-only or metadata-only changes still use a `T0` contract.
 - Choose the tier by the seam where bugs would escape, not by what is easiest to run.
 - Tests alone can satisfy `T0`; they cannot satisfy `T2+` by themselves.
 - Browser extensions, visual UI, desktop/mobile surfaces, logged-in flows, external sandboxes, and
@@ -238,6 +244,10 @@ outcomes:
 | **BLOCKED_REAL_ENV** | The selected proof tier needs a real environment that was unavailable or blocked | Stop. Report exact blocker and partial evidence. |
 | **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
 
+The proof result closeout must name `minimum_proof_tier`, `minimum_tier_satisfied`, outcome, and
+evidence paths. If a stronger proof tier was required but unavailable, use `BLOCKED_REAL_ENV` with
+the exact blocker and partial evidence.
+
 **Only PASS allows product acceptance and handoff to /ship.** Any other outcome requires user intervention.
 
 If verification finds and fixes issues, the verifier commits fixes atomically (separate from slice commits) and produces a verification report with evidence.
@@ -344,12 +354,18 @@ Proof tier: T0/T1/T2/T3/T4 satisfied (evidence paths)
 Product acceptance: PASS | NOT_REQUIRED (rounds, issues fixed, deferred items)
 Counterpart review: clean | N blockers fixed | skipped — <exact unavailable reason>
 Visual invariants: [checked invariant + evidence method/path, if visual work]
+Workflow closeout: retro_open_loop_closeout considered; skipped verification or unfinished work recorded
 Concerns: [if any]
 ```
 
 Then hand off to /ship.
 
 If you're drifting into shortcut logic, read `references/slice-checklist.md` before continuing.
+
+Before handoff, apply `retro_open_loop_closeout` from
+`../../references/workflow-verification.md`: skipped verification, `BLOCKED_REAL_ENV`, repeated tool
+failure, or unresolved work must become a visible retro/open-loop/memory decision rather than a
+buried concern.
 
 ## Surgical Changes
 

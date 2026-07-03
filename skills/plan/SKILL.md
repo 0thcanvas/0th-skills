@@ -46,6 +46,8 @@ If resuming ongoing work:
   for a throwaway planning artifact.
 - See `../../references/specialist-routing.md` when a slice needs a specialist capability under
   0th workflow ownership.
+- See `../../references/workflow-verification.md` when slices need proof tiers, context handoffs,
+  real-environment blockers, or retro/open-loop closeout.
 
 ## Process
 
@@ -83,6 +85,8 @@ Rules:
 - For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene slices, name the visual invariant that could fail and the required screenshot evidence, pixel assertion, or other visual evidence.
 - For specialist-capability slices, name the capability boundary, required handoff envelope, required
   return receipt, and native 0th fallback if the adapter is unavailable.
+- For ship-bound implementation slices, name the expected proof tier, context_handoff needs,
+  possible `blocked_real_env` state, and any `retro_open_loop_closeout` trigger.
 
 ### 4. Write the Plan
 

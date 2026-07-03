@@ -24,6 +24,8 @@ After /build completes. Or when you have changes on a branch ready to land.
 - See `templates/pr-body.md` for the default PR structure so the review context stays consistent.
 - See `../../references/specialist-routing.md` when the proof contract depends on specialist
   evidence or adapter return receipts.
+- See `../../references/workflow-verification.md` for proof closeout keys and
+  `retro_open_loop_closeout` before PR handoff.
 - See `../../references/working-artifacts.md` for optional PR explainers or human-facing review
   cockpits. The PR body, git diff, and verification report remain the canonical shipping evidence.
 
@@ -58,7 +60,7 @@ Self-review:
 
 ### 3. Evidence Gate
 
-**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof contract at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`). The proof result cannot downgrade the proof tier chosen in the proof contract.
+**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof contract at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`). `proof_contract_required`: the proof result tier cannot be lower than the proof contract tier, and the proof result must include `minimum_proof_tier`, `minimum_tier_satisfied`, and evidence paths.
 
 `/ship` does not re-judge product quality. It checks that `/build` produced current evidence: proof result, verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
 
@@ -73,6 +75,10 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
 ```
 
 If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`, and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+
+Before PR creation, apply `retro_open_loop_closeout`: skipped verification, blocked real-environment
+evidence, or unfinished follow-up must be surfaced in the PR notes, memory/open-loop state, or retro
+handoff as appropriate.
 
 Counterpart review evidence is enforced by the gate. /build must produce one of:
 - `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` — the actual review output, or
