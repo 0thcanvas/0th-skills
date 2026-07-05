@@ -7,6 +7,7 @@ import path from "node:path";
 import {
   detectStacks,
   findLocalPathLeaksInText,
+  listTrackedVerificationArtifacts,
   loadBrief,
   resolveRepoRoot,
   scanTrackedFilesForLocalPathLeaks,
@@ -14,7 +15,8 @@ import {
   validateProofContract,
   validateProofResult,
   validateProductAcceptanceReport,
-  validateReport
+  validateReport,
+  validateTrackedVerificationArtifacts
 } from "../scripts/ship-gate.mjs";
 
 function makeTempRepo() {
@@ -189,6 +191,37 @@ test("scanTrackedFilesForLocalPathLeaks: scans tracked files only", () => {
 
   assert.equal(leaks.length, 1);
   assert.equal(leaks[0].file, "tracked.md");
+});
+
+test("validateTrackedVerificationArtifacts: rejects tracked verification-report files", () => {
+  const repo = makeTempGitRepo();
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(path.join(repo, "verification-report", "proof-result.json"), "{}\n");
+  fs.writeFileSync(path.join(repo, "verification-report", "local-only.json"), "{}\n");
+  execFileSync("git", ["add", "verification-report/proof-result.json"], {
+    cwd: repo,
+    stdio: "ignore"
+  });
+
+  assert.deepEqual(listTrackedVerificationArtifacts(repo, "verification-report"), [
+    "verification-report/proof-result.json"
+  ]);
+
+  const result = validateTrackedVerificationArtifacts(repo, "verification-report");
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /proof-result\.json is tracked/);
+  assert.match(result.reasons.join("\n"), /local ship-gate evidence, not source/);
+});
+
+test("validateTrackedVerificationArtifacts: allows ignored local verification-report files", () => {
+  const repo = makeTempGitRepo();
+  fs.writeFileSync(path.join(repo, ".gitignore"), "verification-report/\n");
+  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
+  fs.writeFileSync(path.join(repo, "verification-report", "proof-result.json"), "{}\n");
+  execFileSync("git", ["add", ".gitignore"], { cwd: repo, stdio: "ignore" });
+
+  const result = validateTrackedVerificationArtifacts(repo, "verification-report");
+  assert.equal(result.ok, true, result.reasons.join(", "));
 });
 
 test("resolveRepoRoot: returns git toplevel when invoked from a subdir", () => {

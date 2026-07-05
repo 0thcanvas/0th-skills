@@ -271,6 +271,54 @@ export function scanTrackedFilesForLocalPathLeaks(repoPath) {
   return leaks;
 }
 
+export function listTrackedVerificationArtifacts(repoPath, reportDir) {
+  if (!existsSync(join(repoPath, ".git"))) {
+    return [];
+  }
+
+  const normalizedReportDir = String(reportDir ?? "")
+    .replace(/^\.\/+/, "")
+    .replace(/\/+$/, "");
+  if (!normalizedReportDir || normalizedReportDir === "." || normalizedReportDir.includes("..")) {
+    throw new Error(`ship-gate: unsafe verification report directory '${reportDir}'`);
+  }
+
+  let output;
+  try {
+    output = execFileSync("git", ["ls-files", "-z", "--", normalizedReportDir], {
+      cwd: repoPath,
+      stdio: ["ignore", "pipe", "pipe"],
+      encoding: "utf8"
+    });
+  } catch (err) {
+    throw new Error(
+      `ship-gate: git ls-files failed inside ${repoPath}: ${err.stderr?.toString().trim() || err.message}`
+    );
+  }
+
+  return output
+    .split("\0")
+    .filter(Boolean)
+    .filter((file) => file === normalizedReportDir || file.startsWith(`${normalizedReportDir}/`));
+}
+
+export function validateTrackedVerificationArtifacts(repoPath, reportDir) {
+  const trackedFiles = listTrackedVerificationArtifacts(repoPath, reportDir);
+  if (trackedFiles.length === 0) {
+    return { ok: true, reasons: [] };
+  }
+
+  const reasons = trackedFiles.slice(0, 20).map((file) => `${file} is tracked`);
+  if (trackedFiles.length > 20) {
+    reasons.push(`... ${trackedFiles.length - 20} more tracked verification artifacts`);
+  }
+  reasons.push(
+    `${reportDir}/ is local ship-gate evidence, not source; keep it ignored and summarize durable evidence in the PR body, docs, or memory`
+  );
+
+  return { ok: false, reasons };
+}
+
 export function validateProductAcceptanceReport(report, options = {}) {
   const reasons = [];
 
@@ -565,6 +613,15 @@ function main() {
     }
     if (localPathLeaks.length > 20) {
       console.error(`ship-gate:   - ... ${localPathLeaks.length - 20} more`);
+    }
+    process.exit(1);
+  }
+
+  const trackedVerificationArtifacts = validateTrackedVerificationArtifacts(repoPath, reportDir);
+  if (!trackedVerificationArtifacts.ok) {
+    console.error("ship-gate: tracked verification artifact gate FAILED.");
+    for (const reason of trackedVerificationArtifacts.reasons) {
+      console.error(`ship-gate:   - ${reason}`);
     }
     process.exit(1);
   }
