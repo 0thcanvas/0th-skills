@@ -57,7 +57,9 @@ If resuming ongoing work:
 - See `../../references/specialist-routing.md` when a specialist plugin or tool can provide part of
   the proof, product, design, browser, iOS, or framework-specific evidence.
 - See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
-  review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`.
+  review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`,
+  but that directory is local workflow state and should stay ignored unless the user explicitly
+  asks to version a small fixture or durable summary.
 
 ## Secret Handling
 
@@ -245,8 +247,9 @@ outcomes:
 | **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
 
 The proof result closeout must name `minimum_proof_tier`, `minimum_tier_satisfied`, outcome, and
-evidence paths. If a stronger proof tier was required but unavailable, use `BLOCKED_REAL_ENV` with
-the exact blocker and partial evidence.
+evidence paths. These paths can point at local ignored artifacts; the durable PR record is the
+compact summary, not raw command captures or live JSON dumps. If a stronger proof tier was required
+but unavailable, use `BLOCKED_REAL_ENV` with the exact blocker and partial evidence.
 
 **Only PASS allows product acceptance and handoff to /ship.** Any other outcome requires user intervention.
 

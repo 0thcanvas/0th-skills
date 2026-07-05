@@ -311,6 +311,8 @@ test("shared working-artifacts contract defines lanes and lifecycle choices", ()
   assert.match(source, /\$OTH_SKILLS_STATE_DIR/);
   assert.match(source, /\$XDG_STATE_HOME/);
   assert.match(source, /\$\{VERIFICATION_REPORT_DIR:-verification-report\}/);
+  assert.match(source, /normally ignored and not committed/);
+  assert.match(source, /Do not commit raw command captures/);
 
   // Lifecycle choices must appear as bold-headed bullets — not just incidental prose matches.
   for (const choice of ["current", "compact", "supersede", "delete"]) {

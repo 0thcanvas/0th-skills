@@ -54,6 +54,10 @@ After verification, the verifier writes `${VERIFICATION_REPORT_DIR:-verification
 `/ship` fails closed when `proof-result.json` is missing, stale, malformed, has
 `outcome != "PASS"`, `minimum_tier_satisfied != true`, or no evidence paths.
 
+`verification-report/` is local gate evidence, not source. Evidence paths may point at ignored
+local files; do not commit bulky raw outputs just to make those paths browsable in GitHub. Put the
+human-readable summary in the PR body and promote only durable, compact conclusions to docs.
+
 ## Rule Of Thumb
 
 - Tests can satisfy `T0`.

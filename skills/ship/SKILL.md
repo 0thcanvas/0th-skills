@@ -27,7 +27,8 @@ After /build completes. Or when you have changes on a branch ready to land.
 - See `../../references/workflow-verification.md` for proof closeout keys and
   `retro_open_loop_closeout` before PR handoff.
 - See `../../references/working-artifacts.md` for optional PR explainers or human-facing review
-  cockpits. The PR body, git diff, and verification report remain the canonical shipping evidence.
+  cockpits. The PR body and git diff are the durable shipping evidence; the verification report is
+  local gate evidence unless a small summary is explicitly promoted to docs.
 
 ## Process
 
@@ -53,6 +54,9 @@ git log main..HEAD --oneline  # commit history
 Self-review:
 - Are there files that shouldn't have changed?
 - Is the scope contained to what was intended?
+- Are any `${VERIFICATION_REPORT_DIR:-verification-report}` files staged/tracked? They should stay
+  ignored local evidence; summarize results in the PR body instead of committing raw command output
+  or live JSON dumps.
 - Any hardcoded local workstation paths left in? Flag macOS/Linux/Windows user-profile paths, or HOME-based fallbacks to a local 0th Canvas checkout.
 - Any secrets, credentials, debug code left in?
 - Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
@@ -68,7 +72,10 @@ When the proof contract depends on specialist evidence, also check that speciali
 exist in the verifier or proof evidence and that no required adapter is left in `adapter_unavailable`
 or `adapter_ran_evidence_incomplete` without an explicit blocked or partial-evidence outcome.
 
-The gate also scans tracked files for hardcoded workstation-local paths before the stack check. This runs even when no app/runtime stack is detected, because portability leaks are still release blockers in docs-only or skills-only repos.
+The gate also scans tracked files for hardcoded workstation-local paths and tracked
+`${VERIFICATION_REPORT_DIR:-verification-report}` artifacts before the stack check. This runs even
+when no app/runtime stack is detected, because portability leaks and raw verification dumps are
+release blockers in docs-only or skills-only repos.
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
