@@ -128,6 +128,16 @@ gh pr merge <pr-number> --squash --delete-branch
 
 Squash keeps main history clean. Delete branch avoids clutter.
 
+### 7. Local Artifact Closeout
+
+`${VERIFICATION_REPORT_DIR:-verification-report}` is local gate evidence, not a submitted artifact.
+Keep it only while the active PR needs gate reruns, debugging, or review follow-up.
+
+After the PR body contains the safe verification summary and the PR is merged, closed, abandoned, or
+the worktree is being removed, delete `${VERIFICATION_REPORT_DIR:-verification-report}`. If the
+directory contains sensitive browser/session payloads, private screenshots, HARs, cookies, tokens, or
+secret-adjacent data, extract only a safe summary and delete the raw local copy immediately.
+
 ## Iron Laws
 
 - **Always a PR.** Even for one-line changes. The PR is visibility, not ceremony.

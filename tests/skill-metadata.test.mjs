@@ -378,6 +378,20 @@ test("working-artifacts contract requires report-first stale doc cleanup", () =>
   );
 });
 
+test("verification-report lifecycle stays local and is cleaned up after ship closeout", () => {
+  const artifacts = read(workingArtifactsContractPath);
+  const ship = read("skills/ship/SKILL.md");
+
+  for (const source of [artifacts, ship]) {
+    assert.match(source, /local gate evidence|gate-consumed evidence/);
+    assert.match(source, /not a submitted artifact|not committed/);
+    assert.match(source, /merged, closed, abandoned/);
+    assert.match(source, /delete `\$\{VERIFICATION_REPORT_DIR:-verification-report\}`/);
+    assert.match(source, /sensitive browser\/session payloads/);
+    assert.match(source, /safe summary/);
+  }
+});
+
 test("core skills require the shared memory write gate", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
