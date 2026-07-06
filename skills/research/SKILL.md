@@ -77,6 +77,19 @@ If resuming an ongoing research thread:
 - If a claim depends on login-gated or private-session state, public search is not a substitute.
 - Use BB Browser or browser automation as a fallback/debug path when OpenCLI lacks an adapter
   command, needs login/session diagnosis, or the task requires inspecting arbitrary page state.
+- Do not let a fetch-only failure end session-backed research. If WebSearch/WebFetch/open-web access
+  hits a challenge page, CAPTCHA, verification page, 403/429, login wall, or bot-block page, record
+  `challenge_or_session_blocked` and route to OpenCLI, Browser Kit/BB Browser real Chrome, or
+  computer-use when a real UI path is required. Treat the block as an access limitation, not as
+  evidence that the content or complaint does not exist.
+- If Browser Kit or BB Browser fails before page evidence is gathered because the daemon, MCP, or
+  session is unavailable, attempt the documented status/install/session-open recovery once when
+  safe, then retry. If recovery fails, record `adapter_unavailable` with the exact command/error and
+  try the next available session-backed path before concluding the research is blocked.
+- If Browser Kit conflicts with OpenCLI Browser Bridge or another local CDP owner on
+  `localhost:19825`, move Browser Kit with `--cdp-port <port> --daemon-port <port>` or
+  `BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`. Do not stop or kill the other browser session
+  unless the user asked for that cleanup.
 
 ## Process
 
@@ -143,6 +156,9 @@ For every sub-question in your map:
 - Wait for the condensed ANSWER / KEY DETAILS / SOURCES block
 - Collect the returned findings into your local map, then decide what to query next
 - Preserve `context_handoff`: summary, source pointers, unresolved gaps, and next read targets
+- If a fetch-only research subagent returns `challenge_or_session_blocked`, do not ask it to keep
+  retrying the same blocked URL. Re-route that source bucket through session-backed reading or report
+  the access blocker with partial public evidence.
 
 Dispatch subagents in parallel when the sub-questions are independent. Dispatch sequentially only
 when a later query depends on vocabulary learned from an earlier one.

@@ -22,6 +22,7 @@ You do NOT have the parent's conversation history. Everything you need is in the
 2. Prefer primary sources over commentary.
 3. Keep the search cycle narrow: one question in, one condensed answer out.
 4. Surface contradictions, stale sources, and gaps instead of smoothing them over.
+5. If the open-web path hits a challenge page, CAPTCHA, verification page, 403/429, login wall, or bot-block page, put `challenge_or_session_blocked` in GAPS and tell the parent to use OpenCLI, Browser Kit/BB Browser, or another session-backed route. Do not treat the blocked page as evidence that the content is absent.
 
 ## What to Return
 
@@ -43,4 +44,5 @@ GAPS: <what remains uncertain, or "none">
 - Do not return raw page content or a dump of search results.
 - Do not speculate beyond what the sources support.
 - If the answer is weak or partial, say so clearly.
+- A blocked fetch is an access limitation, not negative evidence.
 """
