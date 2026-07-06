@@ -126,6 +126,13 @@ test("logged-in browser work preserves private-session evidence boundaries", () 
     "current browser session",
     "tested URL or surface",
     "interaction/read evidence",
+    "challenge_or_session_blocked",
+    "adapter_unavailable",
+    "daemon",
+    "--cdp-port",
+    "--daemon-port",
+    "BROWSER_KIT_CDP_PORT",
+    "BROWSER_KIT_DAEMON_PORT",
     "public search is not a substitute"
   ]) {
     assert.ok(routing.includes(fragment), `browser routing should include "${fragment}"`);
@@ -135,6 +142,28 @@ test("logged-in browser work preserves private-session evidence boundaries", () 
   assert.match(build, /public search is not a substitute/);
   assert.match(research, /\.\.\/\.\.\/references\/specialist-routing\.md/);
   assert.match(research, /session-backed read receipt/);
+  assert.match(research, /challenge_or_session_blocked/);
+  assert.match(research, /fetch-only failure/);
+  assert.match(research, /adapter_unavailable/);
+  assert.match(research, /BROWSER_KIT_CDP_PORT/);
+  assert.match(read("skills/build/references/verification-checklist.md"), /--cdp-port/);
+  assert.match(read("agents/verifier.md"), /BROWSER_KIT_DAEMON_PORT/);
+  assert.match(read("references/stack-minimums.md"), /localhost:19825/);
+});
+
+test("fetch-only research agents hand back session blockers instead of treating them as absence", () => {
+  const claudeResearcher = read("agents/web-researcher.md");
+  const codexResearcher = read(".codex/agents/0th-researcher.toml");
+
+  for (const [name, source] of [
+    ["Claude web-researcher", claudeResearcher],
+    ["Codex 0th_researcher", codexResearcher]
+  ]) {
+    assert.match(source, /challenge_or_session_blocked/, `${name} should name the blocker`);
+    assert.match(source, /OpenCLI/, `${name} should route parent toward OpenCLI`);
+    assert.match(source, /Browser Kit\/BB Browser/, `${name} should route parent toward Browser Kit`);
+    assert.match(source, /not negative evidence|not as evidence that the content is absent/, `${name} should not treat blocked fetch as absence`);
+  }
 });
 
 test("host-facing docs and Codex wrappers expose the specialist routing contract compactly", () => {

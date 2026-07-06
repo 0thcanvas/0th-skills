@@ -123,6 +123,15 @@ Kit is the preferred managed adapter for bb-browser-backed Chrome sessions when 
 or other host browser automation may be used when Browser Kit is unavailable or the task requires
 arbitrary page state inspection.
 
+Adapter failures are part of the receipt, not proof about the page. If Browser Kit or bb-browser is
+unavailable because the daemon, MCP registration, provider launch, or session attach failed, attempt
+one documented recovery path when safe before falling back. If recovery still fails, record
+`adapter_unavailable`, the exact command or error, and the next available session-backed path tried.
+If the blocker is a local port collision with OpenCLI Browser Bridge or another tool on
+`localhost:19825`, prefer moving Browser Kit with `--cdp-port <port> --daemon-port <port>` or
+`BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`; do not kill the other session unless the user
+asked for that specific cleanup.
+
 Expected receipt evidence:
 - Session source, adapter, and whether an existing current browser session was reused
 - Tested URL or surface
@@ -140,6 +149,15 @@ Use this capability when research needs user-visible content from login-gated or
 surfaces. OpenCLI is the preferred read path when an adapter command exists. Browser Kit, bb-browser,
 or browser automation are fallback/debug paths when the adapter is missing, pagination or metadata is
 ambiguous, or arbitrary page state must be inspected.
+
+OpenCLI and Browser Kit can coexist if Browser Kit is moved off OpenCLI Browser Bridge's fixed
+`localhost:19825`; use Browser Kit's CDP/daemon port flags or env vars and include the chosen ports
+in the session-backed read receipt when they matter to reproduction.
+
+Generic fetch/search blockers are access signals. A challenge page, CAPTCHA, verification page,
+403/429, login wall, or bot-block page should be recorded as `challenge_or_session_blocked` and
+rerouted through a session-backed path when the source matters to the answer. Do not treat it as
+negative evidence or as permission to skip the source bucket.
 
 Expected receipt evidence:
 - Adapter command or browser path used

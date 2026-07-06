@@ -29,6 +29,26 @@ Use this file when you need concrete source-routing and query-shaping patterns b
   `twitter thread <post-url-or-id>` when technical discourse, stock chatter, replies, or
   current names are part of the answer
 
+## Anti-Bot And Session-Backed Reads
+
+For Reddit, X/Twitter, private dashboards, app marketplaces, extension pages, and other surfaces
+that often challenge generic fetches, choose the evidence lane before searching:
+
+- Public claims: ordinary search/fetch can discover public sources and pointers.
+- User-visible logged-in content: prefer OpenCLI when an adapter exists.
+- Arbitrary page state, challenge diagnosis, or current tab state: use Browser Kit/BB Browser real
+  Chrome, then computer-use when a real UI path is the only available route.
+
+OpenCLI Browser Bridge owns `localhost:19825`. When both OpenCLI and Browser Kit are needed, move
+Browser Kit with `--cdp-port <port> --daemon-port <port>` or `BROWSER_KIT_CDP_PORT` /
+`BROWSER_KIT_DAEMON_PORT`; record the chosen ports in the receipt if a later agent must reproduce
+the run.
+
+If a fetch/open-web path returns a challenge page, CAPTCHA, verification page, 403/429, login wall,
+or bot-block page, mark `challenge_or_session_blocked`. Re-route to a session-backed lane or report
+the blocker with partial evidence. Do not treat the blocked response as proof that the content is
+absent.
+
 Re-query when:
 
 - the first pass gives vendor language but not implementation language

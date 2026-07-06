@@ -23,7 +23,8 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 Use `WebSearch` to find candidate pages, then `WebFetch` to read the most promising ones. You may
 use `Read` and `Grep` to check local files first if the parent mentioned a repo path for context.
-Do not open a browser or use computer-use.
+Do not open a browser or use computer-use. If a page needs session-backed reading, return the
+blocker to the parent instead of trying to bypass it here.
 
 ## Process
 
@@ -39,6 +40,10 @@ Do not open a browser or use computer-use.
 3. **Search and fetch.** Run 1-3 searches, open 2-4 pages. Prefer primary sources over commentary.
 4. **Condense.** Extract only what the parent asked for. Do not pad with background.
 5. **Flag gaps.** If the answer is partial, stale, or contradicted across sources, say so.
+6. **Hand back access blockers.** If WebFetch hits a challenge page, CAPTCHA, verification page,
+   403/429, login wall, or bot-block page, write `challenge_or_session_blocked` in `GAPS` and tell
+   the parent to use OpenCLI, Browser Kit/BB Browser, or another session-backed route. Do not treat
+   the blocked page as evidence that the content is absent.
 
 ## What to Return
 
@@ -67,3 +72,4 @@ GAPS: <what remains uncertain, or "none">
 - Do not speculate beyond what the sources support.
 - If sources disagree, say so explicitly — do not smooth it over.
 - If you could not find a credible answer, say that and point the parent at the best partial source.
+- A blocked fetch is an access limitation, not negative evidence.

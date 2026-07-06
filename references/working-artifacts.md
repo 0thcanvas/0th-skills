@@ -32,6 +32,12 @@ Do not commit raw command captures, large live JSON dumps, screenshots, HARs, br
 or test logs from `verification-report`. Summarize the result in the PR body, promote a compact
 decision/doc when the evidence is durable, or keep the raw artifact local/CI-attached.
 
+Keep `verification-report` only while it has active gate, debugging, or review-follow-up value. Once
+the PR body contains the safe verification summary and the PR is merged, closed, abandoned, or the
+worktree is being removed, delete `${VERIFICATION_REPORT_DIR:-verification-report}`. If the directory
+contains sensitive browser/session payloads, private screenshots, HARs, cookies, tokens, or
+secret-adjacent data, extract only a safe summary and delete the raw local copy immediately.
+
 ## Lifecycle Choices
 
 Use lifecycle, not age:
