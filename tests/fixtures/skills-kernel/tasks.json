@@ -1,0 +1,10 @@
+[
+  {"id":"docs-metadata","summary":"Revise one internal metadata document","tags":{"size":"tiny","dependency_depth":"none","decomposability":"low","shared_state":"none","proof_tier":"T0","risk":"low"}},
+  {"id":"one-file-feature","summary":"Implement a bounded one-file behavior change","tags":{"size":"small","dependency_depth":"shallow","decomposability":"low","shared_state":"single-owner","proof_tier":"T1","risk":"medium"}},
+  {"id":"ordered-multi-file","summary":"Implement a multi-file feature with ordered dependencies","tags":{"size":"medium","dependency_depth":"deep","decomposability":"low","shared_state":"coupled","proof_tier":"T1","risk":"high"}},
+  {"id":"parallel-read-research","summary":"Research independent primary-source buckets and synthesize","tags":{"size":"medium","dependency_depth":"shallow","decomposability":"high","shared_state":"read-only","proof_tier":"T0","risk":"medium"}},
+  {"id":"root-cause-debug","summary":"Diagnose a failing behavior before applying a fix","tags":{"size":"medium","dependency_depth":"unknown","decomposability":"medium","shared_state":"single-owner","proof_tier":"T1","risk":"high"}},
+  {"id":"broad-refactor","summary":"Refactor a shared abstraction with a broad test surface","tags":{"size":"large","dependency_depth":"deep","decomposability":"medium","shared_state":"coupled","proof_tier":"T1","risk":"high"}},
+  {"id":"browser-proof","summary":"Change a user-facing browser flow requiring rendered proof","tags":{"size":"medium","dependency_depth":"medium","decomposability":"medium","shared_state":"single-owner","proof_tier":"T2","risk":"high"}},
+  {"id":"architecture-review","summary":"Review an architecture and produce an implementation decision","tags":{"size":"medium","dependency_depth":"shallow","decomposability":"medium","shared_state":"read-only","proof_tier":"T0","risk":"medium"}}
+]
