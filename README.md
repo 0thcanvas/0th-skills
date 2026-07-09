@@ -110,9 +110,12 @@ what a child actually received.
   `adapters/*.models.json` disables economy/balanced routing and inherits frontier as a fail-closed fallback
 - Active mappings live outside the plugin at `~/.0th/skills/config/model-routing/<harness>.json`;
   set `OTH_SKILLS_ROUTING_DIR` only when another local configuration root is required
-- Initialize with `node scripts/0th.mjs routing init --harness <name>` and diagnose live controls,
-  model availability, and effort availability with `node scripts/0th.mjs routing doctor --harness <name> --runtime-json <path>`
-- `scripts/0th.mjs capabilities` emits the selected launch plan only when live runtime controls can honor it; `scripts/0th.mjs attest` verifies the post-spawn receipt
+- Initialize with `node scripts/0th.mjs routing init --harness <name>` and diagnose live controls
+  with `routing doctor`; pass `--runtime-json <path>`, or use Codex's token-consuming opt-in
+  `--live-probe` to populate a version- and routing-bound local cache
+- `scripts/0th.mjs capabilities` emits the selected launch plan only when a live exact model/effort
+  pair can honor it; concrete Codex plans run through `scripts/0th.mjs dispatch`, and
+  `scripts/0th.mjs attest` verifies the resulting receipt
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
 - `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
   it as automatic routing policy

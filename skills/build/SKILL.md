@@ -58,8 +58,9 @@ node scripts/0th.mjs capabilities \
   --packet-json <capability-packet.json>
 ```
 
-Delegate only when the result is `allowed: true`. Execute the emitted launch plan and verify its
-post-spawn receipt through `scripts/0th.mjs attest`. Missing, stale, unsupported, shared-state,
+Delegate only when the result is `allowed: true`. For concrete Codex plans, execute it through
+`scripts/0th.mjs dispatch`; prompts go in a file and never in command arguments. Use native spawn
+only for `inherit`. Verify the emitted receipt through `scripts/0th.mjs attest`. Missing, stale, unsupported, shared-state,
 ordered-work, disproportionate inherited-effort, or receipt-mismatch results stay `single-root`.
 Do not substitute a requested profile name or adapter mapping for the actual emitted model and effort.
 

@@ -71,6 +71,10 @@ test("an observed proportionate read-only worker is eligible", () => {
     reasoning_effort: "medium",
     available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
     available_reasoning_efforts: ["medium", "high", "xhigh"],
+    available_model_effort_pairs: [
+      { model: "gpt-5.4-mini", reasoning_effort: "medium" },
+      { model: "gpt-5.4", reasoning_effort: "high" }
+    ],
     model_override: true,
     effort_override: true
   };
@@ -93,6 +97,10 @@ test("shared mutable work is rejected without workspace isolation", () => {
     reasoning_effort: "medium",
     available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
     available_reasoning_efforts: ["medium", "high", "xhigh"],
+    available_model_effort_pairs: [
+      { model: "gpt-5.4-mini", reasoning_effort: "medium" },
+      { model: "gpt-5.4", reasoning_effort: "high" }
+    ],
     model_override: true,
     effort_override: true
   };

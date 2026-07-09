@@ -71,10 +71,15 @@ override takes precedence over local configuration, which takes precedence over 
 
 Use `scripts/0th.mjs routing init --harness <name>` to create a safe local template without
 overwriting an existing file. Use `routing doctor` with a live runtime record before relying on a
-concrete route. Model and effort overrides plus observed availability must all pass.
+concrete route. On Codex, `routing doctor --harness codex --live-probe` can create version-,
+configuration-, and freshness-bound evidence; it consumes provider tokens and is never implicit.
+Model and effort overrides plus the exact observed model/effort pair must all pass.
 
-An allowed decision includes a launch plan and `launch_id`. Execute that exact plan, collect the
-actual child model and effort from session metadata or a runtime probe, then verify the receipt:
+An allowed decision includes a launch plan and `launch_id`. For a concrete Codex plan, use
+`scripts/0th.mjs dispatch` with prompt and output-schema files; the adapter pins model and effort,
+sends the prompt on stdin, and emits the result, JSONL events, and receipt. An `inherit` plan uses
+the native harness spawn path. Other harnesses use their own controlled adapter or native runtime
+metadata. Then verify the receipt:
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" attest \

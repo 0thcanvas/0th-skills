@@ -9,12 +9,14 @@ Runtime delegation requires two validated inputs:
 
 The packet names a portable work kind and compute class, never a provider model. The local harness
 mapping conforms to `schemas/model-routing.schema.json`; bundled mappings are fail-closed fallbacks.
-An allowed decision emits a deterministic
-launch plan conforming to `schemas/launch-plan.schema.json`. After spawning, the controller validates an observed child record against
-`schemas/execution-receipt.schema.json`.
+An allowed decision emits a deterministic launch plan conforming to
+`schemas/launch-plan.schema.json`. After spawning, the controller validates an observed child record
+against `schemas/execution-receipt.schema.json`. A receipt declares whether its evidence is
+independent runtime metadata or successful completion of an explicitly pinned launch; the latter is
+weaker but still prevents a silent fallback to an inherited invocation.
 
 `documented-only` capability records are discovery hints, not execution authority. Concrete routes
-also require observed model and effort availability. Missing, stale, unavailable, or unsupported
-runtime controls fail closed to `single-root`.
+also require an observed exact model/effort pair. Missing, stale, unavailable, or unsupported runtime
+controls fail closed to `single-root`.
 
 Task authority and terminal states use `schemas/task-spec.schema.json` and `schemas/exit-status.schema.json`. Repo proof tiers, stack minimums, Memory v2, and ship gates remain authoritative controller contracts.

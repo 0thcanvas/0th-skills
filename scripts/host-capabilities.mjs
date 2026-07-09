@@ -3,6 +3,11 @@ import path from "node:path";
 import crypto from "node:crypto";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
+import {
+  defaultCodexProbeCachePath,
+  loadCodexProbeCapabilities,
+  probeCodexRouting
+} from "./codex-exec-adapter.mjs";
 
 const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -52,6 +57,7 @@ const REQUIRED_CAPABILITY_KEYS = [
   "reasoning_effort",
   "available_models",
   "available_reasoning_efforts",
+  "available_model_effort_pairs",
   "model_override",
   "effort_override",
   "max_parallelism",
@@ -84,7 +90,11 @@ const RECEIPT_KEYS = [
   "actual_model",
   "actual_reasoning_effort",
   "source",
-  "observed_at"
+  "observed_at",
+  "adapter",
+  "runtime_version",
+  "thread_id",
+  "attestation_basis"
 ];
 const LAUNCH_PLAN_KEYS = [
   "schema_version",
@@ -171,6 +181,20 @@ function assertNullableStringArray(value, label) {
   if (value !== null) assertStringArray(value, label);
 }
 
+function assertNullableModelEffortPairs(value, label) {
+  if (value === null) return;
+  if (!Array.isArray(value)) throw new Error(`${label} must be null or an array`);
+  for (const pair of value) {
+    assertObject(pair, label);
+    assertRequiredKeys(pair, ["model", "reasoning_effort"], label);
+    assertAllowedKeys(pair, ["model", "reasoning_effort"], label);
+    if (typeof pair.model !== "string" || pair.model.trim() === "") {
+      throw new Error(`${label}: model must be a non-empty string`);
+    }
+    if (!EFFORTS.has(pair.reasoning_effort)) throw new Error(`${label}: reasoning_effort is invalid`);
+  }
+}
+
 function parseTimestamp(value, label) {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) {
@@ -203,6 +227,10 @@ export function validateHostCapabilities(value) {
   assertNullableStringArray(
     value.available_reasoning_efforts,
     "host capabilities: available_reasoning_efforts"
+  );
+  assertNullableModelEffortPairs(
+    value.available_model_effort_pairs,
+    "host capabilities: available_model_effort_pairs"
   );
   if (
     value.available_reasoning_efforts !== null
@@ -466,6 +494,19 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
     }
   }
   if (
+    !profileDisabled
+    && profile.model !== "inherit"
+    && profile.reasoning_effort !== "inherit"
+  ) {
+    if (capabilities.available_model_effort_pairs === null) {
+      reasons.push("model_effort_pair_catalog_unobserved");
+    } else if (!capabilities.available_model_effort_pairs.some(
+      (pair) => pair.model === profile.model && pair.reasoning_effort === profile.reasoning_effort
+    )) {
+      reasons.push("model_effort_pair_unavailable");
+    }
+  }
+  if (
     packet.task_risk === "low"
     && selection.selected === "economy"
     && ["xhigh", "max"].includes(capabilities.reasoning_effort)
@@ -512,6 +553,14 @@ export function validateExecutionReceipt(value) {
     if (typeof value[key] !== "string" || value[key].trim() === "") {
       throw new Error(`execution receipt: ${key} must be a non-empty string`);
     }
+  }
+  for (const key of ["adapter", "runtime_version", "thread_id"]) {
+    if (typeof value[key] !== "string" || value[key].trim() === "") {
+      throw new Error(`execution receipt: ${key} must be a non-empty string`);
+    }
+  }
+  if (!["explicit-launch-completed", "runtime-metadata"].includes(value.attestation_basis)) {
+    throw new Error("execution receipt: attestation_basis is invalid");
   }
   if (!EFFORTS.has(value.actual_reasoning_effort)) {
     throw new Error("execution receipt: actual_reasoning_effort is invalid");
@@ -571,34 +620,113 @@ function parseCliOptions(argv) {
     else if (token === "--config-dir") options.configDir = argv[++index];
     else if (token === "--now") options.now = argv[++index];
     else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
+    else if (token === "--probe-max-age-ms") options.probeMaxAgeMs = Number(argv[++index]);
+    else if (token === "--probe-cache") options.probeCache = argv[++index];
+    else if (token === "--probe-output-schema") options.probeOutputSchema = argv[++index];
+    else if (token === "--codex-bin") options.codexBin = argv[++index];
+    else if (token === "--live-probe") options.liveProbe = true;
     else throw new Error(`unknown capabilities option: ${token}`);
   }
   return options;
 }
 
+function codexProbePaths(options, cwd) {
+  return {
+    cachePath: options.probeCache
+      ? path.resolve(cwd, options.probeCache)
+      : defaultCodexProbeCachePath(),
+    outputSchemaPath: options.probeOutputSchema
+      ? path.resolve(cwd, options.probeOutputSchema)
+      : path.join(PLUGIN_ROOT, "protocol", "schemas", "codex-probe-output.schema.json")
+  };
+}
+
+function loadCapabilitiesForRouting({ options, cwd, routing }) {
+  const adapterPath = path.join(PLUGIN_ROOT, "adapters", `${options.harness}.capabilities.json`);
+  if (options.runtimeJson) {
+    return {
+      capabilities: loadHostCapabilities({
+        adapterPath,
+        runtimePath: path.resolve(cwd, options.runtimeJson),
+        now: options.now ? new Date(options.now) : new Date(),
+        maxAgeMs: options.maxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
+      }),
+      probe_cache: null,
+      warning: null
+    };
+  }
+  if (options.harness !== "codex") {
+    return { capabilities: loadHostCapabilities({ adapterPath }), probe_cache: null, warning: null };
+  }
+
+  const { cachePath, outputSchemaPath } = codexProbePaths(options, cwd);
+  let probeCache = null;
+  if (options.liveProbe) {
+    probeCache = probeCodexRouting({
+      routing,
+      cwd,
+      outputSchemaPath,
+      cachePath,
+      codexBin: options.codexBin || "codex",
+      now: options.now ? new Date(options.now) : new Date()
+    });
+  }
+  if (fs.existsSync(cachePath)) {
+    try {
+      return {
+        capabilities: loadCodexProbeCapabilities({
+          cachePath,
+          routing,
+          codexBin: options.codexBin || "codex",
+          now: options.now ? new Date(options.now) : new Date(),
+          maxAgeMs: options.probeMaxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
+        }),
+        probe_cache: probeCache ?? readJson(cachePath),
+        warning: null
+      };
+    } catch (error) {
+      return {
+        capabilities: loadHostCapabilities({ adapterPath }),
+        probe_cache: probeCache,
+        warning: error.message
+      };
+    }
+  }
+  return {
+    capabilities: loadHostCapabilities({ adapterPath }),
+    probe_cache: probeCache,
+    warning: "no fresh Codex probe cache; pass --live-probe to perform token-consuming checks"
+  };
+}
+
 export function runCapabilitiesCommand(argv, { cwd = process.cwd() } = {}) {
   const options = parseCliOptions(argv);
   if (!options.harness) throw new Error("--harness is required");
-  const adapterPath = path.join(PLUGIN_ROOT, "adapters", `${options.harness}.capabilities.json`);
-  const runtimePath = options.runtimeJson ? path.resolve(cwd, options.runtimeJson) : undefined;
-  const capabilities = loadHostCapabilities({
-    adapterPath,
-    runtimePath,
-    now: options.now ? new Date(options.now) : new Date(),
-    maxAgeMs: options.maxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
+  const resolvedRouting = resolveModelRouting({
+    harness: options.harness,
+    cwd,
+    explicitPath: options.routingJson,
+    configDir: options.configDir
   });
-  const output = { capabilities };
+  const capabilityResult = loadCapabilitiesForRouting({
+    options,
+    cwd,
+    routing: resolvedRouting.routing
+  });
+  const output = {
+    capabilities: capabilityResult.capabilities,
+    routing: { source: resolvedRouting.source, path: resolvedRouting.path }
+  };
+  if (capabilityResult.warning) output.capability_warning = capabilityResult.warning;
+  if (capabilityResult.probe_cache) output.probe_cache = capabilityResult.probe_cache;
 
   if (options.packetJson) {
     const packet = readJson(path.resolve(cwd, options.packetJson));
-    const resolvedRouting = resolveModelRouting({
-      harness: options.harness,
-      cwd,
-      explicitPath: options.routingJson,
-      configDir: options.configDir
+    output.delegation = decideDelegation({
+      capabilities: capabilityResult.capabilities,
+      packet,
+      routing: resolvedRouting.routing
     });
-    output.routing = { source: resolvedRouting.source, path: resolvedRouting.path };
-    output.delegation = decideDelegation({ capabilities, packet, routing: resolvedRouting.routing });
   }
   return output;
 }
@@ -628,6 +756,11 @@ function parseRoutingOptions(argv) {
     else if (token === "--runtime-json") options.runtimeJson = argv[++index];
     else if (token === "--now") options.now = argv[++index];
     else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
+    else if (token === "--probe-max-age-ms") options.probeMaxAgeMs = Number(argv[++index]);
+    else if (token === "--probe-cache") options.probeCache = argv[++index];
+    else if (token === "--probe-output-schema") options.probeOutputSchema = argv[++index];
+    else if (token === "--codex-bin") options.codexBin = argv[++index];
+    else if (token === "--live-probe") options.liveProbe = true;
     else if (token === "--force") options.force = true;
     else throw new Error(`unknown routing option: ${token}`);
   }
@@ -686,19 +819,18 @@ export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
   }
 
   if (action === "doctor") {
-    const adapterPath = path.join(PLUGIN_ROOT, "adapters", `${options.harness}.capabilities.json`);
-    const capabilities = loadHostCapabilities({
-      adapterPath,
-      runtimePath: options.runtimeJson ? path.resolve(cwd, options.runtimeJson) : undefined,
-      now: options.now ? new Date(options.now) : new Date(),
-      maxAgeMs: options.maxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
-    });
     const resolved = resolveModelRouting({
       harness: options.harness,
       cwd,
       explicitPath: options.routingJson,
       configDir
     });
+    const capabilityResult = loadCapabilitiesForRouting({
+      options,
+      cwd,
+      routing: resolved.routing
+    });
+    const capabilities = capabilityResult.capabilities;
     const profiles = {};
     for (const computeClass of ROUTABLE_COMPUTE_CLASSES) {
       const decision = resolveLaunchPlan({
@@ -713,7 +845,7 @@ export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
       };
     }
     const allowedCount = Object.values(profiles).filter((profile) => profile.allowed).length;
-    return {
+    const output = {
       harness: options.harness,
       status: allowedCount === 3 ? "ready" : allowedCount > 0 ? "partial" : "blocked",
       routing_source: resolved.source,
@@ -721,6 +853,9 @@ export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
       capabilities_source: capabilities.source,
       profiles
     };
+    if (capabilityResult.warning) output.capability_warning = capabilityResult.warning;
+    if (capabilityResult.probe_cache) output.probe_cache = capabilityResult.probe_cache;
+    return output;
   }
 
   throw new Error(`unknown routing action: ${action}`);

@@ -7,6 +7,7 @@
   "reasoning_effort": null,
   "available_models": null,
   "available_reasoning_efforts": null,
+  "available_model_effort_pairs": null,
   "model_override": false,
   "effort_override": false,
   "max_parallelism": null,

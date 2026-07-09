@@ -30,6 +30,11 @@ const capabilities = {
   reasoning_effort: "xhigh",
   available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
   available_reasoning_efforts: ["low", "medium", "high", "xhigh"],
+  available_model_effort_pairs: [
+    { model: "gpt-5.4-mini", reasoning_effort: "medium" },
+    { model: "gpt-5.4", reasoning_effort: "high" },
+    { model: "gpt-5.6-sol", reasoning_effort: "xhigh" }
+  ],
   model_override: true,
   effort_override: true,
   max_parallelism: 4,
@@ -166,7 +171,12 @@ test("inherit-only runtime fails closed instead of pretending economy routing", 
 
 test("concrete routes require observed model and effort availability", () => {
   const unobserved = resolveLaunchPlan({
-    capabilities: { ...capabilities, available_models: null, available_reasoning_efforts: null },
+    capabilities: {
+      ...capabilities,
+      available_models: null,
+      available_reasoning_efforts: null,
+      available_model_effort_pairs: null
+    },
     packet: packet(),
     routing
   });
@@ -177,13 +187,34 @@ test("concrete routes require observed model and effort availability", () => {
     capabilities: {
       ...capabilities,
       available_models: ["gpt-5.6-sol"],
-      available_reasoning_efforts: ["xhigh"]
+      available_reasoning_efforts: ["xhigh"],
+      available_model_effort_pairs: [{ model: "gpt-5.6-sol", reasoning_effort: "xhigh" }]
     },
     packet: packet(),
     routing
   });
   assert.ok(unavailable.reasons.includes("model_unavailable"));
   assert.ok(unavailable.reasons.includes("reasoning_effort_unavailable"));
+  assert.ok(unavailable.reasons.includes("model_effort_pair_unavailable"));
+});
+
+test("separate model and effort catalogs cannot authorize an unobserved pair", () => {
+  const result = resolveLaunchPlan({
+    capabilities: {
+      ...capabilities,
+      available_models: ["gpt-5.4-mini", "gpt-5.4"],
+      available_reasoning_efforts: ["medium", "high"],
+      available_model_effort_pairs: [
+        { model: "gpt-5.4-mini", reasoning_effort: "high" },
+        { model: "gpt-5.4", reasoning_effort: "medium" }
+      ]
+    },
+    packet: packet(),
+    routing
+  });
+
+  assert.equal(result.allowed, false);
+  assert.deepEqual(result.reasons, ["model_effort_pair_unavailable"]);
 });
 
 test("routing adapters validate and load independently by harness", () => {
@@ -271,7 +302,11 @@ test("execution receipts attest the actual child model and effort", () => {
     actual_model: "gpt-5.4-mini",
     actual_reasoning_effort: "medium",
     source: "session-metadata",
-    observed_at: "2026-07-09T22:01:00Z"
+    observed_at: "2026-07-09T22:01:00Z",
+    adapter: "test-runtime",
+    runtime_version: "test-1",
+    thread_id: "thread-test",
+    attestation_basis: "runtime-metadata"
   };
 
   assert.equal(validateExecutionReceipt(receipt), receipt);
@@ -320,7 +355,11 @@ test("public CLI emits a launch plan and verifies its receipt", () => {
     actual_model: routed.delegation.launch_plan.model,
     actual_reasoning_effort: routed.delegation.launch_plan.reasoning_effort,
     source: "session-metadata",
-    observed_at: "2026-07-09T22:03:00Z"
+    observed_at: "2026-07-09T22:03:00Z",
+    adapter: "test-runtime",
+    runtime_version: "test-1",
+    thread_id: "thread-test",
+    attestation_basis: "runtime-metadata"
   };
   const tempDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "receipt-"));
   const launchPath = path.join(tempDir, "launch.json");

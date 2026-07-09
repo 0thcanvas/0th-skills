@@ -18,10 +18,16 @@ overrides the bundled fallback. Live capability evidence must prove override con
 model/effort availability before delegation. Every allowed route emits a hashed launch plan, and a
 matching post-spawn receipt is required to prove the actual model and effort.
 
+Codex concrete routes use a controlled `codex exec` adapter with per-invocation model and effort,
+stdin prompts, structured output, JSONL completion evidence, and a local probe cache bound to CLI
+version, routing fingerprint, and freshness. Probing is opt-in because it consumes provider tokens.
+
 ## Consequences
 
 Unsupported and inherit-only harnesses fail closed instead of pretending to save cost. Local model
-mappings require maintenance, and real harness integration must expose availability and runtime metadata for receipts.
+mappings require maintenance. Harnesses should expose runtime metadata for the strongest receipts;
+until Codex JSONL does, a completed explicitly pinned launch is recorded as a distinct, weaker
+attestation basis instead of being described as independent runtime observation.
 The controller may escalate once to a stronger class after failed schema or verification evidence.
 
 ## Rejected
