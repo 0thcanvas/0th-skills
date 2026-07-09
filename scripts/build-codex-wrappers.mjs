@@ -11,7 +11,7 @@ const skillsRoot = path.join(repoRoot, "skills");
 const codexSkillsRoot = path.join(repoRoot, "codex-skills");
 
 const codexDescriptions = {
-  build: "Use when coding a known change with TDD.",
+  build: "Implements known code changes with proof-gated TDD. Use when building or fixing a known solution.",
   debug: "Use when failures need root cause before fixes.",
   "deep-research": "Use when hard questions need deeper research.",
   "improve-architecture": "Use when code needs architecture cleanup.",

@@ -17,12 +17,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { auditSkills, loadCanonicalBlock, CORE_SKILLS } from "../scripts/skill-block-sync.mjs";
+import { auditSkills, loadCanonicalBlock, CORE_SKILLS, MIGRATED_SKILLS } from "../scripts/skill-block-sync.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-test("every core SKILL.md contains the canonical memory block byte-for-byte", () => {
+test("legacy core SKILL.md files contain the canonical memory block byte-for-byte", () => {
   const canonical = loadCanonicalBlock(repoRoot);
   const audit = auditSkills({ root: repoRoot, canonical });
   const failures = audit.filter((entry) => entry.status !== "ok");
@@ -40,6 +40,7 @@ test("every core SKILL.md contains the canonical memory block byte-for-byte", ()
     );
   }
   assert.equal(audit.length, CORE_SKILLS.length, "audit covers every core skill");
+  assert.deepEqual(MIGRATED_SKILLS, ["build"], "the build pilot owns the root-task receipt contract instead");
 });
 
 test("canonical block names every required section heading", () => {

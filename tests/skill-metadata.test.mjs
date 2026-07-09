@@ -49,11 +49,15 @@ test("model-invoked skill descriptions advertise trigger conditions up front", (
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
-    assert.match(
-      source,
-      /^description:\s*"Use when /m,
-      `${skillName} should start its description with a clear Use when trigger`
-    );
+    if (skillName === "build") {
+      assert.match(source, /^description:\s*"Implements .* Use when /m);
+    } else {
+      assert.match(
+        source,
+        /^description:\s*"Use when /m,
+        `${skillName} should start its description with a clear Use when trigger`
+      );
+    }
   }
 });
 
@@ -92,11 +96,15 @@ test("Codex skill entrypoints delegate to shared workflows without Claude-only f
     const codexSkillPath = path.join(codexSkillsRoot, skillName, "SKILL.md");
     const source = read(codexSkillPath);
 
-    assert.match(
-      source,
-      /^description:\s*"Use when /m,
-      `${skillName} Codex entrypoint should keep a compact trigger description`
-    );
+    if (skillName === "build") {
+      assert.match(source, /^description:\s*"Implements .* Use when /m);
+    } else {
+      assert.match(
+        source,
+        /^description:\s*"Use when /m,
+        `${skillName} Codex entrypoint should keep a compact trigger description`
+      );
+    }
     assert.doesNotMatch(source, /^argument-hint:/m, `${skillName} Codex entrypoint should omit argument-hint`);
     assert.match(
       source,
@@ -198,7 +206,7 @@ test("shipped prompt commands resolve repo scripts through relative or env roots
 });
 
 test("counterpart-review skills use the generic ask-counterpart-review agent", () => {
-  for (const skillName of ["think", "plan", "build"]) {
+  for (const skillName of ["think", "plan"]) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
@@ -208,6 +216,10 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
       `${skillName} should reference ask-counterpart-review`
     );
   }
+
+  const build = read(path.join(skillsRoot, "build", "SKILL.md"));
+  assert.match(build, /ask-counterpart-review/);
+  assert.match(build, /risk-triggered/);
 
   assert.doesNotMatch(
     read(path.join(skillsRoot, "ship", "SKILL.md")),

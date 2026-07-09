@@ -33,7 +33,6 @@ function assertReferencesProfile(label, source) {
 
 test("Codex-dispatched skills use generic subagent dispatch profiles", () => {
   const profileReference = read("references/codex-dispatch-profiles.md");
-  const build = read("skills/build/SKILL.md");
   const debug = read("skills/debug/SKILL.md");
   const think = read("skills/think/SKILL.md");
   const plan = read("skills/plan/SKILL.md");
@@ -44,7 +43,6 @@ test("Codex-dispatched skills use generic subagent dispatch profiles", () => {
   const codexDeepResearch = read("codex-skills/deep-research/SKILL.md");
 
   for (const [label, source] of [
-    ["build", build],
     ["debug", debug],
     ["think", think],
     ["plan", plan],
@@ -85,11 +83,6 @@ test("Codex-dispatched skills use generic subagent dispatch profiles", () => {
     "profile reference should not use the latest expensive default"
   );
 
-  assert.match(build, /0th_explorer/);
-  assert.match(build, /0th_test_runner/);
-  assert.match(build, /0th_reviewer/);
-  assert.match(build, /0th_verifier/);
-  assert.match(build, /0th_experience_reviewer/);
   assert.match(debug, /0th_explorer/);
   assert.match(debug, /0th_test_runner/);
   assert.match(think, /0th_explorer/);

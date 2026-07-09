@@ -1,415 +1,124 @@
 ---
 name: build
-description: "Use when implementing a known code change, feature, or fix. Runs TDD on a feature branch and verifies behavior before PR handoff."
+description: "Implements a known code change with proof-gated TDD. Use when the user asks to build, add, change, or fix a known solution."
 argument-hint: "[instruction or plan path]"
 ---
 
 # Build
 
-Implement with TDD. Branch per feature, PR to land.
+## Goal
 
-## Direct Invocation
+Deliver the requested change on a feature branch with the smallest sufficient workflow and honest proof.
 
-If the user invoked this skill directly, treat `$ARGUMENTS` as the starting brief. If `$ARGUMENTS`
-is empty, infer the brief from the conversation.
+## Enter / Skip
 
-## When to Use
+- Enter for a direct implementation request, an approved decision, or a build-ready plan.
+- Skip to `/think` when requirements or architecture are materially unresolved.
+- Switch to `/debug` when an unexpected failure needs root cause before a fix.
+- `$ARGUMENTS` is the instruction or plan path when invoked directly.
 
-Always — this is the default skill for getting code written.
+## Root-Task Preflight
 
-Takes input from:
-- A direct instruction ("add a /health endpoint")
-- A decision record from /think
-- A plan with slices from /plan
+Only the root task runs the full startup sequence. Nested phases and workers receive the current brief, ledger, and evidence paths.
 
-## Triage Preamble
+1. Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It may fast-forward only a clean behind branch; dirty or divergent states remain untouched and visible.
+2. Run `memory brief --scope global`, then the project `memory brief`; read each `output_file` before browsing indexes. If the global brief is missing or corrupt, warn and continue. Memory v2 runtime is the canonical agent recall path; legacy KB, Obsidian, and markdown are fallback evidence surfaces. Load source packs only on demand.
+3. Run `memory task-brief` after the memory brief and read its `output_file`.
+4. Read the decision, plan, `CONTEXT.md`, current branch, and relevant code/tests. Do not reread broad indexes when the briefs identify the target.
 
-```
-What: [one sentence]
-Input: [direct instruction / decision record path / plan path]
-Branch: <branch-name>
-Verification: TDD / before-after (for non-testable work)
-Proof tier: T0 / T1 / T2 / T3 / T4
-```
+## Contract and Authority
 
-Create the branch immediately:
-```bash
-git checkout -b <branch-name>
-```
+Write or confirm a TaskSpec containing outcome, acceptance, non-goals, proof tier, risk, and authority. Inspection, review, diagnosis, and planning do not authorize implementation. Build and fix requests authorize in-scope local edits and non-destructive tests; external writes require TaskSpec or repo-workflow authority.
 
-## Session Resumption
+Valid stops include `BLOCKED_BY_SPEC`, `CONTRACT_INVALIDATED`, `SCOPE_EXPANSION_REQUIRED`, `BLOCKED_REAL_ENV`, T4 approval, and exhausted recovery. New evidence that falsifies the contract is not ordinary implementation friction.
 
-If resuming ongoing work:
-1. Read the decision record and/or plan
-2. Check current branch and recent commits
-3. Run the test suite to confirm baseline
-4. Report: "On branch <name>. N of M slices complete. Tests: X passing. Next: [slice]."
+Before implementation, apply `proof_contract_required`: ship-bound implementation work requires `verification-report/proof-contract.json`; docs-only or metadata-only changes still use a `T0` contract. Select `minimum_proof_tier` from `../../references/proof-tiers.md` by the seam where defects escape.
 
-## Reference Files
+## Execution Policy
 
-- See `references/slice-checklist.md` for the compact per-slice loop, non-testable work checklist, and common build traps.
-- See `references/verification-checklist.md` for the compact per-method verification loops and failure/severity classification.
-- See `../../references/stack-minimums.md` (workspace-shared) for the per-stack minimum exit criteria the verifier brief must name.
-- See `../../references/proof-tiers.md` (workspace-shared) before coding to choose the minimum proof tier and write the proof contract.
-- See `../../references/real-env-recipes.md` (workspace-shared) when the selected proof tier needs UI, browser extension, session-backed, sandbox, or live-surface evidence.
-- See `../../references/workflow-verification.md` for `context_handoff`,
-  `proof_contract_required`, `blocked_real_env`, and `retro_open_loop_closeout`.
-- See `../../references/specialist-routing.md` when a specialist plugin or tool can provide part of
-  the proof, product, design, browser, iOS, or framework-specific evidence.
-- See `../../references/working-artifacts.md` for optional human-facing HTML explainers and scratch
-  review artifacts. Gate-consumed evidence still goes under `${VERIFICATION_REPORT_DIR:-verification-report}`,
-  but that directory is local workflow state and should stay ignored unless the user explicitly
-  asks to version a small fixture or durable summary.
+**Default: one root agent.** The root reads, edits, tests, and synthesizes unless bounded delegation demonstrates value.
 
-## Secret Handling
+Delegation requires:
 
-When a build needs credentials, keep resolved values outside the agent. Prefer code that reads named env vars or runtime bindings, and run commands through the project's safe secret runner. Examples:
-- 1Password: `op run --env-file .env.1password -- <command>`
-- Doppler: `doppler run -- <command>`
-- Vault/cloud/platform secrets: use the project-documented runtime injection path
-- No manager: a human may create an ignored `.env.local`; the agent may use the app's loader but must not `cat`, `head`, `grep`, or otherwise print its contents
+1. an independent work packet with an evidence or isolation advantage;
+2. no unsafe shared mutable state, or proven workspace isolation;
+3. a bounded capability packet and worker/round budget;
+4. a live capability record, not documentation alone;
+5. proportionate model and effort controls.
 
-Do not use revealing fallbacks such as `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`). Verify presence with `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"` (only with shell tracing off — `set -x` / `bash -x` would leak the value). Never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`. If no safe runner exists, stop and ask the human to configure one or run the secret-dependent command.
-
-## Process
-
-### 1. Read Context
-
-- Read the decision record / plan / instruction
-- Read relevant KB entries for this domain
-- Read `CONTEXT.md` at the project root if it exists — use its vocabulary for variable names, file names, and test descriptions
-- Understand the current codebase state
-- Use `context_handoff` from `../../references/workflow-verification.md` when context is large:
-  carry summary, source pointers, unresolved gaps, and next read targets instead of raw dumps.
-- On Codex-hosted runs, explicitly use `0th_explorer` first when the owning files, entry points, or data flow are not already obvious. Capture the explorer's JSON-fenced `READ_SET` block (files, symbols, tests, plus any `verified_claims` it confirmed or contradicted) and pass it to `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/read-set-reconcile.mjs" --read-set <json-path>` so claims you actually verified get flipped to `active` (with a fresh `last_confirmed_at`) and contradictions get marked `needs_review` with evidence. On Claude-hosted runs, the built-in `Explore` agent does not emit the JSON contract — extract files/symbols/tests by hand and write the JSON yourself before running the reconciler, or skip reconciliation for that exploration.
-
-### 2. Build Per Slice
-
-### 2a. Write The Proof Contract
-
-Before coding, choose the minimum proof tier from `../../references/proof-tiers.md` and write
-`${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` (default path:
-`verification-report/proof-contract.json`).
-
-Rules:
-- `proof_contract_required`: ship-bound implementation work requires a pre-implementation
-  `proof-contract.json`; docs-only or metadata-only changes still use a `T0` contract.
-- Choose the tier by the seam where bugs would escape, not by what is easiest to run.
-- Tests alone can satisfy `T0`; they cannot satisfy `T2+` by themselves.
-- Browser extensions, visual UI, desktop/mobile surfaces, logged-in flows, external sandboxes, and
-  live/destructive surfaces require the corresponding real-environment evidence named in
-  `../../references/real-env-recipes.md`.
-- If the correct proof tier cannot run, the outcome is `BLOCKED_REAL_ENV`; do not downgrade the tier
-  just to finish.
-- `T4` live/prod/destructive proof requires explicit human approval for the exact live action.
-
-Proof contract shape:
-
-```json
-{
-  "schema_version": 1,
-  "feature": "<short feature name>",
-  "minimum_proof_tier": "T0|T1|T2|T3|T4",
-  "selected_rationale": "<why this tier is the floor>",
-  "required_evidence": ["<evidence item>", "<evidence item>"],
-  "real_env_risks": ["<what could make tests insufficient>"],
-  "created_at": "2026-05-10T20:00:00.000Z"
-}
-```
-
-### 2b. Specialist Routing
-
-When a slice needs a specialist plugin or tool, create a specialist handoff envelope from
-`../../references/specialist-routing.md` before delegating. Route at the capability/workflow
-boundary; a plugin may own its internal workflow, but 0th owns the surrounding gates.
-
-Require a specialist return receipt before claiming the delegated work is complete. Specialist work
-does not satisfy proof by itself: check the receipt, then re-run the proof and product acceptance gates
-that depend on that evidence. If the adapter is unavailable or the receipt is incomplete, record the
-adapter state and keep the selected proof tier honest instead of silently downgrading it.
-
-For visual/product/frontend work, route to a visual target or frontend builder capability when the
-task needs design judgment, high-fidelity implementation, rendered browser QA, or screenshot-backed
-visual checks. Product acceptance may consume specialist evidence only when the receipt includes the
-requested screenshots, design QA, or browser QA. If the adapter is missing, native /build fallback
-must still name the visual target, visual invariant, browser evidence, and any product-quality gap.
-
-For iOS or SwiftUI work, route to an iOS simulator capability when the selected proof tier needs
-simulator build/run/debug, UI screenshots, logs, performance, leak, or real app launch evidence.
-Native compile/test proof does not claim simulator proof; if the adapter cannot provide the runtime
-receipt, keep the proof result at compile-only validation or `BLOCKED_REAL_ENV` as appropriate.
-
-For logged-in, private-surface, shared-tab, or browser-extension work, route to a logged-in browser capability
-before treating public/open-web evidence as enough. The receipt must name the session
-source, tested URL or surface, and interaction/read evidence. If the selected proof tier needs
-authenticated state, public search is not a substitute.
-
-### 2c. Build Per Slice
-
-For each slice (or the single task if no plan):
-
-**If work is test-amenable (logic, APIs, data):**
-
-```
-RED:    Write one failing test — BDD style, from the user's perspective
-        Describe externally visible behavior through the public interface
-        Run it. Confirm it fails for the right reason.
-GREEN:  Write minimal code to pass.
-        Run it. Confirm it passes. Confirm no regressions.
-REFACTOR: Clean up if needed. Stay green.
-COMMIT: Atomic commit for this slice.
-```
-
-**If work is NOT test-amenable (CSS, config, infrastructure):**
-
-```
-BEFORE: Capture current state (screenshot, curl output, config dump)
-CHANGE: Make the change.
-AFTER:  Capture new state. Compare with before.
-VERIFY: Confirm the change does what was intended.
-COMMIT: Atomic commit.
-```
-
-For visual/frontend work, verification starts by naming the visual invariant and what could be
-wrong. If the claim is visual, the evidence must be visual. Use a DOM/e2e test for behavior and
-routing; use screenshot inspection for layout, fit, overlap, and responsive presentation; use a
-pixel assertion or screenshot assertion for overlays, canvas, SVG, animation, and coordinate-system
-alignment.
-
-Rules:
-- One slice at a time. Don't batch.
-- Test behavior through public interfaces, not implementation details.
-- Write tests as behavior descriptions, not implementation checks.
-- Prefer names and assertions that read like living documentation of what the user or caller experiences.
-- Minimal code to pass — no speculative features.
-- Run tests after every change. Paste output.
-- For managed verification commands whose failures should produce a dossier, wrap the command with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <test command>`; use a fresh `--run-id` per run.
-- When work introduces heavy local ML/runtime dependencies, explicitly call out the service or deployment boundary. "The local pipeline runs" is not enough evidence that a production path exists.
-- On Codex-hosted runs, explicitly dispatch `0th_test_runner` after each meaningful code change so raw test output stays out of the main thread
-- On Codex-hosted runs, explicitly dispatch `0th_reviewer` after each slice to verify acceptance criteria before moving on
-- Codex dispatch profiles: on Codex-hosted runs, `0th_explorer`, `0th_test_runner`, `0th_reviewer`, `0th_verifier`, and `0th_experience_reviewer` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
-
-### 3. Mid-Build Bugs
-
-If a test fails for an unexpected reason (not the behavior you're testing):
-- STOP building.
-- Switch to /debug protocol: investigate root cause before fixing.
-- Don't ad-hoc fix and move on.
-
-### 4. Escalation
-
-If a slice fails after 3 attempts:
-- STOP.
-- Report what was tried and what failed.
-- Ask the user: continue with a different approach, or escalate?
-
-### 5. Verification
-
-After all slices pass, run the verification phase before handing off to /ship.
+Resolve the gate with:
 
 ```bash
-# Run full test suite first
-<test command>
-
-# Confirm clean
-git status
+node scripts/0th.mjs capabilities \
+  --harness <host> \
+  --runtime-json <observed-capabilities.json> \
+  --packet-json <capability-packet.json>
 ```
 
-**Brief-construction discipline.** Before dispatching the verifier, read the stack-minimums reference (linked above) and walk its Detection signals against the repo. For every matched row, name the row's stack id and Minimum behavior in the brief. Do not write "skip if not feasible," "if X is hard to run, mark blocked," "skip the live UI exercise," or any equivalent escape language for stack-minimum rows — those rows are the floor, and the verifier will run them anyway. Feature-specific checks (which the brief *can* mark optional) must be additive to the stack-minimums, never replacements for them.
+Delegate only when the result is `allowed: true`. Missing, stale, unsupported, shared-state, ordered-work, or disproportionate inherited-effort results stay `single-root`. Do not substitute a requested profile name for the actual emitted model and effort.
 
-For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene work, include visual
-evidence in the verifier brief. Name the visual invariant that could fail, then specify the
-evidence method: DOM/e2e test for behavior, screenshot inspection for layout/fit/overlap, or pixel
-assertion/screenshot assertion for overlays, canvas, animations, and coordinate alignment. Do not
-let "tests passed" stand in for visual fit.
+## Per-Slice Loop
 
-**Persist the brief.** Write the verifier brief to `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` in the project root before dispatching. `/ship`'s gate script reads this file to detect browser-kit-escape-hatch matches independently of the verifier; without it, escape-hatch rows would not be enforced.
+For testable work:
 
-Dispatch the verifier agent with:
-- Feature summary: what was built, which slices, acceptance criteria
-- Stack-minimums: list of matched stack ids and the Minimum behavior the verifier must exercise per row
-- Proof contract: contents of `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`
-- Feature type(s): infer from build context — which feature-specific verification methods apply, additive to the stack-minimums
-- Current branch and test output
+1. RED: write one failing behavior test through the public interface and run it.
+2. GREEN: implement the smallest change and rerun the focused test.
+3. REFACTOR: improve only touched code while staying green.
+4. VERIFY: run nearby tests and inspect actual output.
+5. COMMIT: create one atomic slice commit.
 
-On Claude-hosted runs, dispatch `0th:verifier`. On Codex-hosted runs, dispatch `0th_verifier` explicitly.
+For non-testable work, capture before state, make one bounded change, capture after state in the same format, compare, then commit.
 
-The verifier exercises the feature as a real user (browser for UI, terminal for CLI, curl for API),
-writes `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and reports one of five
-outcomes:
+Use `skills/build/references/slice-checklist.md` for the compact loop. Do not make unrelated cleanup.
 
-| Outcome | Meaning | Action |
-|---------|---------|--------|
-| **PASS** | All applicable checks ran and passed | Proceed to /ship |
-| **FAIL_UNRESOLVED** | Issues remain after 3 rounds | Stop. Report to user. |
-| **BLOCKED** | Applicable checks could not run | Stop. Report to user. |
-| **BLOCKED_REAL_ENV** | The selected proof tier needs a real environment that was unavailable or blocked | Stop. Report exact blocker and partial evidence. |
-| **FAIL_FLAKY** | Transient failure persisted after retry | Stop. Report to user. |
+For managed verification failures, run:
 
-The proof result closeout must name `minimum_proof_tier`, `minimum_tier_satisfied`, outcome, and
-evidence paths. These paths can point at local ignored artifacts; the durable PR record is the
-compact summary, not raw command captures or live JSON dumps. If a stronger proof tier was required
-but unavailable, use `BLOCKED_REAL_ENV` with the exact blocker and partial evidence.
-
-**Only PASS allows product acceptance and handoff to /ship.** Any other outcome requires user intervention.
-
-If verification finds and fixes issues, the verifier commits fixes atomically (separate from slice commits) and produces a verification report with evidence.
-
-See `references/verification-checklist.md` for the compact per-method loops.
-
-### 6. Product Acceptance Loop
-
-After verifier PASS, run product acceptance before human review or /ship. This is where `/build`
-takes responsibility for "is this genuinely ready?" rather than leaving product polish for the
-human to discover.
-
-First decide whether product acceptance is required:
-- Required for complex, multi-slice, UI, content-heavy, onboarding, learning, user-interaction, or product-surface work.
-- Not required only for mechanical/internal changes with no user-facing behavior, such as narrow test fixes, docs-only cleanup, or private refactors.
-
-Write `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` either way
-(default path: `verification-report/product-acceptance.json`). For
-non-required work, set `required: false`, `outcome: "NOT_REQUIRED"`, and include a concrete
-`required_rationale`. For required work, the report must end with `required: true` and
-`outcome: "PASS"` before /ship.
-
-Judge against this hierarchy: decision record, plan acceptance criteria, explicit user brief, then repo standards.
-If that source material is too vague to judge subjective quality, stop with `BLOCKED_BY_SPEC`
-instead of inventing taste.
-
-For required acceptance, dispatch the experience reviewer:
-- On Claude-hosted runs, dispatch `0th:experience-reviewer`.
-- On Codex-hosted runs, dispatch `0th_experience_reviewer`.
-
-Provide:
-- Decision record, plan, and relevant user brief
-- Feature summary, slices, acceptance criteria, and current branch
-- Verifier report, screenshots, browser notes, terminal output, or other user-flow evidence
-- Known concerns and any intentionally deferred items
-
-For UI/content-heavy work, do not accept a diff-only review. The Product Acceptance Loop must inspect
-screenshots, verifier evidence, live-flow notes, or equivalent user-facing evidence before judging
-layout, copy, pedagogy, or interaction quality.
-
-Finding classes:
-- `BLOCKER`: must fix before human review
-- `POLISH`: in-scope product improvement; fix before human review
-- `NIT`: fix if cheap and low risk
-- `OUT_OF_SCOPE`: record as deferred; do not expand the feature
-- `BLOCKED_BY_SPEC`: stop and ask the user to clarify the decision or plan
-
-Max 3 product acceptance rounds. In each round:
-1. Fix all `BLOCKER` and in-scope `POLISH` findings.
-2. Fix `NIT` findings only when cheap and low risk.
-3. Record `OUT_OF_SCOPE` findings in the report without implementing them.
-4. Rerun the exact affected tests and verifier path after fixes.
-5. Dispatch the experience reviewer again with updated evidence.
-
-After product acceptance passes, run code/diff counterpart review using `ask-counterpart-review`.
-Persist the result to `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md`.
-If counterpart review is unavailable (quota, auth, network), write the exact reason to
-`${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.skipped` instead — the ship
-gate reads either file and fails closed if neither exists or the skipped file is empty. If blockers
-exist, fix them, rerun the relevant tests, rerun product acceptance if product behavior changed,
-and rerun counterpart review. Never call counterpart review clean when it did not run.
-
-The product acceptance report should include:
-
-```json
-{
-  "schema_version": 1,
-  "feature": "<short feature name>",
-  "required": true,
-  "required_rationale": "<why acceptance was required or not required>",
-  "source": {
-    "decision": "docs/decisions/...",
-    "plan": "docs/plans/...",
-    "user_brief": "<short summary or null>"
-  },
-  "judgment_hierarchy": [
-    "decision_record",
-    "plan_acceptance_criteria",
-    "explicit_user_brief",
-    "repo_standards"
-  ],
-  "outcome": "PASS",
-  "rounds": [],
-  "fixed_issues": [],
-  "deferred_items": [],
-  "evidence_paths": ["verification-report/<evidence-path>"],
-  "reviewed_at": "2026-05-10T00:00:00.000Z"
-}
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" \
+  --run-id <unique-run-id> -- <test command>
 ```
 
-Allowed outcomes: `PASS`, `NEEDS_ITERATION`, `BLOCKED_BY_SPEC`, `NOT_REQUIRED`.
+Use a fresh `--run-id` per run. An unexpected failure switches to `/debug`; three failed attempts on one slice stop with `FAIL_UNRESOLVED`.
 
-### 7. Completion
+## Secrets
 
-After verification, product acceptance, and counterpart evidence pass:
+Code reads secrets from environment variables or runtime bindings. Run secret-dependent commands through the project safe runner. Never print resolved values, use revealing secret-manager commands, disable masking, or enable shell tracing. If no safe runner exists, return `BLOCKED` and name the required configuration.
 
-Report:
-```
-STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED
-Slices: N/N complete
-Tests: X passing, 0 failing
-Verification: PASS (N issues found and fixed)
-Proof tier: T0/T1/T2/T3/T4 satisfied (evidence paths)
-Product acceptance: PASS | NOT_REQUIRED (rounds, issues fixed, deferred items)
-Counterpart review: clean | N blockers fixed | skipped — <exact unavailable reason>
-Visual invariants: [checked invariant + evidence method/path, if visual work]
-Workflow closeout: retro_open_loop_closeout considered; skipped verification or unfinished work recorded
-Concerns: [if any]
-```
+## Specialist Boundary
 
-Then hand off to /ship.
+Read `../../references/specialist-routing.md` when a plugin or specialist owns part of the work. Create a specialist handoff envelope and require a specialist return receipt. Specialist work does not satisfy proof by itself; re-run the proof and product acceptance gates. Missing or incomplete adapter evidence cannot silently downgrade the selected tier.
 
-If you're drifting into shortcut logic, read `references/slice-checklist.md` before continuing.
+Use a visual target or frontend builder capability only when rendered design evidence is required; receipts name screenshots, design QA, or browser QA. Use an iOS simulator capability when simulator evidence is required; compile/test proof does not claim simulator proof. Use a logged-in browser capability for private/session-backed surfaces; public search is not a substitute.
 
-Before handoff, apply `retro_open_loop_closeout` from
-`../../references/workflow-verification.md`: skipped verification, `BLOCKED_REAL_ENV`, repeated tool
-failure, or unresolved work must become a visible retro/open-loop/memory decision rather than a
-buried concern.
+## Verification
 
-## Surgical Changes
+Run the full relevant suite after slices pass. Read `../../references/stack-minimums.md`, detect every applicable row, and exercise each minimum behavior. Tests alone cannot satisfy T2+.
 
-Every changed line must trace to the slice spec. While building:
+For UI, canvas, SVG, animation, overlay, or responsive work: Name the visual invariant before checking. If the claim is visual, the evidence must be visual. Use a DOM/e2e test for behavior, screenshot inspection for fit and layout, and a pixel assertion or screenshot assertion for coordinate-sensitive rendering.
 
-- Don't reformat, restyle, or add type hints to adjacent code that isn't part of your change.
-- Don't refactor things that aren't broken or part of the slice.
-- Match existing style even if you'd write it differently.
-- If you spot unrelated dead code, a bug outside scope, or a refactor opportunity, note it in your handoff — don't fix it. (Worth its own `/improve-architecture` pass later.)
-- Remove imports/symbols that *your* changes orphaned. Don't sweep pre-existing dead code.
+When independent verification has a concrete evidence advantage, route one bounded verifier packet through the capability gate. Otherwise the root performs the required checks. Persist `verification-report/brief.txt` and `proof-result.json`; only `outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Unavailable required runtime evidence is `BLOCKED_REAL_ENV`, never a lower tier.
 
-## Iron Laws
+## Product Acceptance Loop
 
-- **No code without a failing test first** (for test-amenable work)
-- **No claims without verification evidence** — run the command, read the output, then assert
-- **Always on a branch** — never commit directly to main
-- **Atomic commits per slice** — each commit is a self-contained change
-- **Surgical changes only** — every changed line traces to the slice spec
-- **No "done" without verification** — the verifier must PASS before /ship
+Read `references/product-acceptance.md`. Required user-facing acceptance consumes proof, screenshots, or live-flow evidence and writes `verification-report/product-acceptance.json`. Mechanical/internal work records `NOT_REQUIRED` with a concrete rationale. Review and `ask-counterpart-review` are risk-triggered: use them only when another context or model has a named evidence advantage worth its cost.
 
-## Repo Preflight
+## Completion
 
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
+Report status, slices, tests, proof tier, evidence paths, product acceptance, optional reviewer yield, and concerns. Then apply `retro_open_loop_closeout` from `../../references/workflow-verification.md`: skipped verification, blocked real environments, repeated failures, and unfinished work must remain visible.
 
-## Memory Brief
+Run the Memory Write Gate from `../../references/memory-contract.md`. For durable claims use `memory remember`; do not hand-edit runtime `claims.jsonl`. “nothing durable” is valid. Track unfinished work with `memory open-loop`; do not store TODOs as memory claims.
 
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
+Gate-consumed evidence stays under `${VERIFICATION_REPORT_DIR:-verification-report}` and is not committed. Follow `../../references/working-artifacts.md`; after merge, close, abandonment, or worktree removal, preserve a safe summary when needed and delete raw local evidence.
 
-## Open Loop Brief
+## References
 
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
-
-## KB Integration
-
-- **Reads:** decision records, plan, domain knowledge, prior bugs in this area
-- **Writes:** nothing (code is in git). But if a surprising pattern is discovered, write to KB.
+- `references/slice-checklist.md`
+- `references/verification-checklist.md`
+- `references/product-acceptance.md`
+- `../../references/proof-tiers.md`
+- `../../references/stack-minimums.md`
+- `../../references/real-env-recipes.md`
+- `../../references/workflow-verification.md`
+- `../../references/specialist-routing.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`

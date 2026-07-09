@@ -27,8 +27,9 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
+export const MIGRATED_SKILLS = ["build"];
+
 export const CORE_SKILLS = [
-  "build",
   "debug",
   "deep-research",
   "improve-architecture",
