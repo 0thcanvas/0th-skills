@@ -543,9 +543,9 @@ export function validateProofResult(report, options = {}) {
 
 export function validateCounterpartReviewEvidence(repoPath, reportDir) {
   // /build must either produce a counterpart-review.md (the actual review output) or
-  // a counterpart-review.skipped file containing a non-empty unavailable/quota/auth/network
-  // reason. The decision says: if counterpart review is unavailable, record the exact
-  // reason — do not call it clean. This gate enforces that contract.
+  // a counterpart-review.skipped file containing either the exact availability blocker or
+  // an explicit risk decision that review has no evidence advantage. This keeps review
+  // risk-triggered without allowing an unexplained skip to pass as clean.
   const reviewPath = join(repoPath, reportDir, "counterpart-review.md");
   const skippedPath = join(repoPath, reportDir, "counterpart-review.skipped");
   const reasons = [];
@@ -584,9 +584,11 @@ export function validateCounterpartReviewEvidence(repoPath, reportDir) {
     reasons.push(`could not read ${reportDir}/counterpart-review.skipped: ${err.message}`);
     return { ok: false, reasons };
   }
-  if (skippedContent.trim() === "") {
+  const skipReason = skippedContent.trim();
+  const classifiedSkip = /(?:unavailable|quota|auth(?:entication|orization)?|network|not[_ -]?required|not needed|no\s+(?:independent\s+)?review\s+evidence advantage|disproportionate)/i;
+  if (skipReason === "" || !classifiedSkip.test(skipReason)) {
     reasons.push(
-      `${reportDir}/counterpart-review.skipped is empty; must contain the exact unavailable/quota/auth/network reason`
+      `${reportDir}/counterpart-review.skipped must contain an availability blocker or a risk decision explaining why review has no evidence advantage`
     );
     return { ok: false, reasons };
   }

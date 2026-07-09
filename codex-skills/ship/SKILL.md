@@ -1,6 +1,6 @@
 ---
 name: ship
-description: "Use when work needs PR shipping."
+description: "Opens a verified PR. Use when a branch is ready."
 ---
 
 # Ship

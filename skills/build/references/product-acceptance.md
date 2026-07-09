@@ -8,6 +8,12 @@ For required acceptance, inspect user-facing evidence such as screenshots, brows
 
 Use another reviewer only when it has a named evidence advantage: fresh context plus an executable oracle, a distinct product surface, or a measured cross-model blind-spot advantage. Route it through the observed capability gate. `ask-counterpart-review` is risk-triggered, not a universal build step. Record unique blockers, duplicates, false positives, fixes accepted, and cost when available.
 
+Persist the review decision for `/ship`: write actual output to
+`verification-report/counterpart-review.md`, or write the exact availability blocker or a
+`NOT_REQUIRED:` rationale naming the absent evidence advantage to
+`verification-report/counterpart-review.skipped`. An unexplained skip is invalid and must not be
+reported as a clean review.
+
 Required report shape:
 
 ```json

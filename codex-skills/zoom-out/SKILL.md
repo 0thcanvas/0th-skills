@@ -1,6 +1,6 @@
 ---
 name: zoom-out
-description: "Higher-level map of unfamiliar code."
+description: "Maps an unfamiliar code area one abstraction level above the immediate files."
 disable-model-invocation: true
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Implements known code changes with proof-gated TDD. Use when building or fixing a known solution."
+description: "Builds known changes. Use when a solution is ready."
 ---
 
 # Build

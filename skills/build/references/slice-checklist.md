@@ -11,8 +11,9 @@ Use this file when you need the compact execution loop, not as the default thing
 3. Implement the smallest change that makes it pass.
 4. Re-run the focused test, then relevant nearby tests.
 5. Refactor only while staying green.
-6. Dispatch `0th_test_runner` on Codex-hosted runs after meaningful code changes.
-7. Dispatch `0th_reviewer` on Codex-hosted runs before moving to the next slice.
+6. Use the root agent for verification by default.
+7. Route a bounded test or review packet through the Skills Kernel capability gate only when it
+   has an independent evidence advantage worth the added cost.
 
 ### Non-testable work
 

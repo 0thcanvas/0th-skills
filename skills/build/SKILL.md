@@ -6,6 +6,9 @@ argument-hint: "[instruction or plan path]"
 
 # Build
 
+Apply the root workflow in `../../references/skills-kernel.md` once, then use the build-specific
+rules below.
+
 ## Goal
 
 Deliver the requested change on a feature branch with the smallest sufficient workflow and honest proof.

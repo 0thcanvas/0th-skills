@@ -22,7 +22,7 @@ import { auditSkills, loadCanonicalBlock, CORE_SKILLS, MIGRATED_SKILLS } from ".
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-test("legacy core SKILL.md files contain the canonical memory block byte-for-byte", () => {
+test("all shared skills have migrated away from the duplicated legacy memory block", () => {
   const canonical = loadCanonicalBlock(repoRoot);
   const audit = auditSkills({ root: repoRoot, canonical });
   const failures = audit.filter((entry) => entry.status !== "ok");
@@ -39,8 +39,20 @@ test("legacy core SKILL.md files contain the canonical memory block byte-for-byt
       ].join("\n")
     );
   }
-  assert.equal(audit.length, CORE_SKILLS.length, "audit covers every core skill");
-  assert.deepEqual(MIGRATED_SKILLS, ["build"], "the build pilot owns the root-task receipt contract instead");
+  assert.equal(audit.length, 0, "no migrated skill should remain in the legacy audit");
+  assert.deepEqual(CORE_SKILLS, []);
+  assert.deepEqual(MIGRATED_SKILLS, [
+    "build",
+    "debug",
+    "deep-research",
+    "improve-architecture",
+    "plan",
+    "research",
+    "retro",
+    "ship",
+    "think",
+    "zoom-out"
+  ]);
 });
 
 test("canonical block names every required section heading", () => {

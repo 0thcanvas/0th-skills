@@ -15,6 +15,7 @@ const researchTemplatePath = path.join(skillsRoot, "research", "templates", "raw
 const shipTemplatePath = path.join(skillsRoot, "ship", "templates", "pr-body.md");
 const memoryContractPath = path.join(repoRoot, "references", "memory-contract.md");
 const workingArtifactsContractPath = path.join(repoRoot, "references", "working-artifacts.md");
+const skillsKernelPath = path.join(repoRoot, "references", "skills-kernel.md");
 
 // `zoom-out` is intentionally excluded: its `disable-model-invocation: true` (and
 // matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
@@ -44,20 +45,15 @@ test("each skill declares Claude direct-invocation metadata", () => {
   }
 });
 
-test("model-invoked skill descriptions advertise trigger conditions up front", () => {
+test("model-invoked skill descriptions state what they do and when to use them", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
-
-    if (skillName === "build") {
-      assert.match(source, /^description:\s*"Implements .* Use when /m);
-    } else {
-      assert.match(
-        source,
-        /^description:\s*"Use when /m,
-        `${skillName} should start its description with a clear Use when trigger`
-      );
-    }
+    assert.match(
+      source,
+      /^description:\s*"(?!Use when ).+\. Use when .+"$/m,
+      `${skillName} should describe both capability and trigger`
+    );
   }
 });
 
@@ -96,15 +92,7 @@ test("Codex skill entrypoints delegate to shared workflows without Claude-only f
     const codexSkillPath = path.join(codexSkillsRoot, skillName, "SKILL.md");
     const source = read(codexSkillPath);
 
-    if (skillName === "build") {
-      assert.match(source, /^description:\s*"Implements .* Use when /m);
-    } else {
-      assert.match(
-        source,
-        /^description:\s*"Use when /m,
-        `${skillName} Codex entrypoint should keep a compact trigger description`
-      );
-    }
+    assert.match(source, /^description:\s*"(?!Use when ).+\. Use when .+"$/m);
     assert.doesNotMatch(source, /^argument-hint:/m, `${skillName} Codex entrypoint should omit argument-hint`);
     assert.match(
       source,
@@ -404,173 +392,29 @@ test("verification-report lifecycle stays local and is cleaned up after ship clo
   }
 });
 
-test("core skills require the shared memory write gate", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
+test("the Skills Kernel centralizes startup, memory, and open-loop lifecycle", () => {
+  const source = read(skillsKernelPath);
 
-    assert.match(
-      source,
-      /\.\.\/\.\.\/references\/memory-contract\.md/,
-      `${skillName} should link to the shared memory contract`
-    );
-    assert.match(
-      source,
-      /Memory Write Gate/,
-      `${skillName} should require the Memory Write Gate`
-    );
-    assert.match(
-      source,
-      /nothing durable/,
-      `${skillName} should include an explicit nothing durable outcome`
-    );
-    assert.match(
-      source,
-      /memory\.mjs" remember|memory remember/,
-      `${skillName} should require the unified memory writer for durable claims`
-    );
-    assert.match(
-      source,
-      /do not hand-edit runtime `claims\.jsonl`/,
-      `${skillName} should forbid manual claim-file edits`
-    );
-  }
+  assert.match(source, /once per root task/);
+  assert.match(source, /memory\.mjs" preflight/);
+  assert.match(source, /global memory brief, then the project memory brief/);
+  assert.match(source, /open-loop brief/);
+  assert.match(source, /receipt stays fresh/);
+  assert.match(source, /Memory Write Gate/);
+  assert.match(source, /memory remember/);
+  assert.match(source, /do not hand-edit runtime `claims\.jsonl`/);
+  assert.match(source, /memory open-loop/);
+  assert.match(source, /not as a memory claim/);
+  assert.doesNotMatch(source, /\$HOME\/0thcanvas|\/Users\/mini\/0thcanvas/);
 });
 
-test("core skills read open-loop briefs after memory briefs", () => {
+test("every model-invoked skill delegates shared lifecycle policy to the Skills Kernel", () => {
   for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
+    const source = read(path.join(skillsRoot, skillName, "SKILL.md"));
     assert.match(
       source,
-      /memory\.mjs" task-brief|memory task-brief/,
-      `${skillName} should name the open-loop brief command`
-    );
-    assert.match(
-      source,
-      /output_file/,
-      `${skillName} should read the generated open-loop brief path from command JSON`
-    );
-    assert.match(
-      source,
-      /after the memory brief/i,
-      `${skillName} should order open-loop recall after memory recall`
-    );
-  }
-});
-
-test("core skills update open loops for unfinished work", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
-    assert.match(
-      source,
-      /memory\.mjs" open-loop|memory open-loop/,
-      `${skillName} should name the open-loop command`
-    );
-    assert.match(
-      source,
-      /do not store TODOs as memory claims/i,
-      `${skillName} should keep unfinished actions out of memory claims`
-    );
-  }
-});
-
-test("core skills require conservative repo preflight", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
-    assert.match(
-      source,
-      /memory\.mjs" preflight|memory preflight/,
-      `${skillName} should name the shared memory preflight command`
-    );
-    assert.match(
-      source,
-      /fast-forward/,
-      `${skillName} should name the safe fast-forward behavior`
-    );
-    assert.match(
-      source,
-      /dirty.*divergent|divergent.*dirty/s,
-      `${skillName} should warn on dirty and divergent states`
-    );
-  }
-});
-
-test("core memory commands require configured skill root without local checkout fallbacks", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
-    assert.match(
-      source,
-      /\$\{OTH_SKILLS_ROOT:\?Set OTH_SKILLS_ROOT to the 0th-skills directory\}/,
-      `${skillName} should require OTH_SKILLS_ROOT for shared scripts`
-    );
-    assert.doesNotMatch(
-      source,
-      /\$HOME\/0thcanvas|\/Users\/mini\/0thcanvas/,
-      `${skillName} should not assume a local 0thcanvas checkout path`
-    );
-  }
-});
-
-test("core skills read the generated memory brief first when present", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
-    assert.match(
-      source,
-      /memory\.mjs" brief|memory brief/,
-      `${skillName} should name the shared memory brief command`
-    );
-    assert.match(
-      source,
-      /output_file/,
-      `${skillName} should read the generated memory brief path from command JSON`
-    );
-    assert.match(
-      source,
-      /before browsing indexes/i,
-      `${skillName} should prefer the brief before manual index browsing`
-    );
-  }
-});
-
-test("core skills read global memory before project memory and degrade visibly", () => {
-  for (const skillName of skillNames) {
-    const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
-    const source = read(skillPath);
-
-    assert.match(
-      source,
-      /brief" --scope global|brief --scope global/,
-      `${skillName} should generate the global memory brief first`
-    );
-    assert.match(
-      source,
-      /global brief[\s\S]*warn[\s\S]*continue/i,
-      `${skillName} should warn and continue when global memory is missing or corrupt`
-    );
-    assert.match(
-      source,
-      /canonical agent recall path/i,
-      `${skillName} should name Memory v2 runtime as canonical recall`
-    );
-    assert.match(
-      source,
-      /legacy KB|Obsidian|markdown/i,
-      `${skillName} should mention legacy markdown KB fallback/import-export handling`
-    );
-    assert.match(
-      source,
-      /source packs[\s\S]*on demand/i,
-      `${skillName} should keep large source packs out of startup context`
+      /\.\.\/\.\.\/references\/skills-kernel\.md/,
+      `${skillName} should use the shared kernel`
     );
   }
 });

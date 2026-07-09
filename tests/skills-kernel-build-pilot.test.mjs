@@ -73,10 +73,9 @@ test("build pilot preserves executable proof, authority, and closeout contracts"
   }
 });
 
-test("canonical memory-block audit excludes only the migrated build pilot", () => {
-  assert.deepEqual(MIGRATED_SKILLS, ["build"]);
-  assert.equal(CORE_SKILLS.includes("build"), false);
+test("canonical memory-block audit is empty after the complete migration", () => {
+  assert.equal(MIGRATED_SKILLS.length, 10);
+  assert.deepEqual(CORE_SKILLS, []);
   const audit = auditSkills({ root: repoRoot, canonical: loadCanonicalBlock(repoRoot) });
-  assert.equal(audit.length, CORE_SKILLS.length);
-  assert.equal(audit.every((entry) => entry.status === "ok"), true);
+  assert.deepEqual(audit, []);
 });

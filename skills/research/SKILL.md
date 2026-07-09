@@ -1,251 +1,91 @@
 ---
 name: research
-description: "Use when the answer lives outside the repo and needs source-aware research across docs, code, papers, specs, X/Twitter technical or finance discourse, or other practitioner evidence."
+description: "Produces a current, source-aware answer for an external question. Use when repo evidence is insufficient and claims require docs, papers, code, standards, or practitioner sources."
 argument-hint: "[question]"
 ---
 
 # Research
 
-Research with source routing. Not "search once and summarize."
-
-## Direct Invocation
-
-If the user invoked this skill directly, treat `$ARGUMENTS` as the research question. If
-`$ARGUMENTS` is empty, infer the question from the conversation.
-
-## When to Use
-
-- Product or API evaluation where current external facts matter
-- Open-source tool discovery or comparison
-- Paper or algorithm landscape review
-- Practitioner/video research where transcripts, demos, talks, or creator advice are evidence sources
-- Competitive or implementation research before /think, /build, or /debug
-- Cases where the repo and KB do not already answer the question
-
-Skip this when local code, docs, or the KB already contain the answer.
-
-## Triage Preamble
-
-```
-Question: [one sentence]
-Depth: quick scan / decision-ready / deep dive
-Deliverable: [recommendation / comparison / source list / raw findings]
-```
-
-## Session Resumption
-
-If resuming an ongoing research thread:
-1. Read the relevant KB domain index
-2. Read any prior raw notes in that domain
-3. Read recent decisions or plans that depend on this research
-4. Report: "Last session answered X. Open questions: Y. Next: Z."
-
-## Reference Files
-
-- See `references/source-routing.md` for query-shaping examples and source-bucket heuristics.
-- See `references/video-source-research.md` when YouTube, talks, demos, podcasts, or transcripts are a major source bucket.
-- See `../../references/specialist-routing.md` when research depends on logged-in browser access,
-  session-backed reading, or another specialist adapter.
-- See `../../references/workflow-verification.md` for `context_handoff` when research spans
-  multiple passes, agents, or source buckets.
-- See `../../references/working-artifacts.md` for exploratory reports, HTML summaries, and decks:
-  durable findings go to the KB/memory layer, while human-facing renderings are temporary unless promoted.
-
-## Template Files
-
-- See `templates/output-shape.md` for the default decision-ready inline output shape.
-- See `templates/raw-findings-note.md` when the research is durable enough to persist into the KB.
-
-## Tool Routing
-
-- Use host-native research agents for open-web research: primary docs, product pages, GitHub,
-  papers, specs, public pages, and ordinary web search/fetch work.
-- For technical, AI-agent, finance, or stock research where practitioner discourse matters,
-  treat X/Twitter as a first-class source bucket for current claims, names, links, dissent,
-  replies, threads, and market/operator sentiment.
-- Use OpenCLI for session-backed or login-gated read research when the task maps to an existing
-  adapter command. This includes X/Twitter research that needs the user's logged-in browser session,
-  authenticated dashboards, closed communities, or other sites where session state is the evidence
-  boundary.
-- Keep OpenCLI read-only by default. Do not use posting, liking, following, deleting, or other
-  write commands unless the user explicitly asks for that action.
-- Treat OpenCLI output as user-visible/session evidence, not canonical provider metadata. Note
-  pagination, missing metadata, and search/operator limitations when they affect the verdict.
-- When using OpenCLI, Browser Kit, BB Browser, or another logged-in path, capture a session-backed read receipt:
-  adapter used, account/query/post/surface, tested URL or surface, interaction/read evidence,
-  pagination or missing-metadata notes, and access limitations.
-- If a claim depends on login-gated or private-session state, public search is not a substitute.
-- Use BB Browser or browser automation as a fallback/debug path when OpenCLI lacks an adapter
-  command, needs login/session diagnosis, or the task requires inspecting arbitrary page state.
-- Do not let a fetch-only failure end session-backed research. If WebSearch/WebFetch/open-web access
-  hits a challenge page, CAPTCHA, verification page, 403/429, login wall, or bot-block page, record
-  `challenge_or_session_blocked` and route to OpenCLI, Browser Kit/BB Browser real Chrome, or
-  computer-use when a real UI path is required. Treat the block as an access limitation, not as
-  evidence that the content or complaint does not exist.
-- If Browser Kit or BB Browser fails before page evidence is gathered because the daemon, MCP, or
-  session is unavailable, attempt the documented status/install/session-open recovery once when
-  safe, then retry. If recovery fails, record `adapter_unavailable` with the exact command/error and
-  try the next available session-backed path before concluding the research is blocked.
-- If Browser Kit conflicts with OpenCLI Browser Bridge or another local CDP owner on
-  `localhost:19825`, move Browser Kit with `--cdp-port <port> --daemon-port <port>` or
-  `BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`. Do not stop or kill the other browser session
-  unless the user asked for that cleanup.
-
-## Process
-
-### 1. Define the Real Question
-
-State the decision or deliverable the research must support.
-
-Bad: "Research Canva Magic Grab."
-Good: "Find the best open-source and paper-backed approaches for extracting editable fields from designed invitation images."
-
-### 2. Decompose the Topic
-
-Split the branded or user-facing term into underlying capabilities.
-
-Examples:
-- Product feature -> vendor name, feature name, underlying capability, adjacent terms
-- API/tooling -> primary docs, SDKs, examples, migration notes, real-world usage
-- OSS landscape -> task name, ecosystem names, benchmark terms, maintenance signals
-- Paper landscape -> task name, problem formulation, model family, benchmark dataset
-
-If the first query is brand-shaped, generate capability-shaped queries before going deeper.
-
-### 3. Route to Source Buckets
-
-Use the best source for each sub-question:
-
-- **Primary docs / product pages** for product truth, API behavior, pricing, limits, launch claims
-- **GitHub** for open-source tools, maintenance signals, implementation examples, issue discussions
-- **arXiv / papers** for algorithms, baselines, benchmark results, recent methods
-- **Specs / standards docs** for browser or protocol behavior
-- **video/transcript sources** for practitioner workflows, demos, tool mentions, and operator pain
-- **Forums / blogs** for practitioner reports, workflow pain, edge cases
-- **X/Twitter via OpenCLI** as a main practitioner and market discourse lane for technical,
-  AI-agent, finance, and stock research: current claims, names, links, dissent, sentiment,
-  and post/reply/thread evidence where user-visible content is enough
-- **Session-backed sites via OpenCLI** for other login-gated or adapter-backed public/private
-  practitioner discussion where the user's logged-in browser session is the evidence boundary
-
-Primary sources first. Commentary second.
-For stock or technical theses, use X/Twitter to surface leads and disagreement, then validate
-material claims through primary sources, filings, docs, repos, papers, or direct artifacts.
-Treat video sources as claim generators unless the video itself shows primary data
-or a reproducible artifact. Validate important claims through stronger source
-buckets before making recommendations.
-
-### 4. Dispatch Searches to a Host-Native Research Subagent
-
-Do not run web lookups directly from this skill when a host-native research subagent is available.
-Each search/fetch cycle should go through the host's focused research agent so raw page content
-stays out of this conversation.
-
-Subagent choice by host:
-
-- **Claude-hosted runs:** use `0th:web-researcher`
-- **Codex-hosted runs:** use `0th_researcher`
-
-Codex dispatch profile: on Codex-hosted runs, `0th_researcher` is a workflow profile
-implemented through a generic `spawn_agent` role. Follow
-`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
-
-For every sub-question in your map:
-
-- Send one focused question to the research subagent, with the target source bucket when you know it
-- Wait for the condensed ANSWER / KEY DETAILS / SOURCES block
-- Collect the returned findings into your local map, then decide what to query next
-- Preserve `context_handoff`: summary, source pointers, unresolved gaps, and next read targets
-- If a fetch-only research subagent returns `challenge_or_session_blocked`, do not ask it to keep
-  retrying the same blocked URL. Re-route that source bucket through session-backed reading or report
-  the access blocker with partial public evidence.
-
-Dispatch subagents in parallel when the sub-questions are independent. Dispatch sequentially only
-when a later query depends on vocabulary learned from an earlier one.
-
-If no subagent path is available, fall back to running web search directly, but apply the same
-discipline: one sub-question per search cycle, condense before writing anything into your local map.
-
-### 5. First Pass: Map the Space
-
-- Run a broad pass across the relevant source buckets
-- Collect candidate sources, not conclusions
-- Note vocabulary used by good sources
-- Identify contradictions, stale sources, and missing pieces
-
-Goal: build the map before making claims.
-
-### 6. Second Pass: Re-query with Learned Vocabulary
-
-Do not stop at the first page of results.
-
-- Expand with synonyms, task names, paper terms, and implementation terms learned from pass one
-- Search by underlying problem, not just by marketing name
-- Search the source directly when possible, especially GitHub and arXiv
-- Use site-restricted searches when generic search quality is weak
-
-See `references/source-routing.md` for concrete query patterns.
-
-### 7. Compare Evidence
-
-For each important claim, ask:
-- Is this a primary source?
-- Is it current enough?
-- Is it specific to the use case?
-- Does another source disagree?
-
-Prefer:
-1. Primary docs, primary repos, papers
-2. Maintainer issues, benchmark pages, examples
-3. Independent blog posts, tutorials, videos/transcripts
-
-If sources conflict, say so explicitly. Do not smooth over disagreement.
-
-### 8. Produce a Decision-Ready Output
-
-Use the default output shape in `templates/output-shape.md`.
-
-If the findings are durable, write them to the KB in the relevant domain's `raw/` directory and update the domain index.
-
-## Research Rules
-
-- Do not treat a search engine as the source of truth
-- Do not rely on a single source bucket for deep research
-- Do not confuse a branded feature with the underlying technical problem
-- Do not recommend tools without checking maintenance signals and recency
-- Do not cite papers you have not actually inspected
-- Do not pull raw page content into this conversation when the host-native research subagent can do the search/fetch cycle for you
-- Do not accumulate raw source context; keep source material in KB/source-pack/raw artifacts and
-  carry bounded summaries plus source pointers forward
-- If you find yourself query-looping without improving the vocabulary or source quality, pause and re-read `references/source-routing.md`
-
-## Handoff
-
-- Use /think when the research feeds a decision
-- Use /build when the research is sufficient to implement
-- Use /debug when the research explains an external failure mode or dependency issue
-
-## Repo Preflight
-
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
-
-## KB Integration
-
-- **Reads:** KB domain index, prior raw notes, related decisions and plans
-- **Writes:** durable findings to the appropriate KB `raw/` directory
+Route each claim to the source most capable of proving it. Apply
+`../../references/skills-kernel.md` once for root-task preflight, authority, optional delegation,
+safety, context transfer, and closeout.
+
+## Enter / scope
+
+- Enter when current external facts, comparisons, recommendations, or source attribution matter.
+- Skip when local code, docs, or durable project evidence already answer the question.
+- `$ARGUMENTS` is the research question when invoked directly.
+
+State the decision or deliverable, depth, freshness need, exclusions, and stop condition. Default to
+one root agent. Use bounded parallel source buckets only when they are independent and the capability
+gate proves an evidence or latency advantage; routine lookups remain single-root.
+
+## Source map
+
+Decompose branded language into the underlying capability and assign source buckets:
+
+- primary docs, product pages, filings, specs, and release notes for product truth;
+- source repositories, issues, and examples for implementation and maintenance evidence;
+- papers and benchmark artifacts for methods and measured claims;
+- practitioner forums, videos/transcripts, and social discourse for workflows, pain, leads, and
+  disagreement—not as a substitute for primary validation;
+- session-backed reading for login-gated or private state.
+
+Use primary sources first. Search results are discovery, not evidence. Recommendations require current
+maintenance, availability, and constraint checks. Time-sensitive claims need current sources.
+
+## Research loop
+
+1. Frame the exact question and the decision it supports.
+2. Run a broad first pass to learn vocabulary, candidate sources, contradictions, and missing
+   buckets. Do not conclude yet.
+3. Re-query using learned terminology, source-specific searches, and dissenting hypotheses.
+4. Inspect the sources that support each material claim. Record source date, scope, limitations,
+   and disagreement.
+5. Stop when the decision is supported, the requested coverage is met, or another pass produces no
+   meaningful vocabulary or evidence improvement.
+
+Use `context_handoff` between passes: bounded summary, source pointers, unresolved gaps, and next
+read targets. Keep raw source material outside the root context.
+
+## Session-backed sources
+
+When login or user state is the evidence boundary, use the available session-backed adapter and
+write a session-backed read receipt: adapter, account/query/surface, tested URL or surface,
+interaction/read evidence, pagination or missing metadata, and access limits. Public search is not
+a substitute for private/session state.
+
+A fetch-only failure, challenge page, CAPTCHA, 403/429, or login wall is
+`challenge_or_session_blocked`, not negative evidence. Attempt one safe adapter status/reconnect
+path, then route to another available session path or report the exact blocker. `adapter_unavailable`
+must include the failed command or boundary.
+
+If Browser Kit conflicts with another CDP owner, move it with `--cdp-port`, `--daemon-port`,
+`BROWSER_KIT_CDP_PORT`, or `BROWSER_KIT_DAEMON_PORT`; do not kill the other browser session by
+default. OpenCLI and browser tools remain read-only unless the user explicitly authorizes a write.
+
+## Output
+
+Use `templates/output-shape.md`:
+
+- verdict or direct answer first;
+- evidence-supported findings separated from inference;
+- conflicts, access limits, and remaining uncertainty;
+- recommendation or next experiment;
+- citations adjacent to the claims they support.
+
+For durable findings, write the appropriate KB `raw/` note using
+`templates/raw-findings-note.md`, update its index, and use the Memory Write Gate. Exploratory
+reports remain working artifacts.
+
+## References
+
+- `references/source-routing.md`
+- `references/video-source-research.md`
+- `templates/output-shape.md`
+- `templates/raw-findings-note.md`
+- `../../references/skills-kernel.md`
+- `../../references/specialist-routing.md`
+- `../../references/workflow-verification.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`

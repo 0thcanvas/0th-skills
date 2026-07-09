@@ -1,6 +1,6 @@
 ---
 name: improve-architecture
-description: "Use when code needs architecture cleanup."
+description: "Finds deep modules. Use when code feels tangled."
 ---
 
 # Improve Architecture

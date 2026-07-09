@@ -92,15 +92,15 @@ Approve, modify, or reject this decomposition.
 
 ---
 
-## Phase 1 — SEARCH (Autonomous, Parallel)
+## Phase 1 — SEARCH (Autonomous, Adaptive)
 
 **Goal:** Map the solution space. Two passes.
 
 ### Pass 1 — Broad search
 
-For each sub-problem x source bucket combination, dispatch the host-native search agent in parallel:
-- Claude-hosted runs: `0th:web-researcher`
-- Codex-hosted runs: `0th_researcher`
+For each sub-problem × source-bucket combination, create a bounded search packet. Execute it in the
+root by default. Route independent packets concurrently only when the Skills Kernel capability gate
+returns `allowed: true` and the source split has a concrete evidence or latency advantage.
 - **Question:** the sub-problem, phrased for the source bucket.
 - **Source bucket:** the assigned bucket.
 - **Context:** which sub-problem this serves.
@@ -111,7 +111,7 @@ read-only adapter commands when available, for example `twitter profile`, `twitt
 Treat results as user-visible/session evidence; note pagination, missing metadata, and
 search/operator limits.
 
-Each web-researcher returns <= 30 lines. Write each result to:
+Each search packet returns <= 30 lines. Write each result to:
 ```
 TOPIC_ROOT/raw/YYYY-MM-DD-{subproblem-slug}-{source-bucket}.md
 ```
@@ -123,11 +123,8 @@ Use the raw finding template (`templates/raw-finding.md`). Tag provenance as `or
 1. Read all Pass 1 findings (by file path — do NOT load full content into orchestrator context,
    only agent summaries).
 2. Extract new vocabulary: terms, names, techniques, model names, paper titles discovered.
-3. Re-query with learned vocabulary. Dispatch additional host-native search agents with
-   refined queries using the new terms.
-4. For key arXiv papers surfaced in Pass 1 or Pass 2: dispatch the host-native deep extraction agent with:
-   - Claude-hosted runs: `0th:deep-researcher`
-   - Codex-hosted runs: `0th_deep_researcher`
+3. Re-query with learned vocabulary using additional bounded search packets.
+4. For key papers or repositories surfaced in Pass 1 or Pass 2, run a deep extraction packet with:
    - **Source URL:** the paper/repo URL.
    - **Extraction questions:** architecture details, methods, quantitative results, limitations.
    - **Context:** which sub-problem and gap this fills.
@@ -149,16 +146,15 @@ After writing to KB, reference findings by file path, not by content.
 
 **Goal:** Synthesize raw findings into a structured world model.
 
-Dispatch the host-native synthesis agent with:
-- Claude-hosted runs: `0th:synthesizer`
-- Codex-hosted runs: `0th_synthesizer`
+Build the world model in the root by default. A synthesis packet may be delegated only when the
+Skills Kernel gate allows it and file-backed context isolation is an evidence advantage. Inputs:
 - **Raw note paths:** paths to NEW raw notes from the current iteration's Phase 1 only.
 - **Existing world-model path:** `TOPIC_ROOT/world-model.md` (if iteration > 1).
 - **World-model output path:** `TOPIC_ROOT/world-model.md`.
 - **Sub-problems list:** the current decomposition from state.md.
 - **Mode:** `build` (iteration 1) or `merge` (iteration 2+).
 
-The synthesizer:
+The synthesis step:
 - Extracts nodes: Technique, Paper, Benchmark, Limitation.
 - Builds typed edges: solves, evaluated_on, causes, analogous_to.
 - Runs consensus check per sub-problem (verified requires >=2 agents from different source
@@ -166,7 +162,7 @@ The synthesizer:
 - Writes `TOPIC_ROOT/world-model.md`.
 - Returns a ~10-line summary (version, node counts, consensus, gaps).
 
-**Compaction step:** After the synthesizer finishes, move consumed SEARCH raw files to
+**Compaction step:** After synthesis finishes, move consumed SEARCH raw files to
 `raw/archived/`. Experiment result files (`raw/*experiment*`) are exempt — they stay in
 `raw/` because Phase 7 needs them.
 
@@ -241,8 +237,8 @@ cross-domain search.
 2. **Cross-domain search** for each gap:
    a. Look up the sub-problem's abstract mechanism in `references/abstract-mechanisms.md`.
    b. Identify 2+ non-obvious fields that solve the same abstract mechanism.
-   c. Dispatch the host-native search agent (`0th:web-researcher` on Claude, `0th_researcher` on Codex) to search those fields for candidate techniques.
-   d. Dispatch the host-native deep extraction agent (`0th:deep-researcher` on Claude, `0th_deep_researcher` on Codex) for promising cross-domain papers/techniques — extract
+   c. Run bounded search packets across those fields for candidate techniques.
+   d. Run deep extraction packets for promising cross-domain papers/techniques — extract
       architecture details, methods, and quantitative results.
    e. **Translation step** (mandatory): explicitly describe how the cross-domain technique maps
       back to the original problem. Record as `analogous_to` edges in world model.
@@ -292,9 +288,8 @@ Steps:
 1. Read `wiki/architecture.md`.
 2. Identify the **highest-risk assumption** — the thing most likely to be wrong. Quality gate
    criterion #7 enforces risk-first selection: test the weakest link, not the easiest thing.
-3. Dispatch the host-native experiment agent with:
-   - Claude-hosted runs: `0th:experimenter`
-   - Codex-hosted runs: `0th_experimenter`
+3. Run the experiment in the root by default. A delegated experiment packet requires workspace
+   isolation, explicit mutation authority, and an `allowed: true` Skills Kernel decision. Inputs:
    - **Architecture doc path:** `TOPIC_ROOT/wiki/architecture.md`
    - **Hypothesis:** the specific claim to test.
    - **Success criteria:** measurable threshold that defines pass/fail.
@@ -302,7 +297,7 @@ Steps:
      `feasibility-spike` (15 min), or `scale-test` (30 min).
    - **Topic path:** `TOPIC_ROOT/`
    - **Experiment number:** sequential ID.
-4. Experimenter writes results to `TOPIC_ROOT/raw/YYYY-MM-DD-experiment-{n}.md`
+4. Write results to `TOPIC_ROOT/raw/YYYY-MM-DD-experiment-{n}.md`
    and creates reproducible experiment directory under `experiments/`.
 
 ### Routing on Failure
@@ -476,18 +471,14 @@ previous summaries are gone from context — they live on disk.
 - `templates/journal-entry.md` — journal entry format.
 - `templates/quality-gate.md` — quality gate evaluation format.
 
-## Agents
+## Capability packets
 
-| Agent | Dispatched In | Purpose |
+| Packet | Used in | Required return |
 |---|---|---|
-| `0th:web-researcher` / `0th_researcher` | Phase 1, Phase 5 | Search + condense (<=30 lines). One question per dispatch. |
-| `0th:deep-researcher` / `0th_deep_researcher` | Phase 1 Pass 2, Phase 5 | Deep extraction from papers/repos. Structured findings. |
-| `0th:synthesizer` / `0th_synthesizer` | Phase 2 | Build/merge world model from raw notes. Consensus check. |
-| `0th:experimenter` / `0th_experimenter` | Phase 6 | Run proof-of-concept experiments. Pass/fail verdict. |
+| Search | Phase 1, Phase 5 | <=30-line finding with source pointers and gaps |
+| Deep extraction | Phase 1 Pass 2, Phase 5 | Structured evidence, limits, and provenance |
+| Synthesis | Phase 2 | World-model path, consensus result, contradictions, and gaps |
+| Experiment | Phase 6 | Reproducible artifact, measurements, and pass/fail verdict |
 
-### Codex Dispatch Profiles
-
-On Codex-hosted runs, the `0th_*` entries in this guide are workflow profiles
-implemented through generic `spawn_agent` roles. Follow
-`../../../references/codex-dispatch-profiles.md` instead of doing that phase in the
-orchestrator.
+Packet names describe work, not permanent roles. Apply `../../../references/skills-kernel.md` before
+delegating any packet; missing or stale runtime capabilities keep the work in the root.

@@ -1,6 +1,6 @@
 ---
 name: retro
-description: "Use when session lessons need logging."
+description: "Records misses. Use when a correction matters."
 ---
 
 # Retro

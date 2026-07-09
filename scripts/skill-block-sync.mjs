@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Audit (or propagate) the canonical skill memory block from
-// references/skill-memory-block.md across all nine core SKILL.md files.
+// Audit (or propagate) the legacy canonical skill memory block. Skills moved
+// to references/skills-kernel.md are excluded from this compatibility tool.
 //
 // Background: PR #19 introduced a ~1.5 KB "Repo Preflight + Memory Brief +
 // Open Loop Brief + Memory Integration + Open Loop Integration" preamble
@@ -27,9 +27,8 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 
-export const MIGRATED_SKILLS = ["build"];
-
-export const CORE_SKILLS = [
+export const MIGRATED_SKILLS = [
+  "build",
   "debug",
   "deep-research",
   "improve-architecture",
@@ -37,8 +36,11 @@ export const CORE_SKILLS = [
   "research",
   "retro",
   "ship",
-  "think"
+  "think",
+  "zoom-out"
 ];
+
+export const CORE_SKILLS = [];
 
 const SECTION_HEADINGS = new Set([
   "Repo Preflight",
