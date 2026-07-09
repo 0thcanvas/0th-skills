@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/execution-receipt.schema.json",
+  "title": "Observed child execution receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "launch_id",
+    "harness",
+    "actual_model",
+    "actual_reasoning_effort",
+    "source",
+    "observed_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "launch_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "harness": { "type": "string", "minLength": 1 },
+    "actual_model": { "type": "string", "minLength": 1 },
+    "actual_reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+    "source": { "enum": ["session-metadata", "runtime-probe"] },
+    "observed_at": { "type": "string", "format": "date-time" }
+  }
+}

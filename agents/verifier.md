@@ -4,7 +4,6 @@ description: |
   Verify a completed feature by exercising it as a real user. Dispatched by /build
   after all slices pass. Uses browser automation for UI, terminal for CLI, curl for API.
   Reports Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | BLOCKED_REAL_ENV | FAIL_FLAKY.
-model: opus
 ---
 
 Verify a completed feature by using it as a real user would.

@@ -1,7 +1,5 @@
 name = "0th_experience_reviewer"
 description = "Review completed features through the Product Acceptance Loop before human review."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Experience Judge", "Product Eye", "User Lens"]
 developer_instructions = """

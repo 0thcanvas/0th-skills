@@ -1,7 +1,5 @@
 name = "0th_deep_researcher"
 description = "Deep-dive extraction from a specific technical source."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 nickname_candidates = ["Source Diver", "Paper Lens", "Exact Extract"]
 developer_instructions = """

@@ -96,16 +96,17 @@ visible.
 Portable skills do not require these profiles. They default to one root agent and route optional
 packets through [`references/skills-kernel.md`](references/skills-kernel.md) only after a live
 capability check. The manifests below remain available for explicit compatibility and specialist
-use; their configured model names are not proof that the current runtime honored a requested model
-or effort.
+use. Role manifests describe behavior and tools; harness adapters under `adapters/*.models.json`
+own compute-class-to-model mapping, and runtime receipts prove what a child actually received.
 
 - Claude-specific agent manifests live under `agents/*.md`
 - Codex-native subagent manifests live under `.codex/agents/*.toml`
 - Codex project-level agent policy lives under `.codex/config.toml`
 - The markdown files are the Claude-side manifests; the Codex TOML files are the native manifest format Codex actually loads
 - The `.codex/` directory is intentionally hidden on macOS because it is native tool config, not product source
-- Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
-- Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
+- Claude and Codex role manifests do not pin models or effort; explicit compatibility use inherits the session unless the harness adapter supplies a launch plan
+- `adapters/*.models.json` maps portable `economy`, `balanced`, and `frontier` classes to harness-local model selectors
+- `scripts/0th.mjs capabilities` emits the selected launch plan only when live runtime controls can honor it; `scripts/0th.mjs attest` verifies the post-spawn receipt
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
 - `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
   it as automatic routing policy
@@ -136,7 +137,7 @@ or effort.
 | Read-only exploration | Built-in `Explore` agent | `0th_explorer` workflow profile over generic `explorer` |
 | Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
 | Codex-only profiles | n/a | `0th_explorer`, `0th_researcher` |
-| Native policy pinning | Per-agent `model` in frontmatter | Per-agent `model`, `model_reasoning_effort`, `sandbox_mode`, plus `.codex/config.toml` |
+| Compute selection | Harness adapter plus runtime receipt | Harness adapter plus runtime receipt |
 
 The goal is host-native parity, not identical files. When a behavior cannot be mirrored cleanly, document the asymmetry and keep the user-facing workflow explicit.
 

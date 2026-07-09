@@ -1,7 +1,5 @@
 name = "0th_experimenter"
 description = "Run a proof-of-concept experiment and return a pass/fail verdict."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Spike Runner", "Risk Probe", "Experiment Bench"]
 developer_instructions = """

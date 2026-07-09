@@ -45,7 +45,7 @@ Delegation requires:
 
 1. an independent work packet with an evidence or isolation advantage;
 2. no unsafe shared mutable state, or proven workspace isolation;
-3. a bounded capability packet and worker/round budget;
+3. a bounded capability packet with work kind, compute class, escalation class, and worker/round budget;
 4. a live capability record, not documentation alone;
 5. proportionate model and effort controls.
 
@@ -58,7 +58,10 @@ node scripts/0th.mjs capabilities \
   --packet-json <capability-packet.json>
 ```
 
-Delegate only when the result is `allowed: true`. Missing, stale, unsupported, shared-state, ordered-work, or disproportionate inherited-effort results stay `single-root`. Do not substitute a requested profile name for the actual emitted model and effort.
+Delegate only when the result is `allowed: true`. Execute the emitted launch plan and verify its
+post-spawn receipt through `scripts/0th.mjs attest`. Missing, stale, unsupported, shared-state,
+ordered-work, disproportionate inherited-effort, or receipt-mismatch results stay `single-root`.
+Do not substitute a requested profile name or adapter mapping for the actual emitted model and effort.
 
 ## Per-Slice Loop
 

@@ -5,7 +5,6 @@ description: |
   Dispatched by /deep-research Phase 6 to test the highest-risk assumptions
   in a proposed architecture. Writes reproducible experiments with pass/fail verdicts.
 tools: Bash, Read, Write, Edit, WebFetch, Grep, Glob
-model: opus
 ---
 
 Run a single proof-of-concept experiment and return a structured pass/fail verdict.

@@ -41,7 +41,8 @@ Delegation is optional and requires all of:
 
 1. independent or isolated work;
 2. a concrete evidence advantage, context-isolation advantage, or measured latency advantage;
-3. a bounded capability packet with task, inputs, output schema, authority, budget, and stop rules;
+3. a bounded capability packet with task, work kind, compute class, inputs, output schema, authority,
+   budget, escalation, and stop rules;
 4. a live, fresh capability record showing the requested controls actually exist;
 5. no unsafe shared mutable state.
 
@@ -58,6 +59,24 @@ Delegate only when it returns `allowed: true`. Documentation, requested profile 
 model/effort settings are not runtime evidence. Ordered work, stale observations, missing isolation,
 unsupported overrides, or disproportionate inherited effort stay single-root. Do not create a
 reviewer, verifier, researcher, or fleet merely because a workflow phase has that name.
+
+Portable packets use `compute_class: auto|economy|balanced|frontier|inherit`; they never contain a
+model name. `source_discovery`, `evidence_extraction`, `test_execution`, and `log_condensation`
+default to economy; bounded implementation and routine review default to balanced; cross-source
+synthesis, architecture, and high-risk implementation default to frontier. High and critical risk
+raise the floor. Harness mappings live in `adapters/<harness>.models.json`.
+
+An allowed decision includes a launch plan and `launch_id`. Execute that exact plan, collect the
+actual child model and effort from session metadata or a runtime probe, then verify the receipt:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" attest \
+  --launch-plan-json <launch-plan.json> \
+  --receipt-json <execution-receipt.json>
+```
+
+No receipt, an unverifiable runtime, or a model/effort mismatch invalidates cost routing for that
+dispatch. Stop or escalate once to the packet's stronger class; do not repeat same-tier retries.
 
 ## Safety and evidence
 
@@ -95,6 +114,7 @@ as soon as it is no longer required.
 
 ## Shared references
 
+- `model-routing.md`
 - `memory-contract.md`
 - `workflow-verification.md`
 - `specialist-routing.md`

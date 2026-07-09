@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/launch-plan.schema.json",
+  "title": "Resolved harness launch plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "harness",
+    "compute_class",
+    "model",
+    "reasoning_effort",
+    "selection_mode",
+    "escalation_class",
+    "selection_rationale",
+    "attestation_required",
+    "launch_id"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "harness": { "type": "string", "minLength": 1 },
+    "compute_class": { "enum": ["economy", "balanced", "frontier", "inherit"] },
+    "model": { "type": "string", "minLength": 1 },
+    "reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+    "selection_mode": { "enum": ["per-invocation", "named-profile", "inherit"] },
+    "escalation_class": { "type": ["string", "null"], "enum": [null, "balanced", "frontier"] },
+    "selection_rationale": { "type": "string", "minLength": 1 },
+    "attestation_required": { "const": true },
+    "launch_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "harness": "codex",
+  "profiles": {
+    "economy": {
+      "model": "gpt-5.4-mini",
+      "reasoning_effort": "medium",
+      "selection_mode": "per-invocation"
+    },
+    "balanced": {
+      "model": "gpt-5.4",
+      "reasoning_effort": "high",
+      "selection_mode": "per-invocation"
+    },
+    "frontier": {
+      "model": "inherit",
+      "reasoning_effort": "inherit",
+      "selection_mode": "inherit"
+    }
+  }
+}

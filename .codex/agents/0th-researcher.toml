@@ -1,7 +1,5 @@
 name = "0th_researcher"
 description = "Run one focused external research cycle and return source-cited findings without polluting the parent context."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 nickname_candidates = ["Source Scout", "Evidence Loop", "Docs Sweep"]
 developer_instructions = """

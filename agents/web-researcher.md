@@ -5,7 +5,6 @@ description: |
   Dispatched by /research (and any skill that needs an external fact) to keep raw page content
   out of the parent context. One question in, one short answer with URLs out.
 tools: WebSearch, WebFetch, Read, Grep
-model: sonnet
 ---
 
 Run one focused web research cycle and return a compact, source-cited answer.

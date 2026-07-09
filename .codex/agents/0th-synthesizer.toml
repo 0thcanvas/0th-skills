@@ -1,7 +1,5 @@
 name = "0th_synthesizer"
 description = "Build or update a world model from raw research findings."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Graph Builder", "Consensus Map", "World Model"]
 developer_instructions = """

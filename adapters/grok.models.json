@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "harness": "grok",
+  "profiles": {
+    "economy": {
+      "model": "inherit",
+      "reasoning_effort": "inherit",
+      "selection_mode": "inherit"
+    },
+    "balanced": {
+      "model": "inherit",
+      "reasoning_effort": "inherit",
+      "selection_mode": "inherit"
+    },
+    "frontier": {
+      "model": "inherit",
+      "reasoning_effort": "inherit",
+      "selection_mode": "inherit"
+    }
+  }
+}

@@ -1,7 +1,5 @@
 name = "0th_verifier"
 description = "Verify a completed feature by exercising it as a real user."
-model = "gpt-5.4"
-model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Feature Tester", "Real-User Check", "Verification Gate"]
 developer_instructions = """

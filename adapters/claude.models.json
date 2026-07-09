@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "harness": "claude",
+  "profiles": {
+    "economy": {
+      "model": "haiku",
+      "reasoning_effort": "medium",
+      "selection_mode": "per-invocation"
+    },
+    "balanced": {
+      "model": "sonnet",
+      "reasoning_effort": "high",
+      "selection_mode": "per-invocation"
+    },
+    "frontier": {
+      "model": "opus",
+      "reasoning_effort": "high",
+      "selection_mode": "per-invocation"
+    }
+  }
+}
