@@ -1,6 +1,6 @@
 ---
 name: debug
-description: "Use when failures need root cause before fixes."
+description: "Finds root causes. Use when behavior is broken."
 ---
 
 # Debug

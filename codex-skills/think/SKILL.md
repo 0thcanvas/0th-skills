@@ -1,6 +1,6 @@
 ---
 name: think
-description: "Use when ideas need decisions."
+description: "Makes design decisions. Use when tradeoffs are unresolved."
 ---
 
 # Think

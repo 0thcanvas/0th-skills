@@ -22,18 +22,18 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 - **5-15 line decision records, not 300-line specs.** The human reviews code, not documents.
 - **Branch per feature, PR to land.** Always. The PR is the inspection point.
 - **TDD for testable work, before/after for everything else.** No code without verification.
-- **Verification before shipping.** After all slices pass, the verifier exercises the feature as a real user. Only PASS proceeds to /ship.
-- **Cross-model review.** The host model writes; the counterpart model reviews (nit/suggestion/blocker). Counterpart is determined by `~/.0th/reviewer-config.json`. Default: Claude→Codex, Codex→Agy. Agy runs Antigravity CLI print mode using the model selected in Antigravity.
+- **Verification before shipping.** After all slices pass, the root exercises the required proof; a separate verifier is used only when it has an independent evidence advantage. Only PASS proceeds to /ship.
+- **Review is risk-triggered.** Counterpart review runs only when a fresh context or distinct model has a named evidence advantage. The configured route remains in `~/.0th/reviewer-config.json` for those cases.
 - **Scale to uncertainty.** Low uncertainty = /build. Medium = /think then /build. High = /think with divergent design exploration.
 - **Write decisions, not specs.** Decision records always persist to docs/decisions/. Plans are optional.
 - **Root cause before fixes.** 3 failed hypotheses = stop and escalate.
-- **Session resumption is explicit.** Every skill checks Memory v2 runtime + git log + open decisions when starting a new session; markdown KB material is fallback/source evidence, not the primary recall path.
+- **One root-task kernel.** Every skill applies `references/skills-kernel.md` once per root task for Memory v2 preflight, authority, capability gating, safety, and closeout. Nested phases reuse the receipt.
 - **Research is source-aware.** Use official docs, GitHub, papers, and direct source search, not one generic web query.
 - **Agent manifests are host-native.** Claude-side manifests live in `agents/*.md`, while Codex subagents use TOML under `.codex/agents/`.
 - **Shared behavior changes must update both hosts.** If a mirrored agent's behavior changes, update both `agents/*.md` and `.codex/agents/*.toml` in the same slice unless the difference is intentionally host-specific.
 - **Asymmetry must be explicit.** If an agent exists on only one host, document that in `README.md` and keep `tests/agent-parity.test.mjs` aligned with the intentional exception.
 - **Codex runtime policy is part of the product.** If a change affects subagent orchestration or safety assumptions, update `.codex/config.toml` too rather than relying on user defaults.
-- **Use the host-native research agent.** Claude-hosted research uses `0th:web-researcher`; Codex-hosted research uses `0th_researcher`.
+- **Research stays single-root by default.** Independent source packets delegate only through a fresh capability record and a concrete evidence or latency advantage.
 - **Do not duplicate Claude built-ins without a strong reason.** For read-only code mapping on Claude, prefer the built-in `Explore` agent instead of creating a custom 0th mirror.
 - **Cross-model review is script-driven.** A single `counterpart-companion.mjs` auto-detects the host and loads the appropriate driver (`codex`, `claude`, or `agy`).
 - **Cross-model review uses a generic helper.** `ask-counterpart-review` replaces the old `ask-codex-review` and `ask-claude-review` (deprecated shims, removed next release).

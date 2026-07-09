@@ -11,25 +11,16 @@ const skillsRoot = path.join(repoRoot, "skills");
 const codexSkillsRoot = path.join(repoRoot, "codex-skills");
 
 const codexDescriptions = {
-  build: "Use when coding a known change with TDD.",
-  debug: "Use when failures need root cause before fixes.",
-  "deep-research": "Use when hard questions need deeper research.",
-  "improve-architecture": "Use when code needs architecture cleanup.",
-  plan: "Use when decisions need build slices.",
-  research: "Use when answers need external sources.",
-  retro: "Use when session lessons need logging.",
-  ship: "Use when work needs PR shipping.",
-  think: "Use when ideas need decisions.",
-  "zoom-out": "Higher-level map of unfamiliar code."
-};
-
-const codexWrapperNotes = {
-  research: [
-    "Codex dispatch note: use `spawn_agent` for research subquestions. `0th_researcher` is a workflow profile implemented through a generic role; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
-  ],
-  "deep-research": [
-    "Codex dispatch note: phases 1, 2, 5, and 6 dispatch subagents via `spawn_agent`. `0th_*` names are workflow profiles implemented through generic roles; follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread."
-  ]
+  build: "Builds known changes. Use when a solution is ready.",
+  debug: "Finds root causes. Use when behavior is broken.",
+  "deep-research": "Builds world models. Use when research needs multiple passes.",
+  "improve-architecture": "Finds deep modules. Use when code feels tangled.",
+  plan: "Creates vertical slices. Use when work needs ordering.",
+  research: "Finds external evidence. Use when current sources matter.",
+  retro: "Records misses. Use when a correction matters.",
+  ship: "Opens a verified PR. Use when a branch is ready.",
+  think: "Makes design decisions. Use when tradeoffs are unresolved.",
+  "zoom-out": "Maps an unfamiliar code area one abstraction level above the immediate files."
 };
 
 function fail(message) {
@@ -88,9 +79,6 @@ function generateWrapper(skillName) {
     `name: ${name}`,
     `description: "${description}"`
   ];
-  if (frontmatter["disable-model-invocation"]) {
-    lines.push(`disable-model-invocation: ${frontmatter["disable-model-invocation"]}`);
-  }
   lines.push(
     "---",
     "",
@@ -98,9 +86,6 @@ function generateWrapper(skillName) {
     "",
     `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`
   );
-  for (const note of codexWrapperNotes[skillName] ?? []) {
-    lines.push("", note);
-  }
   lines.push("");
   return `${lines.join("\n")}`;
 }

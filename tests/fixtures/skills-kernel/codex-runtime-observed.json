@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "harness": "codex",
+  "source": "session-metadata",
+  "observed_at": "2026-07-09T19:52:00Z",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "xhigh",
+  "model_override": false,
+  "effort_override": false,
+  "max_parallelism": 4,
+  "max_depth": 1,
+  "workspace_isolation": false,
+  "resume": true,
+  "hooks": [],
+  "external_write_controls": ["approval"]
+}

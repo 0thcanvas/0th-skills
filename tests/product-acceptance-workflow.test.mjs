@@ -12,18 +12,21 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
-test("build owns product acceptance and counterpart diff review before ship", () => {
+test("build owns evidence-triggered product acceptance and review before ship", () => {
   const source = read("skills/build/SKILL.md");
+  const acceptance = read("skills/build/references/product-acceptance.md");
 
   assert.match(source, /Product Acceptance Loop/);
-  assert.match(source, /verification-report\/product-acceptance\.json/);
+  assert.match(source, /references\/product-acceptance\.md/);
+  assert.match(acceptance, /verification-report\/product-acceptance\.json/);
   assert.match(source, /verification-report\/proof-contract\.json/);
   assert.match(source, /proof-result\.json/);
-  assert.match(source, /decision record, plan acceptance criteria, explicit user brief, then repo standards/);
-  assert.match(source, /Max 3 product acceptance rounds/);
-  assert.match(source, /0th_experience_reviewer/);
-  assert.match(source, /ask-counterpart-review/);
-  assert.match(source, /code\/diff counterpart review/);
+  assert.match(acceptance, /decision record, plan acceptance criteria, explicit user brief, then repo standards/);
+  assert.match(acceptance, /Max 3 product acceptance rounds/);
+  assert.match(acceptance, /evidence advantage/);
+  assert.match(acceptance, /ask-counterpart-review/);
+  assert.doesNotMatch(acceptance, /0th_experience_reviewer/);
+  assert.doesNotMatch(source, /counterpart review is mandatory/i);
 });
 
 test("ship stays a lightweight evidence checker instead of starting substantive review", () => {
@@ -71,7 +74,7 @@ test("visual work names invariants before verification evidence is accepted", ()
 });
 
 test("build product acceptance template shows required reports need evidence paths", () => {
-  const source = read("skills/build/SKILL.md");
+  const source = read("skills/build/references/product-acceptance.md");
 
   assert.doesNotMatch(source, /"evidence_paths": \[\]/);
   assert.match(source, /"evidence_paths": \[\s*"verification-report\/<evidence-path>"\s*\]/);

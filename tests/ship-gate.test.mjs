@@ -681,13 +681,31 @@ test("validateCounterpartReviewEvidence: passes when counterpart-review.skipped 
   assert.equal(result.ok, true, result.reasons.join(", "));
 });
 
+test("validateCounterpartReviewEvidence: accepts a risk decision with no evidence advantage", () => {
+  const repo = makeTempRepo();
+  writeCounterpartReviewSkipped(
+    repo,
+    "NOT_REQUIRED: routine internal change has no independent review evidence advantage."
+  );
+  const result = validateCounterpartReviewEvidence(repo, "verification-report");
+  assert.equal(result.ok, true, result.reasons.join(", "));
+});
+
+test("validateCounterpartReviewEvidence: rejects an unclassified skip reason", () => {
+  const repo = makeTempRepo();
+  writeCounterpartReviewSkipped(repo, "Skipped because the change looked fine.");
+  const result = validateCounterpartReviewEvidence(repo, "verification-report");
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /availability blocker or a risk decision/);
+});
+
 test("validateCounterpartReviewEvidence: fails when counterpart-review.skipped is empty", () => {
   const repo = makeTempRepo();
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
   fs.writeFileSync(path.join(repo, "verification-report", "counterpart-review.skipped"), "   \n  ");
   const result = validateCounterpartReviewEvidence(repo, "verification-report");
   assert.equal(result.ok, false);
-  assert.match(result.reasons.join("\n"), /must contain the exact unavailable\/quota\/auth\/network reason/);
+  assert.match(result.reasons.join("\n"), /must contain an availability blocker or a risk decision/);
 });
 
 test("validateProofContract: valid contract satisfies the gate", () => {

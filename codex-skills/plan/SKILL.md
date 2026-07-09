@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Use when decisions need build slices."
+description: "Creates vertical slices. Use when work needs ordering."
 ---
 
 # Plan

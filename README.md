@@ -93,6 +93,12 @@ visible.
 
 ## Agents
 
+Portable skills do not require these profiles. They default to one root agent and route optional
+packets through [`references/skills-kernel.md`](references/skills-kernel.md) only after a live
+capability check. The manifests below remain available for explicit compatibility and specialist
+use; their configured model names are not proof that the current runtime honored a requested model
+or effort.
+
 - Claude-specific agent manifests live under `agents/*.md`
 - Codex-native subagent manifests live under `.codex/agents/*.toml`
 - Codex project-level agent policy lives under `.codex/config.toml`
@@ -101,12 +107,11 @@ visible.
 - Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
 - Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
-- Skills that dispatch Codex subagents point to `references/codex-dispatch-profiles.md`,
-  which defines the supported generic `spawn_agent` roles, model pins, reasoning-effort pins,
-  and prompt shapes for each `0th_*` workflow profile
+- `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
+  it as automatic routing policy
 - Today, the mirrored 0th-managed agents are `implementer`, `reviewer`, `experience-reviewer`, `test-runner`, `verifier`, `synthesizer`, `deep-researcher`, and `experimenter`
-- For read-only code mapping, Claude should use its built-in `Explore` agent while Codex uses the `0th_explorer` workflow profile over the generic `explorer` role
-- Claude keeps `web-researcher` for its `WebSearch` + `WebFetch` workflow, while Codex uses the `0th_researcher` workflow profile for focused source-cited research cycles
+- For explicit read-only helper use, Claude can use its built-in `Explore` agent while Codex retains the `0th_explorer` compatibility profile
+- Claude retains `web-researcher` and Codex retains `0th_researcher` for explicit focused research packets; neither is a mandatory phase
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
 - Codex-hosted counterpart review defaults to the `agy` driver, which shells out to Antigravity CLI print mode using the model selected in Antigravity. If `agy` is not on `PATH`, set `AGY_BIN` before invoking the companion process.
@@ -134,6 +139,9 @@ visible.
 | Native policy pinning | Per-agent `model` in frontmatter | Per-agent `model`, `model_reasoning_effort`, `sandbox_mode`, plus `.codex/config.toml` |
 
 The goal is host-native parity, not identical files. When a behavior cannot be mirrored cleanly, document the asymmetry and keep the user-facing workflow explicit.
+
+These are available host surfaces, not the portable workflow topology. `skills/*/SKILL.md` never
+assumes a profile, model, effort level, thread count, or host-specific name.
 
 ### Naming conventions
 
@@ -187,6 +195,17 @@ On failure, the runner writes `${VERIFICATION_REPORT_DIR:-verification-report}/r
 Hook installation is user-scope because repo-local Codex hooks are not the validated path yet. The repo ships hook scripts and tests, but it does not auto-install or mutate `~/.codex/config.toml`, `~/.claude/settings.json`, or any user config.
 
 ## Release notes
+
+### Unreleased — Skills Kernel
+
+- Migrated all ten skills to one root-task kernel with single-root default execution, live
+  capability gating, bounded packets, explicit authority, and shared closeout.
+- Removed fixed host, model, effort, permanent-role, and mandatory-review choreography from shared
+  skills and Codex wrappers.
+- Made research, synthesis, experiments, verification, and counterpart review evidence-triggered;
+  routine work no longer spawns a fleet because a workflow phase exists.
+- Preserved proof tiers, stack minimums, secret safety, session-backed evidence, Memory v2, product
+  acceptance, PR-specific merge approval, and honest blocked outcomes.
 
 ### 0.3.2
 

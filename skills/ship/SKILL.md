@@ -1,180 +1,79 @@
 ---
 name: ship
-description: "Use when implementation is complete and ready for tests, review, push, and PR creation. Always lands through a PR."
+description: "Verifies and opens a reviewable pull request from completed work. Use when a branch is ready to push and present for landing."
 argument-hint: "[branch or PR-ready change]"
 ---
 
 # Ship
 
-Create a PR. Always. No exceptions.
+Ship through a PR and stop before merge unless the user approves that specific PR. Apply
+`../../references/skills-kernel.md` once for root-task preflight, authority, safety, and closeout.
 
-## Direct Invocation
+## Enter / authority
 
-If the user invoked this skill directly, treat `$ARGUMENTS` as the branch, diff, or landing target.
-If `$ARGUMENTS` is empty, infer the shipping scope from the conversation and current git state.
+- Enter after `/build` or for an existing PR-ready branch.
+- `$ARGUMENTS` identifies the branch, diff, or landing target when invoked directly.
+- Shipping authorizes the normal branch push and PR creation workflow. It does not authorize merge,
+  production deployment, unrelated external writes, or destructive cleanup.
 
-The PR is your inspection point — the one moment you see the full picture of what changed.
+## 1. Verify
 
-## When to Use
+Run the complete relevant test suite and inspect actual output. Then review branch status, full diff,
+stat, and commits against the intended scope. Stop on failures, unexpected files, secrets, unsafe
+secret access, debug residue, tracked verification artifacts, or workstation-local paths.
 
-After /build completes. Or when you have changes on a branch ready to land.
+Read `verification-report/proof-contract.json` and `verification-report/proof-result.json`.
+`proof_contract_required` means the proof result tier cannot be below the proof contract tier;
+`minimum_tier_satisfied` must be true and evidence paths must exist.
+`BLOCKED_REAL_ENV` stops shipping.
 
-## Template Files
+## 2. Evidence gate
 
-- See `templates/pr-body.md` for the default PR structure so the review context stays consistent.
-- See `../../references/specialist-routing.md` when the proof contract depends on specialist
-  evidence or adapter return receipts.
-- See `../../references/workflow-verification.md` for proof closeout keys and
-  `retro_open_loop_closeout` before PR handoff.
-- See `../../references/working-artifacts.md` for optional PR explainers or human-facing review
-  cockpits. The PR body and git diff are the durable shipping evidence; the verification report is
-  local gate evidence unless a small summary is explicitly promoted to docs.
-
-## Process
-
-### 1. Verify
-
-Run the full test suite. Paste output. No "should pass" — evidence first.
-
-```bash
-<test command>
-git status
-```
-
-If tests fail, stop. Fix first (use /debug if needed).
-
-### 2. Review the Diff
-
-```bash
-git diff main..HEAD --stat    # file list — scope check
-git diff main..HEAD           # full diff
-git log main..HEAD --oneline  # commit history
-```
-
-Self-review:
-- Are there files that shouldn't have changed?
-- Is the scope contained to what was intended?
-- Are any `${VERIFICATION_REPORT_DIR:-verification-report}` files staged/tracked? They should stay
-  ignored local evidence; summarize results in the PR body instead of committing raw command output
-  or live JSON dumps.
-- Any hardcoded local workstation paths left in? Flag macOS/Linux/Windows user-profile paths, or HOME-based fallbacks to a local 0th Canvas checkout.
-- Any secrets, credentials, debug code left in?
-- Any unsafe secret access patterns left in? Flag `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), command-argv secrets, raw Authorization headers, cookies, HARs, or browser/CDP payloads.
-- If the project does not use 1Password, confirm its equivalent secret path still keeps resolved values outside chat/logs and injects them only into the target runtime.
-
-### 3. Evidence Gate
-
-**Run the ship gate first.** It independently re-derives expected stack minimums from the repo (the matrix in `../../references/stack-minimums.md`) and refuses PR creation if the verifier did not exercise them. It also validates the proof contract at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, the proof result at `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, and the product acceptance report at `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json` (default path: `verification-report/product-acceptance.json`), including freshness: `reviewed_at` must parse as an ISO timestamp and fall within the freshness window (default 24h, override via `PRODUCT_ACCEPTANCE_FRESH_WINDOW_HOURS`; proof result freshness override: `PROOF_RESULT_FRESH_WINDOW_HOURS`). `proof_contract_required`: the proof result tier cannot be lower than the proof contract tier, and the proof result must include `minimum_proof_tier`, `minimum_tier_satisfied`, and evidence paths.
-
-`/ship` does not re-judge product quality. It checks that `/build` produced current evidence: proof result, verifier report, product acceptance report, and counterpart review evidence or an explicit skipped/unavailable reason.
-
-When the proof contract depends on specialist evidence, also check that specialist return receipts
-exist in the verifier or proof evidence and that no required adapter is left in `adapter_unavailable`
-or `adapter_ran_evidence_incomplete` without an explicit blocked or partial-evidence outcome.
-
-The gate also scans tracked files for hardcoded workstation-local paths and tracked
-`${VERIFICATION_REPORT_DIR:-verification-report}` artifacts before the stack check. This runs even
-when no app/runtime stack is detected, because portability leaks and raw verification dumps are
-release blockers in docs-only or skills-only repos.
+Run:
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/ship-gate.mjs"
 ```
 
-If the gate exits non-zero, **stop**. Do not run `gh pr create`. The output names which expected evidence is missing or invalid; return to /build to produce or refresh that evidence, then re-run the gate. The gate reads `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`, `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`, and `${VERIFICATION_REPORT_DIR:-verification-report}/product-acceptance.json`; stack detection mirrors `../../references/stack-minimums.md` so the matrix and the gate stay in sync via the lockstep workflow described in that file.
+The gate validates proof, stack minimums, the product acceptance report at
+`verification-report/product-acceptance.json`,
+specialist return receipts,
+review evidence or an explicit no-review reason, freshness, tracked local evidence, and local-path
+leaks. `/ship` does not re-judge product quality or start first-time substantive review. If the proof contract depends on specialist evidence, unresolved `adapter_unavailable` or incomplete receipts
+must already produce an honest blocked outcome.
 
-Before PR creation, apply `retro_open_loop_closeout`: skipped verification, blocked real-environment
-evidence, or unfinished follow-up must be surfaced in the PR notes, memory/open-loop state, or retro
-handoff as appropriate.
+Any non-zero exit returns to `/build`; do not create the PR.
 
-Counterpart review evidence is enforced by the gate. /build must produce one of:
-- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.md` — the actual review output, or
-- `${VERIFICATION_REPORT_DIR:-verification-report}/counterpart-review.skipped` — a non-empty file containing the exact unavailable/quota/auth/network reason.
+## 3. Create PR
 
-The gate fails closed if neither file exists, or if the skipped file is empty. Additional human-readable rules:
-- If the review had blockers, the build handoff says they were fixed and re-reviewed.
-- If counterpart review was skipped because quota/auth/network was unavailable, surface that exact state to the user; do not call it clean.
+Read `templates/pr-body.md` and fill that shape with scope, tests, proof tier, evidence paths,
+product acceptance, review decision/yield, and unresolved concerns. Then push the feature branch and
+create the PR. Never force-push main.
 
-### 4. Create the PR
+Present the PR URL, file list, evidence status, proof status, and concerns. Stop at **ready to merge**.
+Merge approval is PR-specific; a previous “ship it” or general automation instruction does not
+authorize the current PR.
 
-Only after the gate exits zero, read `templates/pr-body.md`, fill in its placeholders, and use that filled result as the PR body.
-Do not invent a second PR-body shape in this skill. The template file is the source of truth.
+After explicit approval for this PR, squash-merge and delete the branch using the project workflow.
 
-```bash
-git push -u origin <branch>
-gh pr create --title "<title>" --body "<filled contents of templates/pr-body.md>"
-```
+## 4. Local evidence closeout
 
-PR title: short, imperative ("Add spaced repetition engine", not "Added some stuff for SR").
+`verification-report/` is local gate evidence, not a submitted artifact. Keep it only while the PR
+needs reruns or follow-up. After the PR is merged, closed, abandoned, or its worktree is removed,
+delete `${VERIFICATION_REPORT_DIR:-verification-report}`. If it contains sensitive browser/session payloads,
+private screenshots, HARs, cookies, tokens, or secret-adjacent data, preserve only a safe summary and
+delete the raw files immediately.
 
-### 5. User Inspects
+Apply `retro_open_loop_closeout` before handoff so skipped proof, blocked environments, repeated
+failures, and unfinished follow-up remain visible.
 
-Present to user:
-- The PR URL
-- The file list (so they can see scope at a glance)
-- Evidence status: verifier PASS, product acceptance PASS or NOT_REQUIRED, counterpart review result or skipped reason
-- Proof status: selected proof tier and evidence paths from proof-result.json
-- Any concerns from the self-review
+## References
 
-User decides: merge, request changes, or close. Merge approval is PR-specific: do not carry approval from an earlier PR, a prior "ship it", or a general shipping instruction into a newly opened PR. After checks and reviews pass, stop at "ready to merge" until the user explicitly approves merging that PR number or otherwise clearly approves that specific PR.
-
-### 6. Merge
-
-After user approves:
-
-```bash
-gh pr merge <pr-number> --squash --delete-branch
-```
-
-Squash keeps main history clean. Delete branch avoids clutter.
-
-### 7. Local Artifact Closeout
-
-`${VERIFICATION_REPORT_DIR:-verification-report}` is local gate evidence, not a submitted artifact.
-Keep it only while the active PR needs gate reruns, debugging, or review follow-up.
-
-After the PR body contains the safe verification summary and the PR is merged, closed, abandoned, or
-the worktree is being removed, delete `${VERIFICATION_REPORT_DIR:-verification-report}`. If the
-directory contains sensitive browser/session payloads, private screenshots, HARs, cookies, tokens, or
-secret-adjacent data, extract only a safe summary and delete the raw local copy immediately.
-
-## Iron Laws
-
-- **Always a PR.** Even for one-line changes. The PR is visibility, not ceremony.
-- **Tests must pass before PR creation.** Not after. Before.
-- **Never force-push to main.** If something went wrong, revert with a new commit.
-
-## Completion
-
-```
-STATUS: DONE
-PR: <url>
-Tests: X passing, 0 failing
-Product acceptance: [PASS / NOT_REQUIRED]
-Counterpart review: [clean / N blockers resolved / skipped — exact reason]
-```
-
-## Repo Preflight
-
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
-
-## KB Integration
-
-- **Reads:** nothing (operates on the diff)
-- **Writes:** nothing (the PR is the record)
+- `templates/pr-body.md`
+- `../../references/skills-kernel.md`
+- `../../references/proof-tiers.md`
+- `../../references/stack-minimums.md`
+- `../../references/specialist-routing.md`
+- `../../references/workflow-verification.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`

@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Use when coding a known change with TDD."
+description: "Builds known changes. Use when a solution is ready."
 ---
 
 # Build

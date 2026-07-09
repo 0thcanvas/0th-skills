@@ -1,160 +1,67 @@
 ---
 name: plan
-description: "Use when a decision needs vertical implementation slices, acceptance criteria, dependency ordering, or multi-session coordination."
+description: "Converts an approved outcome into verifiable vertical slices. Use when implementation has ordering, dependency, risk, or multi-session complexity."
 argument-hint: "[decision record path or scope]"
 ---
 
 # Plan
 
-Break a decision into buildable slices. Optional — only when the work needs structure.
+Produce a build checklist, not a tutorial. Apply `../../references/skills-kernel.md` once for
+root-task preflight, authority, optional delegation, safety, and closeout.
 
-## Direct Invocation
+## Enter / skip
 
-If the user invoked this skill directly, treat `$ARGUMENTS` as the initial scope or decision record
-reference. If `$ARGUMENTS` is empty, infer the scope from the conversation.
+- Enter when the work spans multiple meaningful slices or sessions.
+- Skip to `/build` when one bounded implementation loop is sufficient.
+- `$ARGUMENTS` is the decision record or requested scope when invoked directly.
 
-## When to Use
-
-- Work spans multiple sessions (need to resume)
-- Multiple slices with ordering dependencies
-- Want to dispatch parallel agents per slice
-- Scope is large enough that "just build it" risks drift
-
-Skip this when a single TDD session will cover it.
-
-## Triage Preamble
-
-```
-What: [one sentence]
-Decision record: [path or "none — building from direct instruction"]
-Slices (estimate): [number]
-Why /plan: [what structure is needed]
-```
-
-## Session Resumption
-
-If resuming ongoing work:
-1. Read the decision record(s) this plan implements
-2. Read any existing plan in docs/plans/
-3. Read recent git log to see what's already been built
-4. Report: "N of M slices complete. Next: [slice name]."
-
-## Reference Files
-
-- See `../../references/working-artifacts.md` for planning drafts and optional human-facing
-  comparisons. Approved `/plan` outputs still save to `docs/plans/` unless the user explicitly asks
-  for a throwaway planning artifact.
-- See `../../references/specialist-routing.md` when a slice needs a specialist capability under
-  0th workflow ownership.
-- See `../../references/workflow-verification.md` when slices need proof tiers, context handoffs,
-  real-environment blockers, or retro/open-loop closeout.
+This workflow plans only. It does not implement slices.
 
 ## Process
 
-### 1. Read the Decision
+1. Load the approved decision or direct instruction and every declared dependency. If a material
+   product or architecture question remains unresolved, return `BLOCKED_BY_SPEC` or `/think`.
+2. Capture 3–5 cross-slice decisions: data shape, key interfaces, authority boundary, proof tier,
+   deployment/runtime boundary, and any irreversible migration.
+3. Slice vertically through the observable behavior. Each slice must be independently verifiable
+   and small enough for one build loop. Prefer many thin slices to a few horizontal layers.
+4. Give each slice an outcome, acceptance criteria, non-goals, dependency, expected proof tier, and
+   possible `blocked_real_env` state. Name a `context_handoff` only when later work needs bounded
+   source pointers or unresolved gaps.
+5. For UI, canvas, SVG, animation, overlay, responsive layout, or game work, name the visual invariant
+   and required screenshot evidence, screenshot assertion, or pixel assertion.
+6. For specialist work, name the capability boundary, handoff envelope, return receipt, and native
+   fallback. Never plan a plugin’s internal workflow.
+7. Save the approved checklist to `docs/plans/YYYY-MM-DD-<topic>.md`.
 
-Load the decision record from /think (or the user's direct instruction). Read all decision records it references via `depends-on`.
-
-On Codex-hosted runs, explicitly use `0th_explorer` when you need help mapping the current code
-paths or interfaces before you can slice the work cleanly.
-
-Codex dispatch profile: on Codex-hosted runs, `0th_explorer` is a workflow profile
-implemented through a generic `spawn_agent` role. Follow
-`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
-
-### 2. Identify Durable Decisions
-
-Before slicing, note architectural decisions that span all slices:
-- Data models / schema shapes
-- Key interfaces and their contracts
-- Route structures
-- Auth/authz approach
-- Service or deployment boundaries when the work introduces heavy local runtimes, ML models, or worker processes
-
-These go in the plan header. 3-5 bullet points max.
-
-### 3. Slice Vertically
-
-Each slice is end-to-end through all layers (data → logic → interface). Not horizontal (all models, then all routes, then all UI).
-
-Rules:
-- Each slice is independently demoable or verifiable
-- Many thin slices over few thick ones
-- Describe behavior and acceptance criteria, NOT implementation steps
-- No file paths — describe contracts and interfaces
-- For UI, canvas, SVG, animation, overlay, responsive layout, or game-scene slices, name the visual invariant that could fail and the required screenshot evidence, pixel assertion, or other visual evidence.
-- For specialist-capability slices, name the capability boundary, required handoff envelope, required
-  return receipt, and native 0th fallback if the adapter is unavailable.
-- For ship-bound implementation slices, name the expected proof tier, context_handoff needs,
-  possible `blocked_real_env` state, and any `retro_open_loop_closeout` trigger.
-
-### 4. Write the Plan
-
-Save to `docs/plans/YYYY-MM-DD-<topic>.md`:
+Plan shape:
 
 ```markdown
 # <Topic> Plan
-
-**Decision:** [link to decision record]
+**Decision:** <path or direct instruction>
 **Slices:** N
 
 ## Architecture
-- Data model: [shape]
-- Key interface: [contract]
+- <cross-slice contract>
 
 ## Slices
-
-### 1. <Name>
-<What this slice delivers — one sentence>
-- [ ] Acceptance criterion
-- [ ] Acceptance criterion
-- [ ] Visual invariant: [what must visually hold + screenshot evidence/pixel assertion], if applicable
-
-### 2. <Name>
-<What this slice delivers>
-- [ ] Acceptance criterion
-- [ ] Visual invariant: [what must visually hold + screenshot evidence/pixel assertion], if applicable
-
-...
+### 1. <Outcome>
+- [ ] <externally visible acceptance>
+- [ ] Proof: <tier and evidence>
 ```
 
-Target: 2-4 lines per slice. The plan is a checklist, not a tutorial. If a slice description exceeds 5 lines, it's too thick — split it.
+Keep each slice to 2–5 lines. File-by-file edit instructions belong to implementation, not the plan.
 
-### 5. Cross-Model Review
+## Review and handoff
 
-Send to the counterpart reviewer using `ask-counterpart-review` with the decision record + plan:
-- Missing slices? Wrong order? Scope creep beyond the decision?
-- Same severity protocol: nit / suggestion / blocker
+Use `ask-counterpart-review` only when ordering, migration risk, or missing coverage gives a reviewer
+a concrete evidence advantage. The user may approve, reorder, or narrow the slices. Then hand off
+to `/build` with the plan path.
 
-### 6. User Approves
+## References
 
-User scans the slice list. Approves, reorders, or adjusts scope.
-
-## Handoff
-
-After approval, suggest /build with the plan path.
-
-## Repo Preflight
-
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
-
-## KB Integration
-
-- **Reads:** decision records, project architecture docs, design principles
-- **Writes:** plan to docs/plans/ (mirrored to vault)
+- `../../references/skills-kernel.md`
+- `../../references/specialist-routing.md`
+- `../../references/workflow-verification.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`

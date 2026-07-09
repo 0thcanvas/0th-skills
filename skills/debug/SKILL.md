@@ -1,172 +1,82 @@
 ---
 name: debug
-description: "Use when something is broken: bugs, test failures, unexpected behavior, or build failures. Investigates root cause before fixing."
+description: "Finds and proves a failure's root cause before changing code. Use when behavior is broken, flaky, slow, or unexpectedly failing."
 argument-hint: "[symptom or failing test]"
 ---
 
 # Debug
 
-Find the root cause, then fix it. Not the other way around.
+Build a feedback loop, prove the root cause, then fix only when authorized. Apply
+`../../references/skills-kernel.md` once for root-task preflight, authority, optional delegation,
+safety, and closeout.
 
-## Direct Invocation
+## Enter / authority
 
-If the user invoked this skill directly, treat `$ARGUMENTS` as the starting symptom report. If
-`$ARGUMENTS` is empty, infer the symptom from the conversation.
+- Enter for bugs, test/build failures, regressions, flakiness, and performance failures.
+- `$ARGUMENTS` is the starting symptom when invoked directly.
+- A diagnosis request authorizes investigation and reporting, not a code change.
+- A fix request authorizes the smallest in-scope root-cause fix plus a regression test.
 
-## When to Use
+## Iron laws
 
-- Bug reports
-- Test failures
-- Unexpected behavior
-- Build failures
-- Performance problems
-- "It was working yesterday"
+- No hypothesis without a feedback loop.
+- No fix before root-cause evidence.
+- Three failed attempts on the same hypothesis stop and reassess.
 
-Also invoked by /build when a mid-build test fails unexpectedly.
+## 1. Feedback loop
 
-## Triage Preamble
+Create the fastest deterministic signal at the seam nearest the symptom: failing test, CLI fixture,
+request script, browser assertion, trace replay, differential run, fuzz loop, bisection harness, or
+structured human loop.
 
-```
-Symptom: [what's broken, in one sentence]
-Severity: blocking / degraded / cosmetic
-First seen: [when, or "unknown"]
-```
+Visual bugs need a visual feedback loop. A DOM test is not enough for alignment, overlap, clipping, animation, canvas/SVG coordinates, or layout fit; capture screenshot, video, screenshot assertion,
+or pixel evidence.
 
-## Session Resumption
+Wrap managed failing commands when a failure dossier is useful:
 
-If resuming a debug session:
-1. Read any prior debug notes in KB
-2. Read recent commits in the affected area
-3. Report: "Last session investigated X. Hypothesis was Y. Status: [confirmed/disproved/untested]."
-
-## Reference Files
-
-- See `references/root-cause-patterns.md` for common investigation patterns, diagnostic prompts, and escalation signals.
-- See `../../references/workflow-verification.md` for `context_handoff`, `blocked_real_env`, and
-  `retro_open_loop_closeout` when a bug depends on large logs or unavailable real environments.
-- See `../../references/working-artifacts.md` for throwaway timelines, causal graphs, HAR summaries,
-  and other human-facing debug artifacts that should not become repo truth by default.
-- For MV3 Chrome-extension bugs (service worker state, storage, console), use Browser Kit (`@0th/browser-kit` + `@0th/browser-kit/ext-debug`) rather than ad-hoc CDP. Run `browser-kit mcp status` before relying on `browser_*` tools, open the session with `browser-kit session open --ext …`, list tabs before navigating, and reuse matching logged-in tabs when the bug depends on user state.
-
-## Secret Handling
-
-Debugging often touches logs, traces, HARs, shell output, env vars, and browser sessions. Treat those as leak surfaces.
-
-- Use the project's safe secret runner when reproducing secret-dependent behavior: `op run --env-file ... -- <command>`, `doppler run -- <command>`, Vault/cloud/platform runtime injection, or a human-created ignored `.env.local` loaded by the app.
-- When a `.env.local` is present, run the app's loader rather than reading the file directly. Do not `cat`, `head`, `grep`, or otherwise print its contents.
-- Never dump full environments, raw request headers, cookies, Authorization values, session storage, local storage, HAR bodies, or browser/CDP payloads into chat or subagent prompts.
-- Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, or shell tracing (`set -x`, `bash -x`) around secrets.
-- Verify only whether a named secret is present. If the value may have appeared in a trace/log/chat, report the category and recommend rotation without repeating the value.
-
-## Iron Laws
-
-```
-NO HYPOTHESES WITHOUT A FEEDBACK LOOP
-NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" \
+  --run-id <unique-run-id> -- <loop command>
 ```
 
-Phase 0 (loop) before Phase 1 (investigate). Phase 1 before any proposed fix.
+If no useful loop can be built, return `BLOCKED` with what was tried and the exact missing artifact,
+environment, or temporary-instrumentation permission. Do not guess beyond the evidence.
 
-## Process
+## 2. Root cause
 
-### Phase 0: Build a feedback loop
+1. Reproduce and read the complete error or visible symptom.
+2. Check recent changes and trace the bad value or state backward to its origin.
+3. Read relevant prior incidents, decisions, `CONTEXT.md`, and owning interfaces.
+4. State one specific, falsifiable root-cause hypothesis.
+5. Add the smallest diagnostic or controlled comparison that can disprove it, then rerun the loop.
+6. Repeat with new evidence, not new speculation.
 
-**The loop is the skill.** Everything else is mechanical. With a fast, deterministic, agent-runnable pass/fail signal, bisection and hypothesis-testing become consumption of that signal. Without one, no amount of code-reading saves you.
+For large logs, use `context_handoff`: summary, source pointers, unresolved gaps, and next read
+targets. Never place raw secrets, cookies, headers, HAR bodies, or private browser payloads into a
+handoff.
 
-Spend disproportionate effort here. Be aggressive. Refuse to give up.
+## 3. Fix and prove
 
-Try in roughly this order:
+When fixes are authorized:
 
-1. **Failing test** at the seam closest to the bug (unit / integration / e2e).
-2. **curl / HTTP script** against a running dev server.
-3. **CLI invocation** with a fixture input, diff stdout against a known-good snapshot.
-4. **Headless browser script** (Playwright) — drive the UI, assert on DOM / console / network.
-5. **Replay a captured trace** — save real payload / event log to disk, replay through the code path in isolation.
-6. **Throwaway harness** — minimal subset of the system, mocked deps, single function call exercising the bug path.
-7. **Property / fuzz loop** — for "sometimes wrong output" bugs, run 1000 random inputs and look for the failure mode.
-8. **Bisection harness** — automate `boot at state X, check, repeat` so you can `git bisect run` it.
-9. **Differential loop** — run the same input through old vs new (or two configs), diff outputs.
-10. **HITL bash script** — last resort, drive a human through `scripts/hitl-loop.template.sh` so the loop is still structured.
+1. Write a failing regression test through the public interface.
+2. Confirm it fails for the proven reason.
+3. Make the smallest root-cause fix.
+4. Rerun the loop, focused tests, and relevant full suite.
+5. Remove temporary diagnostics and record the proof path.
 
-Visual bugs need a visual feedback loop. A DOM test is not enough for alignment, overlap, clipping, animation, canvas/SVG coordinates, or layout fit; capture a screenshot, video, screenshot assertion, or pixel assertion that proves the visible symptom changed.
+Unavailable browser, simulator, sandbox, or session evidence returns `blocked_real_env`; weaker
+evidence cannot substitute. Non-obvious root causes may become a durable memory/KB claim at closeout.
 
-**Iterate on the loop itself.** Once you have one, ask: faster (cache setup, skip unrelated init, narrow scope)? sharper (assert the specific symptom, not "didn't crash")? more deterministic (pin time, seed RNG, isolate filesystem, freeze network)? A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
+## Report
 
-When a loop is managed verification and its failure should be surfaced back through 0th hooks, wrap it with `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" --run-id <unique-run-id> -- <loop command>`; use a fresh `--run-id` per run.
+Return symptom, root cause, fix or diagnosis-only boundary, regression test, evidence, and status.
+Apply `retro_open_loop_closeout` when proof was skipped, blocked, flaky, or repeatedly failed.
 
-**Non-deterministic bugs.** The goal is a higher reproduction rate, not a clean repro. Loop the trigger 100×, parallelise, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not — keep raising the rate until it is.
+## References
 
-**If you genuinely can't build a loop**, stop and say so explicitly. List what you tried. Ask the user for: environment access, a captured artifact (HAR, log dump, screen recording with timestamps), or permission for temporary instrumentation. Do not proceed to hypothesise without a loop.
-
-### Phase 1: Investigate
-
-1. **Read the error.** Stack traces, error messages, logs. Don't skim — read completely.
-2. **Reproduce.** Can you trigger it reliably? If not, gather more evidence. Don't guess.
-3. **Check recent changes.** `git log --oneline -20 -- <affected files>`. What changed?
-4. **Trace the data flow.** Where does the bad value originate? Keep tracing backward until you find the source.
-5. **Read KB.** Check for prior bugs in this area, known pitfalls, architectural quirks.
-6. **Read `CONTEXT.md`** at the project root if it exists — use its vocabulary to align your hypothesis and report with the project's domain terms.
-7. On Codex-hosted runs, explicitly use `0th_explorer` when the owning code path is unclear and `0th_test_runner` for condensed repro or verification runs.
-8. Use `context_handoff` for large logs or multi-step investigations: summary, source pointers,
-   unresolved gaps, and next read targets.
-9. Codex dispatch profiles: on Codex-hosted runs, `0th_explorer` and `0th_test_runner` are workflow profiles implemented through generic `spawn_agent` roles. Follow `../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
-
-Output: "Root cause hypothesis: [specific, testable claim about what is wrong and why]."
-
-### Phase 2: Test the Hypothesis
-
-1. Add a diagnostic (log, assertion, debug output) at the suspected root cause.
-2. Reproduce. Does the evidence match?
-3. If wrong: form new hypothesis. Return to Phase 1 with new information.
-
-### Phase 3: Fix
-
-1. **Write a failing test** that reproduces the bug through the public interface.
-2. **Run it.** Confirm it fails for the right reason.
-3. **Fix the root cause.** Smallest change that eliminates the actual problem.
-4. **Run it.** Confirm it passes. Confirm no regressions.
-5. **Run full test suite.** Paste output.
-
-### Phase 4: Report
-
-```
-SYMPTOM:    [what the user observed]
-ROOT CAUSE: [what was actually wrong]
-FIX:        [what changed, with file:line references]
-EVIDENCE:   [test output showing fix works]
-TEST:       [regression test location]
-STATUS:     DONE | DONE_WITH_CONCERNS | BLOCKED
-```
-
-Write findings to KB if the root cause was non-obvious.
-
-If the bug cannot be reproduced because browser, simulator, sandbox, or session evidence is
-unavailable, report `blocked_real_env` rather than treating weaker evidence as proof. At closeout,
-apply `retro_open_loop_closeout` when verification was skipped, blocked, or needs follow-up.
-
-If you hit the 3-strike boundary or start rationalizing a shortcut, read `references/root-cause-patterns.md` before proceeding.
-
-## Repo Preflight
-
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
-
-## KB Integration
-
-- **Reads:** prior bugs in this area, architectural notes, known pitfalls
-- **Writes:** root cause findings if non-obvious, patterns discovered, architectural observations
+- `references/root-cause-patterns.md`
+- `../../references/skills-kernel.md`
+- `../../references/workflow-verification.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`

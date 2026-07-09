@@ -1,156 +1,70 @@
 ---
 name: deep-research
-description: "Use when a hard feasibility, decision, or survey question needs multi-phase research, experiments, and a buildable architecture."
+description: "Builds a file-backed world model for a hard external question. Use when feasibility, decision, or survey work needs multiple source passes, gap analysis, or experiments."
 argument-hint: "[feasibility|decision|survey] [question]"
 ---
 
 # Deep Research
 
-Eight-phase research loop for problems that need more than a search engine.
+Use the smallest multi-pass investigation that can resolve a genuinely hard question. Apply
+`../../references/skills-kernel.md` once for root-task preflight, authority, optional delegation,
+safety, context transfer, and closeout. Ordinary source-backed questions belong in `/research`.
 
-Use this skill to decompose hard questions, research sub-problems with host-native agents,
-build a filesystem-backed world model, and produce one of three outputs:
-- `feasibility`: buildable architecture plus experiment results.
-- `decision`: evidence-backed decision record.
-- `survey`: wiki pages plus landscape overview.
+## Modes
 
-For the detailed phase mechanics, templates, and routing tables, read
-`references/phase-guide.md` before executing a phase.
+- `feasibility`: buildable architecture plus an experiment against the highest-risk assumption.
+- `decision`: evidence-backed comparison and decision record.
+- `survey`: landscape and reusable wiki pages.
 
-## Direct Invocation
+Parse mode and question from `$ARGUMENTS`; if mode is absent, infer it only when unambiguous.
+Generate a short topic slug and resolve the KB root through project configuration.
 
-Parse `$ARGUMENTS`:
-1. First word is the **mode**: `feasibility`, `decision`, or `survey`.
-2. Everything after the first word is the **question**.
+## Disk contract
 
-If the mode is missing or invalid, ask:
-> "Which mode? feasibility (build an architecture), decision (compare options), or survey (map a landscape)."
+Use `{KB_ROOT}/research/{topic}/` with `state.md`, `journal.md`, `raw/`, `raw/archived/`, `wiki/`,
+and `experiments/`. Existing `state.md` is the resume authority. Two sessions must not mutate the
+same topic concurrently.
 
-Generate a **topic slug** from the question: kebab-case, 3-5 words, no stop words. Confirm
-with the user before creating directories:
-> "Topic slug: `{slug}` — OK?"
+Raw sources and experiments stay on disk. The root carries only `state.md`, bounded summaries,
+source pointers, unresolved gaps, and next read targets through `context_handoff`; each summary stays
+small and does not
+accumulate raw source material.
 
-| Mode | Phases | Output |
-|------|--------|--------|
-| `feasibility` | 0-1-2-3-4-5-6-7 | Buildable architecture + experiment results |
-| `decision` | 0-1-2-3-4-5-7d | Decision record |
-| `survey` | 0-1-2-3-7s | Wiki pages + landscape overview |
-
-## Disk Contract
-
-Resolve the KB root using `PROTOCOL.md`: `KB_ROOT`, then project instructions, then ask once.
-
-Use these paths throughout:
-- `RESEARCH_ROOT = {KB_ROOT}/research`
-- `TOPIC_ROOT = {RESEARCH_ROOT}/{topic}`
-
-On first run, create:
-```
-{KB_ROOT}/research/
-  index.md
-  log.md
-{RESEARCH_ROOT}/{topic}/
-  state.md
-  journal.md
-  raw/
-  raw/archived/
-  wiki/
-  experiments/
-```
-
-Use `templates/state.md` for `state.md`. Write raw findings, world models, quality gates,
-experiments, conclusions, and journal entries using this skill's templates.
-
-## Session Resumption
-
-Before starting work, check `TOPIC_ROOT/state.md`.
-
-If it exists:
-1. Read `state.md`.
-2. Report current phase, iteration, sub-problem statuses, and what happened last.
-3. Ask: "Resume from Phase {N}, or start fresh?"
-
-If the user resumes, continue from the recorded phase. If the user starts fresh, archive the
-existing directory to `RESEARCH_ROOT/{topic}-archived-YYYY-MM-DD/`, create a new topic
-directory, and proceed as a first run.
-
-Single-session per topic. Different topics can run in parallel; two sessions on the same topic
-are unsupported because agents would clobber `raw/` and `world-model.md`.
-
-## Phase Loop
+## Adaptive phase loop
 
 Read the relevant section of `references/phase-guide.md` before each phase.
 
-| Phase | Gate | Summary |
-|---|---|---|
-| 0 FRAME | Human | Restate the question, decompose sub-problems, tag mechanisms, assign source buckets, and get approval. |
-| 1 SEARCH | Autonomous | Dispatch host-native research agents in broad and vocabulary-expanded passes; write raw notes. |
-| 2 BUILD WORLD MODEL | Autonomous | Dispatch synthesizer to build or merge `world-model.md` from raw notes and consensus checks. |
-| 3 PROBE GAPS | Human | Present verified findings, unverified claims, gaps, contradictions, and decomposition threats. |
-| 4 REASSESS | Automatic | Decide whether decomposition still holds; return to Phase 0 if evidence threatens the frame. |
-| 5 DEVELOP | Autonomous | Assemble a buildable architecture or decision evidence; run the 10-point quality gate. |
-| 6 EXPERIMENT | Autonomous | Feasibility mode only: validate the highest-risk assumption with a proof-of-concept. |
-| 7 CONCLUDE | Human | Present verdict and write final artifacts. Use 7d for decisions and 7s for surveys. |
+1. **Frame:** define verdict criteria, decompose sub-problems, assign source buckets, and identify
+   the assumption most likely to invalidate the frame.
+2. **Search:** run broad and learned-vocabulary passes. Default to one root agent; use independent
+   source packets only when the Skills Kernel capability gate allows them.
+3. **Build world model:** synthesize claims, mechanisms, contradictions, confidence, and provenance
+   into `world-model.md`.
+4. **Probe gaps:** show verified findings, unverified claims, conflicting evidence, and threats to
+   the decomposition.
+5. **Reassess:** change the frame when evidence invalidates it; do not defend the original split.
+6. **Develop:** assemble the architecture, decision, or survey and run
+   `references/quality-rubric.md`.
+7. **Experiment:** feasibility mode only; test the highest-risk buildable assumption through an
+   executable seam.
+8. **Conclude:** state `SUCCESS`, `PARTIAL`, `PIVOT`, `EXHAUSTED`, `USER_STOP`, or
+   `MAX_ITERATIONS`, with evidence paths and remaining gaps.
 
-## Agent Routing
-
-Use host-native agents:
-
-| Work | Claude | Codex |
-|---|---|---|
-| Search and condense | `0th:web-researcher` | `0th_researcher` |
-| Deep extraction | `0th:deep-researcher` | `0th_deep_researcher` |
-| World-model synthesis | `0th:synthesizer` | `0th_synthesizer` |
-| Experiment | `0th:experimenter` | `0th_experimenter` |
-
-Codex dispatch profiles: on Codex-hosted runs, the `0th_*` entries in this table are
-workflow profiles implemented through generic `spawn_agent` roles. Follow
-`../../references/codex-dispatch-profiles.md` instead of continuing in the main thread.
-
-Each agent writes results to disk and returns a short summary. Do not pull raw webpages,
-full paper text, search listings, experiment logs, or previous phase outputs into the
-orchestrator context.
-
-## Context Rule
-
-Agents communicate through files, not context accumulation. Apply `context_handoff` from
-`../../references/workflow-verification.md`: each phase carries bounded summaries, source pointers,
-unresolved gaps, and next read targets while raw source material stays on disk.
-
-The orchestrator may hold:
-- this compact workflow
-- `TOPIC_ROOT/state.md`, read fresh each phase
-- current phase agent summaries, <=30 lines each
-- user responses at human gates
-
-Reference findings by file path after they are written. When a new phase starts, previous
-summaries are gone from context; they live on disk.
+Human alignment is required before a materially new frame, destructive/live experiment, or final
+decision that exceeds the accepted TaskSpec. A routine phase transition is not a reason to pause.
 
 ## Termination
 
-Terminate through Phase 7 when any condition is met:
-- SUCCESS: quality gate passes and feasibility experiment validates.
-- PARTIAL: some sub-problems are solved and others remain open.
-- PIVOT: Phase 4 returns to Phase 0 three times.
-- EXHAUSTED: Phase 1 finds no new vocabulary for two full iterations.
-- USER_STOP: user stops at a human gate.
-- MAX_ITERATIONS: five full loops for feasibility or decision.
+Stop early when verdict criteria are met. Stop as `EXHAUSTED` after two full searches add no useful
+vocabulary or evidence. Cap feasibility/decision reframes at three and full loops at five. Survey is
+normally one frame/search/world model/gap/conclusion pass.
 
-Survey mode is single-pass: Phase 0-1-2-3-7s, or USER_STOP.
+## References
 
-## Reference Documents
-
-- `references/phase-guide.md` — detailed phase mechanics and routing tables.
-- `references/quality-rubric.md` — 10-point quality gate criteria and loop-back targets.
-- `references/failure-modes.md` — failure mode defenses and overexcitement detector.
-- `references/abstract-mechanisms.md` — cross-domain translation vocabulary.
-- `../../references/workflow-verification.md` — `context_handoff` fields for bounded summaries,
-  source pointers, unresolved gaps, and next read targets.
-- `../../references/working-artifacts.md` — optional human-facing HTML reports, slide decks, and
-  comparison surfaces stay outside repo truth unless explicitly promoted.
-
-## Templates
-
+- `references/phase-guide.md`
+- `references/quality-rubric.md`
+- `references/failure-modes.md`
+- `references/abstract-mechanisms.md`
 - `templates/state.md`
 - `templates/world-model.md`
 - `templates/raw-finding.md`
@@ -158,23 +72,7 @@ Survey mode is single-pass: Phase 0-1-2-3-7s, or USER_STOP.
 - `templates/conclusion.md`
 - `templates/journal-entry.md`
 - `templates/quality-gate.md`
-
-## Repo Preflight
-
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
-
-## Memory Integration
-
-Before finishing a meaningful workflow boundary, run the Memory Write Gate in `../../references/memory-contract.md`. Use `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" write-gate` when the scope is ambiguous so the event is classified as project, global, both, or nothing durable. For direct durable claims, write through `memory remember` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" remember` command shown above); do not hand-edit runtime `claims.jsonl`.
-
-## Open Loop Integration
-
-When work remains unfinished, blocked, or intentionally dropped, update open loops through `memory open-loop` (shorthand for the full `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" open-loop` command); do not store TODOs as memory claims. Use `add` for new unfinished work, `block` for waiting states, `close` when completed, `drop` when no longer worth doing, and `reopen` when deferred work becomes active again.
+- `../../references/skills-kernel.md`
+- `../../references/workflow-verification.md`
+- `../../references/working-artifacts.md`
+- `../../references/memory-contract.md`
