@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   loadModelRouting,
+  resolveModelRouting,
   resolveLaunchPlan,
   selectComputeClass,
   validateCapabilityPacket,
@@ -27,6 +28,8 @@ const capabilities = {
   observed_at: "2026-07-09T22:00:00Z",
   model: "gpt-5.6-sol",
   reasoning_effort: "xhigh",
+  available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
+  available_reasoning_efforts: ["low", "medium", "high", "xhigh"],
   model_override: true,
   effort_override: true,
   max_parallelism: 4,
@@ -87,6 +90,13 @@ test("portable model-routing schemas and harness adapters exist", () => {
     "adapters/grok.models.json"
   ]) {
     assert.equal(fs.existsSync(path.join(repoRoot, relativePath)), true, `${relativePath} should exist`);
+  }
+  for (const harness of ["codex", "claude", "grok"]) {
+    assert.equal(
+      fs.existsSync(path.join(repoRoot, "adapters", "templates", `${harness}.models.json`)),
+      true,
+      `${harness} routing template should exist`
+    );
   }
 });
 
@@ -154,6 +164,28 @@ test("inherit-only runtime fails closed instead of pretending economy routing", 
   assert.ok(result.reasons.includes("effort_override_unavailable"));
 });
 
+test("concrete routes require observed model and effort availability", () => {
+  const unobserved = resolveLaunchPlan({
+    capabilities: { ...capabilities, available_models: null, available_reasoning_efforts: null },
+    packet: packet(),
+    routing
+  });
+  assert.ok(unobserved.reasons.includes("model_catalog_unobserved"));
+  assert.ok(unobserved.reasons.includes("effort_catalog_unobserved"));
+
+  const unavailable = resolveLaunchPlan({
+    capabilities: {
+      ...capabilities,
+      available_models: ["gpt-5.6-sol"],
+      available_reasoning_efforts: ["xhigh"]
+    },
+    packet: packet(),
+    routing
+  });
+  assert.ok(unavailable.reasons.includes("model_unavailable"));
+  assert.ok(unavailable.reasons.includes("reasoning_effort_unavailable"));
+});
+
 test("routing adapters validate and load independently by harness", () => {
   assert.equal(validateModelRouting(routing), routing);
   assert.throws(
@@ -165,6 +197,44 @@ test("routing adapters validate and load independently by harness", () => {
     harness: "codex"
   });
   assert.equal(loaded.harness, "codex");
+});
+
+test("routing resolution prefers explicit, then local, then bundled fallback", () => {
+  const tempDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "routing-precedence-"));
+  const localPath = path.join(tempDir, "codex.json");
+  const explicitPath = path.join(tempDir, "explicit.json");
+  fs.writeFileSync(localPath, `${JSON.stringify(routing)}\n`);
+  fs.writeFileSync(explicitPath, `${JSON.stringify({ ...routing, harness: "codex" })}\n`);
+
+  const explicit = resolveModelRouting({
+    harness: "codex",
+    cwd: repoRoot,
+    explicitPath,
+    configDir: tempDir
+  });
+  assert.equal(explicit.source, "explicit");
+  assert.equal(explicit.path, explicitPath);
+
+  const local = resolveModelRouting({ harness: "codex", cwd: repoRoot, configDir: tempDir });
+  assert.equal(local.source, "local");
+  assert.equal(local.path, localPath);
+
+  fs.rmSync(localPath);
+  const fallback = resolveModelRouting({ harness: "codex", cwd: repoRoot, configDir: tempDir });
+  assert.equal(fallback.source, "bundled-fallback");
+  assert.equal(fallback.path, path.join(repoRoot, "adapters", "codex.models.json"));
+});
+
+test("bundled routing contains no authoritative provider model choices", () => {
+  for (const harness of ["codex", "claude", "grok"]) {
+    const bundled = loadModelRouting({
+      routingPath: path.join(repoRoot, "adapters", `${harness}.models.json`),
+      harness
+    });
+    assert.equal(bundled.profiles.economy.selection_mode, "disabled");
+    assert.equal(bundled.profiles.balanced.selection_mode, "disabled");
+    assert.equal(bundled.profiles.frontier.selection_mode, "inherit");
+  }
 });
 
 test("inherit-only harness adapters cannot pretend to provide economy routing", () => {
@@ -234,6 +304,7 @@ test("public CLI emits a launch plan and verifies its receipt", () => {
     "--harness", "codex",
     "--runtime-json", runtimePath,
     "--packet-json", packetPath,
+    "--routing-json", path.join("tests", "fixtures", "model-router", "codex-routing.json"),
     "--now", "2026-07-09T22:02:00Z"
   ], { cwd: repoRoot, encoding: "utf8" });
 
@@ -266,4 +337,54 @@ test("public CLI emits a launch plan and verifies its receipt", () => {
 
   assert.equal(attest.status, 0, attest.stderr);
   assert.equal(JSON.parse(attest.stdout).verified, true);
+});
+
+test("routing init writes isolated local config once and doctor reports readiness", () => {
+  const configDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "routing-init-"));
+  const init = spawnSync(process.execPath, [
+    "scripts/0th.mjs", "routing", "init",
+    "--harness", "codex",
+    "--config-dir", configDir
+  ], { cwd: repoRoot, encoding: "utf8" });
+  assert.equal(init.status, 0, init.stderr);
+  const initialized = JSON.parse(init.stdout);
+  assert.equal(initialized.created, true);
+  assert.equal(initialized.path, path.join(configDir, "codex.json"));
+
+  const second = spawnSync(process.execPath, [
+    "scripts/0th.mjs", "routing", "init",
+    "--harness", "codex",
+    "--config-dir", configDir
+  ], { cwd: repoRoot, encoding: "utf8" });
+  assert.notEqual(second.status, 0);
+  assert.match(second.stderr, /already exists/);
+
+  const doctor = spawnSync(process.execPath, [
+    "scripts/0th.mjs", "routing", "doctor",
+    "--harness", "codex",
+    "--config-dir", configDir,
+    "--runtime-json", path.join("tests", "fixtures", "model-router", "codex-runtime-controllable.json"),
+    "--now", "2026-07-09T22:02:00Z"
+  ], { cwd: repoRoot, encoding: "utf8" });
+  assert.equal(doctor.status, 0, doctor.stderr);
+  const diagnosis = JSON.parse(doctor.stdout);
+  assert.equal(diagnosis.routing_source, "local");
+  assert.equal(diagnosis.status, "partial");
+  assert.equal(diagnosis.profiles.economy.allowed, false);
+  assert.ok(diagnosis.profiles.economy.reasons.includes("compute_class_unavailable"));
+  assert.equal(diagnosis.profiles.frontier.allowed, true);
+});
+
+test("routing commands resolve bundled plugin assets outside the plugin working directory", () => {
+  const targetCwd = fs.mkdtempSync(path.join(repoRoot, "verification-report", "external-cwd-"));
+  const configDir = path.join(targetCwd, "config");
+  const result = spawnSync(process.execPath, [
+    path.join(repoRoot, "scripts", "0th.mjs"),
+    "routing", "init",
+    "--harness", "claude",
+    "--config-dir", configDir
+  ], { cwd: targetCwd, encoding: "utf8" });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.existsSync(path.join(configDir, "claude.json")), true);
 });

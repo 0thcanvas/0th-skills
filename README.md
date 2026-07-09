@@ -96,8 +96,9 @@ visible.
 Portable skills do not require these profiles. They default to one root agent and route optional
 packets through [`references/skills-kernel.md`](references/skills-kernel.md) only after a live
 capability check. The manifests below remain available for explicit compatibility and specialist
-use. Role manifests describe behavior and tools; harness adapters under `adapters/*.models.json`
-own compute-class-to-model mapping, and runtime receipts prove what a child actually received.
+use. Role manifests describe behavior and tools; local files under
+`~/.0th/skills/config/model-routing/` own compute-class-to-model mapping, and runtime receipts prove
+what a child actually received.
 
 - Claude-specific agent manifests live under `agents/*.md`
 - Codex-native subagent manifests live under `.codex/agents/*.toml`
@@ -105,7 +106,12 @@ own compute-class-to-model mapping, and runtime receipts prove what a child actu
 - The markdown files are the Claude-side manifests; the Codex TOML files are the native manifest format Codex actually loads
 - The `.codex/` directory is intentionally hidden on macOS because it is native tool config, not product source
 - Claude and Codex role manifests do not pin models or effort; explicit compatibility use inherits the session unless the harness adapter supplies a launch plan
-- `adapters/*.models.json` maps portable `economy`, `balanced`, and `frontier` classes to harness-local model selectors
+- `adapters/templates/*.models.json` provides safe local configuration structure; bundled
+  `adapters/*.models.json` disables economy/balanced routing and inherits frontier as a fail-closed fallback
+- Active mappings live outside the plugin at `~/.0th/skills/config/model-routing/<harness>.json`;
+  set `OTH_SKILLS_ROUTING_DIR` only when another local configuration root is required
+- Initialize with `node scripts/0th.mjs routing init --harness <name>` and diagnose live controls,
+  model availability, and effort availability with `node scripts/0th.mjs routing doctor --harness <name> --runtime-json <path>`
 - `scripts/0th.mjs capabilities` emits the selected launch plan only when live runtime controls can honor it; `scripts/0th.mjs attest` verifies the post-spawn receipt
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
 - `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
@@ -137,7 +143,7 @@ own compute-class-to-model mapping, and runtime receipts prove what a child actu
 | Read-only exploration | Built-in `Explore` agent | `0th_explorer` workflow profile over generic `explorer` |
 | Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
 | Codex-only profiles | n/a | `0th_explorer`, `0th_researcher` |
-| Compute selection | Harness adapter plus runtime receipt | Harness adapter plus runtime receipt |
+| Compute selection | Local harness mapping plus runtime receipt | Local harness mapping plus runtime receipt |
 
 The goal is host-native parity, not identical files. When a behavior cannot be mirrored cleanly, document the asymmetry and keep the user-facing workflow explicit.
 

@@ -5,6 +5,8 @@
   "observed_at": "2026-07-09T19:52:00Z",
   "model": "gpt-5.6-sol",
   "reasoning_effort": "xhigh",
+  "available_models": null,
+  "available_reasoning_efforts": null,
   "model_override": false,
   "effort_override": false,
   "max_parallelism": 4,

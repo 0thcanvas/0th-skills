@@ -11,6 +11,8 @@
     "observed_at",
     "model",
     "reasoning_effort",
+    "available_models",
+    "available_reasoning_efforts",
     "model_override",
     "effort_override",
     "max_parallelism",
@@ -29,6 +31,16 @@
     "reasoning_effort": {
       "type": ["string", "null"],
       "enum": [null, "low", "medium", "high", "xhigh", "max"]
+    },
+    "available_models": {
+      "type": ["array", "null"],
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "available_reasoning_efforts": {
+      "type": ["array", "null"],
+      "items": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+      "uniqueItems": true
     },
     "model_override": { "type": "boolean" },
     "effort_override": { "type": "boolean" },

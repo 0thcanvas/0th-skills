@@ -1,6 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
+
+const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const SOURCES = new Set(["documented-only", "session-metadata", "runtime-probe"]);
 const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max"]);
@@ -37,7 +41,7 @@ const RISK_FLOORS = new Map([
   ["high", "balanced"],
   ["critical", "frontier"]
 ]);
-const SELECTION_MODES = new Set(["per-invocation", "named-profile", "inherit"]);
+const SELECTION_MODES = new Set(["per-invocation", "named-profile", "inherit", "disabled"]);
 const RECEIPT_SOURCES = new Set(["session-metadata", "runtime-probe"]);
 const REQUIRED_CAPABILITY_KEYS = [
   "schema_version",
@@ -46,6 +50,8 @@ const REQUIRED_CAPABILITY_KEYS = [
   "observed_at",
   "model",
   "reasoning_effort",
+  "available_models",
+  "available_reasoning_efforts",
   "model_override",
   "effort_override",
   "max_parallelism",
@@ -161,6 +167,10 @@ function assertStringArray(value, label) {
   }
 }
 
+function assertNullableStringArray(value, label) {
+  if (value !== null) assertStringArray(value, label);
+}
+
 function parseTimestamp(value, label) {
   const timestamp = Date.parse(value);
   if (!Number.isFinite(timestamp)) {
@@ -189,6 +199,15 @@ export function validateHostCapabilities(value) {
   if (value.reasoning_effort !== null && !EFFORTS.has(value.reasoning_effort)) {
     throw new Error("host capabilities: reasoning_effort is invalid");
   }
+  assertNullableStringArray(value.available_models, "host capabilities: available_models");
+  assertNullableStringArray(
+    value.available_reasoning_efforts,
+    "host capabilities: available_reasoning_efforts"
+  );
+  if (
+    value.available_reasoning_efforts !== null
+    && value.available_reasoning_efforts.some((effort) => !EFFORTS.has(effort))
+  ) throw new Error("host capabilities: available_reasoning_efforts contains an invalid effort");
   assertBoolean(value.model_override, "host capabilities: model_override");
   assertBoolean(value.effort_override, "host capabilities: effort_override");
   assertNullableInteger(value.max_parallelism, "host capabilities: max_parallelism", 1);
@@ -281,14 +300,20 @@ export function validateModelRouting(value) {
     assertObject(profile, `model routing: profiles.${computeClass}`);
     assertRequiredKeys(profile, ROUTING_PROFILE_KEYS, `model routing: profiles.${computeClass}`);
     assertAllowedKeys(profile, ROUTING_PROFILE_KEYS, `model routing: profiles.${computeClass}`);
+    if (!SELECTION_MODES.has(profile.selection_mode)) {
+      throw new Error(`model routing: profiles.${computeClass}.selection_mode is invalid`);
+    }
+    if (profile.selection_mode === "disabled") {
+      if (profile.model !== null || profile.reasoning_effort !== null) {
+        throw new Error(`model routing: profiles.${computeClass} disabled mode must use null model and effort`);
+      }
+      continue;
+    }
     if (typeof profile.model !== "string" || profile.model.trim() === "") {
       throw new Error(`model routing: profiles.${computeClass}.model must be a non-empty string`);
     }
     if (profile.reasoning_effort !== "inherit" && !EFFORTS.has(profile.reasoning_effort)) {
       throw new Error(`model routing: profiles.${computeClass}.reasoning_effort is invalid`);
-    }
-    if (!SELECTION_MODES.has(profile.selection_mode)) {
-      throw new Error(`model routing: profiles.${computeClass}.selection_mode is invalid`);
     }
     if (profile.selection_mode === "inherit" && (profile.model !== "inherit" || profile.reasoning_effort !== "inherit")) {
       throw new Error(`model routing: profiles.${computeClass} inherit mode must inherit model and effort`);
@@ -304,6 +329,46 @@ export function loadModelRouting({ routingPath, harness } = {}) {
     throw new Error(`model routing harness ${routing.harness} does not match ${harness}`);
   }
   return routing;
+}
+
+export function defaultModelRoutingDir({ homeDir = os.homedir(), env = process.env } = {}) {
+  return env.OTH_SKILLS_ROUTING_DIR
+    ? path.resolve(env.OTH_SKILLS_ROUTING_DIR)
+    : path.join(homeDir, ".0th", "skills", "config", "model-routing");
+}
+
+export function resolveModelRouting({
+  harness,
+  cwd = process.cwd(),
+  explicitPath,
+  configDir,
+  homeDir,
+  env = process.env,
+  pluginRoot = PLUGIN_ROOT
+} = {}) {
+  if (typeof harness !== "string" || harness.trim() === "") throw new Error("harness is required");
+  const candidates = [];
+  if (explicitPath) candidates.push({ source: "explicit", path: path.resolve(cwd, explicitPath) });
+  const resolvedConfigDir = configDir
+    ? path.resolve(cwd, configDir)
+    : defaultModelRoutingDir({ homeDir, env });
+  candidates.push({ source: "local", path: path.join(resolvedConfigDir, `${harness}.json`) });
+  candidates.push({
+    source: "bundled-fallback",
+    path: path.join(pluginRoot, "adapters", `${harness}.models.json`)
+  });
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate.path)) {
+      if (candidate.source === "explicit") throw new Error(`explicit routing config does not exist: ${candidate.path}`);
+      continue;
+    }
+    return {
+      ...candidate,
+      routing: loadModelRouting({ routingPath: candidate.path, harness })
+    };
+  }
+  throw new Error(`no model routing configuration found for harness ${harness}`);
 }
 
 export function loadHostCapabilities({
@@ -365,23 +430,41 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
   const profile = selection.selected === "inherit"
     ? { model: "inherit", reasoning_effort: "inherit", selection_mode: "inherit" }
     : routing.profiles[selection.selected];
+  const profileDisabled = profile.selection_mode === "disabled";
   const resolvedModel = profile.model === "inherit" ? capabilities.model : profile.model;
   const resolvedEffort = profile.reasoning_effort === "inherit"
     ? capabilities.reasoning_effort
     : profile.reasoning_effort;
-  if (selection.selected !== "inherit" && selection.selected !== "frontier" && profile.selection_mode === "inherit") {
+  if (profileDisabled) reasons.push("compute_class_unavailable");
+  if (!profileDisabled && selection.selected !== "inherit" && selection.selected !== "frontier" && profile.selection_mode === "inherit") {
     reasons.push("compute_class_unavailable");
   }
-  if (resolvedModel === null) reasons.push("runtime_model_unknown");
-  if (resolvedEffort === null) reasons.push("runtime_effort_unknown");
-  if (profile.model !== "inherit" && profile.model !== capabilities.model && !capabilities.model_override) {
+  if (!profileDisabled && resolvedModel === null) reasons.push("runtime_model_unknown");
+  if (!profileDisabled && resolvedEffort === null) reasons.push("runtime_effort_unknown");
+  if (!profileDisabled && profile.model !== "inherit" && profile.model !== capabilities.model && !capabilities.model_override) {
     reasons.push("model_override_unavailable");
   }
+  if (!profileDisabled && profile.model !== "inherit" && profile.model !== capabilities.model) {
+    if (capabilities.available_models === null) reasons.push("model_catalog_unobserved");
+    else if (!capabilities.available_models.includes(profile.model)) reasons.push("model_unavailable");
+  }
   if (
+    !profileDisabled
+    &&
     profile.reasoning_effort !== "inherit"
     && profile.reasoning_effort !== capabilities.reasoning_effort
     && !capabilities.effort_override
   ) reasons.push("effort_override_unavailable");
+  if (
+    !profileDisabled
+    && profile.reasoning_effort !== "inherit"
+    && profile.reasoning_effort !== capabilities.reasoning_effort
+  ) {
+    if (capabilities.available_reasoning_efforts === null) reasons.push("effort_catalog_unobserved");
+    else if (!capabilities.available_reasoning_efforts.includes(profile.reasoning_effort)) {
+      reasons.push("reasoning_effort_unavailable");
+    }
+  }
   if (
     packet.task_risk === "low"
     && selection.selected === "economy"
@@ -484,6 +567,8 @@ function parseCliOptions(argv) {
     if (token === "--harness") options.harness = argv[++index];
     else if (token === "--runtime-json") options.runtimeJson = argv[++index];
     else if (token === "--packet-json") options.packetJson = argv[++index];
+    else if (token === "--routing-json") options.routingJson = argv[++index];
+    else if (token === "--config-dir") options.configDir = argv[++index];
     else if (token === "--now") options.now = argv[++index];
     else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
     else throw new Error(`unknown capabilities option: ${token}`);
@@ -494,8 +579,7 @@ function parseCliOptions(argv) {
 export function runCapabilitiesCommand(argv, { cwd = process.cwd() } = {}) {
   const options = parseCliOptions(argv);
   if (!options.harness) throw new Error("--harness is required");
-  const adapterPath = path.resolve(cwd, "adapters", `${options.harness}.capabilities.json`);
-  const routingPath = path.resolve(cwd, "adapters", `${options.harness}.models.json`);
+  const adapterPath = path.join(PLUGIN_ROOT, "adapters", `${options.harness}.capabilities.json`);
   const runtimePath = options.runtimeJson ? path.resolve(cwd, options.runtimeJson) : undefined;
   const capabilities = loadHostCapabilities({
     adapterPath,
@@ -507,8 +591,14 @@ export function runCapabilitiesCommand(argv, { cwd = process.cwd() } = {}) {
 
   if (options.packetJson) {
     const packet = readJson(path.resolve(cwd, options.packetJson));
-    const routing = loadModelRouting({ routingPath, harness: options.harness });
-    output.delegation = decideDelegation({ capabilities, packet, routing });
+    const resolvedRouting = resolveModelRouting({
+      harness: options.harness,
+      cwd,
+      explicitPath: options.routingJson,
+      configDir: options.configDir
+    });
+    output.routing = { source: resolvedRouting.source, path: resolvedRouting.path };
+    output.delegation = decideDelegation({ capabilities, packet, routing: resolvedRouting.routing });
   }
   return output;
 }
@@ -526,4 +616,112 @@ export function runAttestCommand(argv, { cwd = process.cwd() } = {}) {
   const launchPlan = readJson(path.resolve(cwd, options.launchPlanJson));
   const receipt = readJson(path.resolve(cwd, options.receiptJson));
   return verifyExecutionReceipt({ launchPlan, receipt });
+}
+
+function parseRoutingOptions(argv) {
+  const options = {};
+  for (let index = 0; index < argv.length; index += 1) {
+    const token = argv[index];
+    if (token === "--harness") options.harness = argv[++index];
+    else if (token === "--config-dir") options.configDir = argv[++index];
+    else if (token === "--routing-json") options.routingJson = argv[++index];
+    else if (token === "--runtime-json") options.runtimeJson = argv[++index];
+    else if (token === "--now") options.now = argv[++index];
+    else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
+    else if (token === "--force") options.force = true;
+    else throw new Error(`unknown routing option: ${token}`);
+  }
+  if (!options.harness) throw new Error("--harness is required");
+  return options;
+}
+
+function doctorPacket(computeClass) {
+  const workKind = computeClass === "economy"
+    ? "source_discovery"
+    : computeClass === "balanced" ? "bounded_implementation" : "architecture";
+  const escalationClass = computeClass === "economy"
+    ? "balanced"
+    : computeClass === "balanced" ? "frontier" : null;
+  return {
+    objective: `Diagnose ${computeClass} model routing`,
+    independent: true,
+    ordered: false,
+    mutation_scope: "read-only",
+    shared_mutable_state: false,
+    evidence_advantage: "routing configuration diagnosis",
+    work_kind: workKind,
+    compute_class: computeClass,
+    escalation_class: escalationClass,
+    task_risk: "low",
+    budget: { max_workers: 1, max_rounds: 1 },
+    output_schema: "routing-diagnosis"
+  };
+}
+
+export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
+  const [action, ...rest] = argv;
+  if (!action) throw new Error("routing action is required: init or doctor");
+  const options = parseRoutingOptions(rest);
+  const configDir = options.configDir
+    ? path.resolve(cwd, options.configDir)
+    : defaultModelRoutingDir();
+
+  if (action === "init") {
+    const templatePath = path.join(PLUGIN_ROOT, "adapters", "templates", `${options.harness}.models.json`);
+    const template = loadModelRouting({ routingPath: templatePath, harness: options.harness });
+    const outputPath = path.join(configDir, `${options.harness}.json`);
+    const existedBefore = fs.existsSync(outputPath);
+    if (existedBefore && fs.lstatSync(outputPath).isSymbolicLink()) {
+      throw new Error(`refusing to overwrite routing config symlink: ${outputPath}`);
+    }
+    if (existedBefore && !options.force) {
+      throw new Error(`routing config already exists: ${outputPath}`);
+    }
+    fs.mkdirSync(configDir, { recursive: true });
+    fs.writeFileSync(outputPath, `${JSON.stringify(template, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: options.force ? "w" : "wx"
+    });
+    return { created: true, overwritten: existedBefore && options.force, harness: options.harness, path: outputPath };
+  }
+
+  if (action === "doctor") {
+    const adapterPath = path.join(PLUGIN_ROOT, "adapters", `${options.harness}.capabilities.json`);
+    const capabilities = loadHostCapabilities({
+      adapterPath,
+      runtimePath: options.runtimeJson ? path.resolve(cwd, options.runtimeJson) : undefined,
+      now: options.now ? new Date(options.now) : new Date(),
+      maxAgeMs: options.maxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
+    });
+    const resolved = resolveModelRouting({
+      harness: options.harness,
+      cwd,
+      explicitPath: options.routingJson,
+      configDir
+    });
+    const profiles = {};
+    for (const computeClass of ROUTABLE_COMPUTE_CLASSES) {
+      const decision = resolveLaunchPlan({
+        capabilities,
+        packet: doctorPacket(computeClass),
+        routing: resolved.routing
+      });
+      profiles[computeClass] = {
+        allowed: decision.allowed,
+        reasons: decision.reasons,
+        launch_plan: decision.launch_plan
+      };
+    }
+    const allowedCount = Object.values(profiles).filter((profile) => profile.allowed).length;
+    return {
+      harness: options.harness,
+      status: allowedCount === 3 ? "ready" : allowedCount > 0 ? "partial" : "blocked",
+      routing_source: resolved.source,
+      routing_path: resolved.path,
+      capabilities_source: capabilities.source,
+      profiles
+    };
+  }
+
+  throw new Error(`unknown routing action: ${action}`);
 }

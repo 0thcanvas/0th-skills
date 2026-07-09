@@ -64,7 +64,14 @@ Portable packets use `compute_class: auto|economy|balanced|frontier|inherit`; th
 model name. `source_discovery`, `evidence_extraction`, `test_execution`, and `log_condensation`
 default to economy; bounded implementation and routine review default to balanced; cross-source
 synthesis, architecture, and high-risk implementation default to frontier. High and critical risk
-raise the floor. Harness mappings live in `adapters/<harness>.models.json`.
+raise the floor. Active harness mappings live in
+`~/.0th/skills/config/model-routing/<harness>.json` or `OTH_SKILLS_ROUTING_DIR`; bundled adapter files
+are inherit-only safety fallbacks, not authoritative model choices. An explicit `--routing-json`
+override takes precedence over local configuration, which takes precedence over the bundled fallback.
+
+Use `scripts/0th.mjs routing init --harness <name>` to create a safe local template without
+overwriting an existing file. Use `routing doctor` with a live runtime record before relying on a
+concrete route. Model and effort overrides plus observed availability must all pass.
 
 An allowed decision includes a launch plan and `launch_id`. Execute that exact plan, collect the
 actual child model and effort from session metadata or a runtime probe, then verify the receipt:

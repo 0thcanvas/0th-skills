@@ -2,7 +2,8 @@
 
 This file documents an explicit compatibility surface. Portable skills do not reference these
 profiles and must not treat a role name or thread setting as live runtime capabilities. These files
-do not pin model or effort; compute selection belongs to `adapters/codex.models.json`.
+do not pin model or effort; active compute selection belongs to the local
+`~/.0th/skills/config/model-routing/codex.json` file. The bundled Codex mapping is a safe fallback.
 
 The optional manifests under `.codex/agents/` remain available when a user explicitly selects one
 or when a caller has already passed the gate in `skills-kernel.md`. Their names describe historical

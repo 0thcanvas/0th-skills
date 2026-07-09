@@ -3,14 +3,14 @@
   "harness": "codex",
   "profiles": {
     "economy": {
-      "model": null,
-      "reasoning_effort": null,
-      "selection_mode": "disabled"
+      "model": "gpt-5.4-mini",
+      "reasoning_effort": "medium",
+      "selection_mode": "per-invocation"
     },
     "balanced": {
-      "model": null,
-      "reasoning_effort": null,
-      "selection_mode": "disabled"
+      "model": "gpt-5.4",
+      "reasoning_effort": "high",
+      "selection_mode": "per-invocation"
     },
     "frontier": {
       "model": "inherit",

@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 
 import process from "node:process";
-import { runAttestCommand, runCapabilitiesCommand } from "./host-capabilities.mjs";
+import { runAttestCommand, runCapabilitiesCommand, runRoutingCommand } from "./host-capabilities.mjs";
 
 function usage() {
   return [
     "Usage: node scripts/0th.mjs <command> [options]",
     "",
     "Commands:",
-    "  capabilities --harness <name> [--runtime-json <path>] [--packet-json <path>]",
+    "  capabilities --harness <name> [--runtime-json <path>] [--packet-json <path>] [--routing-json <path>]",
     "  attest --launch-plan-json <path> --receipt-json <path>",
+    "  routing init --harness <name> [--config-dir <path>] [--force]",
+    "  routing doctor --harness <name> [--config-dir <path>] [--runtime-json <path>]",
     ""
   ].join("\n");
 }
@@ -23,6 +25,7 @@ function main(argv) {
   let output;
   if (command === "capabilities") output = runCapabilitiesCommand(args);
   else if (command === "attest") output = runAttestCommand(args);
+  else if (command === "routing") output = runRoutingCommand(args);
   else throw new Error(`unknown 0th command: ${command}`);
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
 }

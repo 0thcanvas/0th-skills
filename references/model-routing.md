@@ -17,9 +17,16 @@ class and may happen once after failed output-schema or verification evidence.
 
 ## Harness boundary
 
-`adapters/<harness>.models.json` owns the current model and effort selectors for `economy`,
-`balanced`, and `frontier`. The mapping is configuration, not proof. A live host capability record
-must show that model and effort controls exist before the controller emits a launch plan.
+Active selectors live at `~/.0th/skills/config/model-routing/<harness>.json`, or under the directory
+named by `OTH_SKILLS_ROUTING_DIR`. Resolution order is explicit `--routing-json`, local configuration,
+then bundled fallback. `adapters/templates/` provides structure; `adapters/<harness>.models.json`
+disables economy/balanced and inherits frontier so missing local configuration cannot silently spend
+the root model as a cheap worker.
+
+Run `scripts/0th.mjs routing init --harness <name>` to create the local template. It refuses to
+overwrite an existing file unless `--force` is explicit and refuses symlink targets. Run
+`scripts/0th.mjs routing doctor --harness <name> --runtime-json <path>` to verify live override
+controls and observed model/effort availability. Configuration is intent, not proof.
 
 If a harness can only inherit the parent runtime, economy and balanced routing are unavailable.
 Remain single-root unless the packet explicitly requests `inherit` and delegation still has an

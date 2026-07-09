@@ -17,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const adapterPath = path.join(repoRoot, "adapters", "codex.capabilities.json");
-const routingPath = path.join(repoRoot, "adapters", "codex.models.json");
+const routingPath = path.join(repoRoot, "tests", "fixtures", "model-router", "codex-routing.json");
 const runtimePath = path.join(repoRoot, "tests", "fixtures", "skills-kernel", "codex-runtime-observed.json");
 const packetPath = path.join(repoRoot, "tests", "fixtures", "skills-kernel", "read-only-packet.json");
 
@@ -69,6 +69,8 @@ test("an observed proportionate read-only worker is eligible", () => {
       now: new Date("2026-07-09T20:00:00Z")
     }),
     reasoning_effort: "medium",
+    available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
+    available_reasoning_efforts: ["medium", "high", "xhigh"],
     model_override: true,
     effort_override: true
   };
@@ -89,6 +91,8 @@ test("shared mutable work is rejected without workspace isolation", () => {
       now: new Date("2026-07-09T20:00:00Z")
     }),
     reasoning_effort: "medium",
+    available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
+    available_reasoning_efforts: ["medium", "high", "xhigh"],
     model_override: true,
     effort_override: true
   };
