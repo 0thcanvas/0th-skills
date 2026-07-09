@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/exit-status.schema.json",
+  "title": "Workflow exit status",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "reason", "evidence_paths"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "status": {
+      "enum": [
+        "DONE",
+        "DONE_WITH_CONCERNS",
+        "BLOCKED",
+        "BLOCKED_REAL_ENV",
+        "BLOCKED_BY_SPEC",
+        "CONTRACT_INVALIDATED",
+        "SCOPE_EXPANSION_REQUIRED",
+        "FAIL_UNRESOLVED",
+        "FAIL_FLAKY"
+      ]
+    },
+    "reason": { "type": ["string", "null"] },
+    "evidence_paths": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/capability-packet.schema.json",
+  "title": "Bounded worker capability packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "objective",
+    "independent",
+    "ordered",
+    "mutation_scope",
+    "shared_mutable_state",
+    "evidence_advantage",
+    "requested_model",
+    "requested_effort",
+    "task_risk",
+    "budget",
+    "output_schema"
+  ],
+  "properties": {
+    "objective": { "type": "string", "minLength": 1 },
+    "independent": { "type": "boolean" },
+    "ordered": { "type": "boolean" },
+    "mutation_scope": { "enum": ["read-only", "mutable"] },
+    "shared_mutable_state": { "type": "boolean" },
+    "evidence_advantage": { "type": "string", "minLength": 1 },
+    "requested_model": { "type": ["string", "null"] },
+    "requested_effort": { "enum": ["proportionate", "inherit", "low", "medium", "high", "xhigh", "max"] },
+    "task_risk": { "enum": ["low", "medium", "high", "critical"] },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_workers", "max_rounds"],
+      "properties": {
+        "max_workers": { "type": "integer", "minimum": 1 },
+        "max_rounds": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "output_schema": { "type": "string", "minLength": 1 }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "objective": "Research one independent official documentation source",
+  "independent": true,
+  "ordered": false,
+  "mutation_scope": "read-only",
+  "shared_mutable_state": false,
+  "evidence_advantage": "isolated source extraction with a structured finding",
+  "requested_model": null,
+  "requested_effort": "proportionate",
+  "task_risk": "low",
+  "budget": {
+    "max_workers": 1,
+    "max_rounds": 1
+  },
+  "output_schema": "raw-finding"
+}

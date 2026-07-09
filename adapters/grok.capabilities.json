@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "harness": "grok",
+  "source": "documented-only",
+  "observed_at": null,
+  "model": null,
+  "reasoning_effort": null,
+  "model_override": false,
+  "effort_override": false,
+  "max_parallelism": null,
+  "max_depth": null,
+  "workspace_isolation": null,
+  "resume": null,
+  "hooks": [],
+  "external_write_controls": []
+}
