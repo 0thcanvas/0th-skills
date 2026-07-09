@@ -58,10 +58,14 @@ test("model-invoked skill descriptions state what they do and when to use them",
 });
 
 test("user-invoked skill descriptions stay human-facing", () => {
-  for (const root of [skillsRoot, codexSkillsRoot]) {
-    const source = read(path.join(root, "zoom-out", "SKILL.md"));
+  const shared = read(path.join(skillsRoot, "zoom-out", "SKILL.md"));
+  const wrapper = read(path.join(codexSkillsRoot, "zoom-out", "SKILL.md"));
+  const metadata = read(path.join(skillsRoot, "zoom-out", "agents", "openai.yaml"));
 
-    assert.match(source, /^disable-model-invocation:\s*true$/m);
+  assert.match(shared, /^disable-model-invocation:\s*true$/m);
+  assert.doesNotMatch(wrapper, /^disable-model-invocation:/m);
+  assert.match(metadata, /allow_implicit_invocation:\s*false/);
+  for (const source of [shared, wrapper]) {
     assert.doesNotMatch(
       source,
       /^description:\s*"Use when /m,

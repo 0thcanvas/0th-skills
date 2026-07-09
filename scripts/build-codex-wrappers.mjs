@@ -79,9 +79,6 @@ function generateWrapper(skillName) {
     `name: ${name}`,
     `description: "${description}"`
   ];
-  if (frontmatter["disable-model-invocation"]) {
-    lines.push(`disable-model-invocation: ${frontmatter["disable-model-invocation"]}`);
-  }
   lines.push(
     "---",
     "",
