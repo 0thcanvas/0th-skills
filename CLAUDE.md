@@ -12,10 +12,9 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 | `/debug` | Root cause then fix | Something is broken |
 | `/ship` | PR and land | Code is ready |
 | `/research` | Source-aware external research | Product, API, OSS, and paper research outside the repo |
-| `/deep-research` | Research loop for hard problems | Impossible-seeming features, cross-domain research, feasibility analysis |
+| `/deep-research` | Budgeted research loop | Explicit world models, contradiction analysis, reusable surveys, or experiments |
 | `/improve-architecture` | Find deepening opportunities | Periodic — codebase feels tangled, post-sprint cleanup |
 | `/retro` | Capture user corrections + agent misfires | End of session, when the agent was corrected ≥ once |
-| `/zoom-out` | Higher-level map of unfamiliar code | User-triggered only — invoke explicitly when lost in a code area |
 
 ## Principles
 
@@ -98,7 +97,6 @@ When the user's request matches a skill, invoke it. Key mappings:
 - Bug, broken, error, "why is this", investigate → /debug
 - Ship, PR, merge, land, deploy → /ship
 - Research, compare tools, look up papers, evaluate APIs, "search the web" → /research
-- Deep research, "is this possible", feasibility study, reverse-engineer feature, cross-domain → /deep-research
+- Explicit multi-pass world model, contradiction analysis, reusable survey, or feasibility experiment → /deep-research
 - "Codebase feels tangled", "where would refactoring pay off", post-sprint cleanup → /improve-architecture
 - "Log a retro", "capture this session's misfires", "process the corrections from this session" → /retro
-- /zoom-out is user-triggered only (not implicitly invoked)

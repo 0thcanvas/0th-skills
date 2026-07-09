@@ -133,7 +133,7 @@ test("build and ship preserve proof contract requirements without schema escape 
 
   assert.match(build, /proof_contract_required/);
   assert.match(build, /ship-bound implementation work requires/);
-  assert.match(build, /docs-only or metadata-only changes still use a `?T0`? contract/);
+  assert.match(build, /docs-only or\s+metadata-only changes still use a `?T0`? contract when ship-bound/);
   assert.match(build, /minimum_proof_tier/);
   assert.match(build, /minimum_tier_satisfied/);
 

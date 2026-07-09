@@ -10,12 +10,11 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 - `debug` — investigate root cause before fixing (includes a 10-way feedback-loop ladder)
 - `ship` — review and land through a PR
 - `research` — run source-aware research across docs, GitHub, papers, and the broader web
-- `deep-research` — multi-phase research loop for hard or impossible-seeming problems: feasibility, decision, and survey modes; uses a `KB_ROOT`-backed research workspace as persistent external memory; orchestrates host-native research plus synthesis and experiment agents through 8 phases
+- `deep-research` — explicitly budgeted multi-phase research for file-backed world models, contradiction analysis, reusable surveys, and feasibility experiments
 - `improve-architecture` — find deepening opportunities in a codebase using Module/Interface/Depth/Seam vocabulary plus the deletion test; run periodically, not per-feature
 - `retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log; classify each, surface patterns when ≥ 3 entries cross a bucket, propose actions
-- `zoom-out` — user-triggered micro-skill: ask the agent to step up a layer of abstraction and map an unfamiliar code area (not implicitly invoked)
 
-`think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo. `improve-architecture` is a periodic structural-quality skill; `zoom-out` is a user-driven utility.
+`think / plan / build / debug / ship` remain the core workflow. `research` is the default external-evidence capability; `deep-research` is an expensive, explicitly budgeted escalation. `improve-architecture` is a periodic structural-quality skill.
 
 ## Project Vocabulary (`CONTEXT.md`)
 
@@ -26,7 +25,7 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 - **Format.** Bold term, one-line definition, `_Avoid_:` line listing rejected aliases. Group with `## Language`, `## Relationships`, `## Flagged ambiguities`.
 - **Multi-context repos.** Place `CONTEXT-MAP.md` at the root linking to per-context `CONTEXT.md` files inside each module. Most projects need only the single root file.
 
-`/think`, `/build`, `/debug`, `/improve-architecture`, `/zoom-out`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
+`/think`, `/build`, `/debug`, `/improve-architecture`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
 
 ## Knowledge Base
 
@@ -131,7 +130,7 @@ what a child actually received.
 
 ### Agent types
 
-- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `retro`, `zoom-out`
+- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `retro`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
 - **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
 - **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
@@ -176,7 +175,7 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the ten skills under `codex-skills/`
+- Confirm the plugin exposes the nine skills under `codex-skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Antigravity CLI
@@ -208,8 +207,14 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### Unreleased — Skills Kernel
 
-- Migrated all ten skills to one root-task kernel with single-root default execution, live
+- Migrated nine skills to one root-task kernel with single-root default execution, live
   capability gating, bounded packets, explicit authority, and shared closeout.
+- Added a lightweight `build` lane for bounded non-ship T0/T1 changes; it keeps focused proof while
+  skipping gate artifacts that only ship-bound work consumes.
+- Made `deep-research` an explicitly budgeted expensive escalation and kept ordinary source-backed
+  work in `research` by default.
+- Removed the `zoom-out` micro-skill after a fresh-agent ablation found no quality advantage over a
+  direct code-mapping request.
 - Removed fixed host, model, effort, permanent-role, and mandatory-review choreography from shared
   skills and Codex wrappers.
 - Made research, synthesis, experiments, verification, and counterpart review evidence-triggered;

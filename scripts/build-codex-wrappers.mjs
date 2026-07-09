@@ -13,14 +13,13 @@ const codexSkillsRoot = path.join(repoRoot, "codex-skills");
 const codexDescriptions = {
   build: "Builds known changes. Use when a solution is ready.",
   debug: "Finds root causes. Use when behavior is broken.",
-  "deep-research": "Builds world models. Use when research needs multiple passes.",
+  "deep-research": "Builds budgeted world models. Use when research needs contradiction analysis or experiments.",
   "improve-architecture": "Finds deep modules. Use when code feels tangled.",
   plan: "Creates vertical slices. Use when work needs ordering.",
   research: "Finds external evidence. Use when current sources matter.",
   retro: "Records misses. Use when a correction matters.",
   ship: "Opens a verified PR. Use when a branch is ready.",
-  think: "Makes design decisions. Use when tradeoffs are unresolved.",
-  "zoom-out": "Maps an unfamiliar code area one abstraction level above the immediate files."
+  think: "Makes design decisions. Use when tradeoffs are unresolved."
 };
 
 function fail(message) {

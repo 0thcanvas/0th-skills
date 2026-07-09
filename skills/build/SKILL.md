@@ -11,7 +11,8 @@ rules below.
 
 ## Goal
 
-Deliver the requested change on a feature branch with the smallest sufficient workflow and honest proof.
+Deliver the requested change with the smallest sufficient workflow and honest proof. Obey the
+repository's branch and commit policy; do not invent one when the repository has none.
 
 ## Enter / Skip
 
@@ -20,22 +21,35 @@ Deliver the requested change on a feature branch with the smallest sufficient wo
 - Switch to `/debug` when an unexpected failure needs root cause before a fix.
 - `$ARGUMENTS` is the instruction or plan path when invoked directly.
 
-## Root-Task Preflight
-
-Only the root task runs the full startup sequence. Nested phases and workers receive the current brief, ledger, and evidence paths.
-
-1. Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It may fast-forward only a clean behind branch; dirty or divergent states remain untouched and visible.
-2. Run `memory brief --scope global`, then the project `memory brief`; read each `output_file` before browsing indexes. If the global brief is missing or corrupt, warn and continue. Memory v2 runtime is the canonical agent recall path; legacy KB, Obsidian, and markdown are fallback evidence surfaces. Load source packs only on demand.
-3. Run `memory task-brief` after the memory brief and read its `output_file`.
-4. Read the decision, plan, `CONTEXT.md`, current branch, and relevant code/tests. Do not reread broad indexes when the briefs identify the target.
-
 ## Contract and Authority
 
 Write or confirm a TaskSpec containing outcome, acceptance, non-goals, proof tier, risk, and authority. Inspection, review, diagnosis, and planning do not authorize implementation. Build and fix requests authorize in-scope local edits and non-destructive tests; external writes require TaskSpec or repo-workflow authority.
 
 Valid stops include `BLOCKED_BY_SPEC`, `CONTRACT_INVALIDATED`, `SCOPE_EXPANSION_REQUIRED`, `BLOCKED_REAL_ENV`, T4 approval, and exhausted recovery. New evidence that falsifies the contract is not ordinary implementation friction.
 
-Before implementation, apply `proof_contract_required`: ship-bound implementation work requires `verification-report/proof-contract.json`; docs-only or metadata-only changes still use a `T0` contract. Select `minimum_proof_tier` from `../../references/proof-tiers.md` by the seam where defects escape.
+Before implementation, select the proof tier from `../../references/proof-tiers.md` by the seam
+where defects escape. Under `proof_contract_required`, ship-bound implementation work requires
+`verification-report/proof-contract.json` and records its `minimum_proof_tier`; docs-only or
+metadata-only changes still use a `T0` contract when ship-bound.
+
+## Lightweight Build Lane
+
+Use the lightweight build lane when all of these are true: the change is one bounded slice, the
+user did not request shipping, the minimum proof tier is T0 or T1, and the work needs no UI,
+session-backed/live evidence, specialist handoff, delegation, or subjective product acceptance.
+
+For bounded non-ship T0 or T1 work:
+
+1. Infer the compact TaskSpec in working context instead of writing workflow files.
+2. Run focused tests through the RED/GREEN loop and the relevant nearby suite; inspect actual output.
+3. Do not create `verification-report`, proof-contract, proof-result, product-acceptance, reviewer,
+   preflight-receipt, or test-evidence artifacts.
+4. Follow the repository's branch and commit policy. The skill does not add branch or commit
+   requirements of its own.
+5. Report the changed files, observed tests, proof tier, and concerns directly.
+
+If scope grows, shipping is requested, or any eligibility condition stops being true, promote to
+the full build lane before continuing. The lightweight lane never weakens required T2–T4 evidence.
 
 ## Execution Policy
 
@@ -72,7 +86,7 @@ For testable work:
 2. GREEN: implement the smallest change and rerun the focused test.
 3. REFACTOR: improve only touched code while staying green.
 4. VERIFY: run nearby tests and inspect actual output.
-5. COMMIT: create one atomic slice commit.
+5. COMMIT: create one atomic slice commit when the repository or accepted task requires it.
 
 For non-testable work, capture before state, make one bounded change, capture after state in the same format, compare, then commit.
 
@@ -103,11 +117,20 @@ Run the full relevant suite after slices pass. Read `../../references/stack-mini
 
 For UI, canvas, SVG, animation, overlay, or responsive work: Name the visual invariant before checking. If the claim is visual, the evidence must be visual. Use a DOM/e2e test for behavior, screenshot inspection for fit and layout, and a pixel assertion or screenshot assertion for coordinate-sensitive rendering.
 
-When independent verification has a concrete evidence advantage, route one bounded verifier packet through the capability gate. Otherwise the root performs the required checks. Persist `verification-report/brief.txt` and `proof-result.json`; only `outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Unavailable required runtime evidence is `BLOCKED_REAL_ENV`, never a lower tier.
+When independent verification has a concrete evidence advantage, route one bounded verifier packet
+through the capability gate. Otherwise the root performs the required checks. For the full,
+ship-bound lane, persist `verification-report/brief.txt` and `proof-result.json`; only
+`outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Unavailable required runtime evidence
+is `BLOCKED_REAL_ENV`, never a lower tier.
 
 ## Product Acceptance Loop
 
-Read `references/product-acceptance.md`. Required user-facing acceptance consumes proof, screenshots, or live-flow evidence and writes `verification-report/product-acceptance.json`. Mechanical/internal work records `NOT_REQUIRED` with a concrete rationale. Review and `ask-counterpart-review` are risk-triggered: use them only when another context or model has a named evidence advantage worth its cost.
+In the full lane, read `references/product-acceptance.md`. Required user-facing acceptance consumes
+proof, screenshots, or live-flow evidence and writes `verification-report/product-acceptance.json`.
+Mechanical/internal ship-bound work records `NOT_REQUIRED` with a concrete rationale. The
+lightweight lane reports that acceptance is unnecessary inline. Review and `ask-counterpart-review`
+are risk-triggered: use them only when another context or model has a named evidence advantage worth
+its cost.
 
 ## Completion
 

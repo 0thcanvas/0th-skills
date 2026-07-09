@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "0th",
-      "description": "10 workflow skills for thinking, planning, building, debugging, shipping, research, architecture cleanup, retros, and host-native subagents.",
+      "description": "9 workflow skills for thinking, planning, building, debugging, shipping, research, architecture cleanup, retros, and host-native subagents.",
       "source": "./",
       "category": "development"
     }

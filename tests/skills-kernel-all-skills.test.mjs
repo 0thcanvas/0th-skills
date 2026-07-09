@@ -17,15 +17,14 @@ const skillNames = [
   "research",
   "retro",
   "ship",
-  "think",
-  "zoom-out"
+  "think"
 ];
 
 function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
-test("all ten shared skills use the portable Skills Kernel", () => {
+test("all nine shared skills use the portable Skills Kernel", () => {
   assert.equal(fs.existsSync(path.join(repoRoot, "references", "skills-kernel.md")), true);
   assert.deepEqual(MIGRATED_SKILLS, skillNames);
   assert.deepEqual(CORE_SKILLS, []);
@@ -56,14 +55,10 @@ test("portable skill bodies contain no fixed host, model, effort, or role choreo
 });
 
 test("model-invoked descriptions state both what the skill does and when to use it", () => {
-  for (const skillName of skillNames.filter((name) => name !== "zoom-out")) {
+  for (const skillName of skillNames) {
     const source = read(`skills/${skillName}/SKILL.md`);
     assert.match(source, /^description:\s*"(?!Use when ).+\. Use when .+"$/m);
   }
-
-  const zoomOut = read("skills/zoom-out/SKILL.md");
-  assert.match(zoomOut, /^disable-model-invocation:\s*true$/m);
-  assert.match(zoomOut, /^description:\s*"Maps .+"$/m);
 });
 
 test("the shared kernel owns preflight, authority, delegation, secrets, and closeout", () => {
@@ -98,8 +93,7 @@ test("each migrated skill retains its defining contract", () => {
     "deep-research": ["feasibility", "decision", "survey", "world model", "bounded summaries"],
     ship: ["ship-gate.mjs", "proof result tier", "PR-specific", "ready to merge"],
     retro: ["extract evidence", "redact", "classify", "aggregate", "candidate_new_category"],
-    "improve-architecture": ["deepening", "Deletion test", "explicit user pick", "Do not refactor"],
-    "zoom-out": ["read-only", "callers", "CONTEXT.md"]
+    "improve-architecture": ["deepening", "Deletion test", "explicit user pick", "Do not refactor"]
   };
 
   for (const [skillName, fragments] of Object.entries(expectations)) {

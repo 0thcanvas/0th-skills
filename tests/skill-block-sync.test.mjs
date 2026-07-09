@@ -50,8 +50,7 @@ test("all shared skills have migrated away from the duplicated legacy memory blo
     "research",
     "retro",
     "ship",
-    "think",
-    "zoom-out"
+    "think"
   ]);
 });
 

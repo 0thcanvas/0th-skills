@@ -7,9 +7,6 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const fixturePath = path.join(__dirname, "fixtures", "skill-routing.fixture.json");
-// `zoom-out` is intentionally excluded: its `disable-model-invocation: true` is a deliberate
-// design (user-triggered micro-skill) and conflicts with the implicit-routing assumption
-// this fixture covers. See the matching comment in tests/skill-metadata.test.mjs.
 const expectedSkills = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "retro", "ship", "think"];
 
 function readFixture() {

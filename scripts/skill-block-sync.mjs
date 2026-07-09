@@ -36,8 +36,7 @@ export const MIGRATED_SKILLS = [
   "research",
   "retro",
   "ship",
-  "think",
-  "zoom-out"
+  "think"
 ];
 
 export const CORE_SKILLS = [];
