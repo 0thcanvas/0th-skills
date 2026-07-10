@@ -28,7 +28,8 @@ const HOST_ENV_KEYS = [
   "CLAUDECODE",
   "CLAUDE_CODE_ENTRYPOINT",
   "_",
-  "CODEX_SANDBOX"
+  "CODEX_SANDBOX",
+  "GROK_AGENT"
 ];
 
 function saveEnv() {
@@ -120,6 +121,17 @@ test("detectHost: CODEX_SANDBOX set returns 'codex'", () => {
   }
 });
 
+test("detectHost: GROK_AGENT set returns 'grok'", () => {
+  const saved = saveEnv();
+  try {
+    clearHostEnv();
+    process.env.GROK_AGENT = "default";
+    assert.equal(detectHost(), "grok");
+  } finally {
+    restoreEnv(saved);
+  }
+});
+
 test("detectHost: Codex Desktop ancestor returns 'codex' without CODEX_SANDBOX", () => {
   const saved = saveEnv();
   try {
@@ -136,6 +148,28 @@ test("detectHost: Codex Desktop ancestor returns 'codex' without CODEX_SANDBOX",
         readProcessInfo: (pid) => processes.get(pid) ?? null
       }),
       "codex"
+    );
+  } finally {
+    restoreEnv(saved);
+  }
+});
+
+test("detectHost: grok binary ancestor returns 'grok' without GROK_AGENT", () => {
+  const saved = saveEnv();
+  try {
+    clearHostEnv();
+    const processes = new Map([
+      [30, { ppid: 20, command: "/bin/zsh" }],
+      [20, { ppid: 10, command: "/opt/grok/bin/grok" }],
+      [10, { ppid: 1, command: "/sbin/launchd" }]
+    ]);
+
+    assert.equal(
+      detectHost(process.env, {
+        pid: 30,
+        readProcessInfo: (pid) => processes.get(pid) ?? null
+      }),
+      "grok"
     );
   } finally {
     restoreEnv(saved);
@@ -194,7 +228,8 @@ test("loadAndValidateConfig: accepts a valid config", () => {
     version: 1,
     counterparts: {
       claude: "codex",
-      codex: "agy"
+      codex: "grok",
+      grok: "codex"
     }
   };
   fs.writeFileSync(cfgPath, JSON.stringify(valid));
@@ -337,27 +372,30 @@ test("stripPreamble: handles AGENT RESPONSE header", () => {
 // Constants
 // ===========================================================================
 
-test("DRIVER_ALLOWLIST contains codex, claude, and agy", () => {
+test("DRIVER_ALLOWLIST contains codex, claude, agy, and grok", () => {
   assert.ok(DRIVER_ALLOWLIST.includes("codex"));
   assert.ok(DRIVER_ALLOWLIST.includes("claude"));
   assert.ok(DRIVER_ALLOWLIST.includes("agy"));
+  assert.ok(DRIVER_ALLOWLIST.includes("grok"));
 });
 
-test("DRIVER_ALLOWLIST has exactly 3 entries", () => {
-  assert.equal(DRIVER_ALLOWLIST.length, 3);
+test("DRIVER_ALLOWLIST has exactly 4 entries", () => {
+  assert.equal(DRIVER_ALLOWLIST.length, 4);
 });
 
 test("KNOWN_HOSTS contains the supported hosts", () => {
   assert.ok(KNOWN_HOSTS.includes("claude"));
   assert.ok(KNOWN_HOSTS.includes("codex"));
-  assert.equal(KNOWN_HOSTS.length, 2);
+  assert.ok(KNOWN_HOSTS.includes("grok"));
+  assert.equal(KNOWN_HOSTS.length, 3);
 });
 
 test("DEFAULT_CONFIG has version 1", () => {
   assert.equal(DEFAULT_CONFIG.version, 1);
 });
 
-test("DEFAULT_CONFIG maps claude to codex and codex to agy", () => {
+test("DEFAULT_CONFIG maps claude to codex, codex to grok, and grok to codex", () => {
   assert.equal(DEFAULT_CONFIG.counterparts.claude, "codex");
-  assert.equal(DEFAULT_CONFIG.counterparts.codex, "agy");
+  assert.equal(DEFAULT_CONFIG.counterparts.codex, "grok");
+  assert.equal(DEFAULT_CONFIG.counterparts.grok, "codex");
 });

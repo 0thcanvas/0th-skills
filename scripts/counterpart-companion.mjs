@@ -11,23 +11,25 @@ import { resolveDefaultStateDir } from "./companion-state.mjs";
 // Constants (exported for testing)
 // ---------------------------------------------------------------------------
 
-export const DRIVER_ALLOWLIST = ["codex", "claude", "agy"];
+export const DRIVER_ALLOWLIST = ["codex", "claude", "agy", "grok"];
 
-// Agy is a review driver, not a host environment that invokes this script.
-export const KNOWN_HOSTS = ["claude", "codex"];
+// Grok is both a host and a review driver. Agy is review-only.
+export const KNOWN_HOSTS = ["claude", "codex", "grok"];
 
 export const DEFAULT_CONFIG = {
   version: 1,
   counterparts: {
     claude: "codex",
-    codex: "agy"
+    codex: "grok",
+    grok: "codex"
   }
 };
 
 const BIN_ENV_VARS = {
   codex: "CODEX_BIN",
   claude: "CLAUDE_BIN",
-  agy: "AGY_BIN"
+  agy: "AGY_BIN",
+  grok: "GROK_BIN"
 };
 
 // ---------------------------------------------------------------------------
@@ -94,6 +96,9 @@ function classifyHostCommand(command) {
   if (lowerCommand.includes("/codex.app/") || basename === "codex") {
     return "codex";
   }
+  if (basename === "grok" || lowerCommand.includes("/.grok/bin/grok")) {
+    return "grok";
+  }
   return null;
 }
 
@@ -144,6 +149,7 @@ export function detectHost(env = process.env, processOptions = {}) {
   if (env.CLAUDECODE === "1") return "claude";
   if (env.CLAUDE_CODE_ENTRYPOINT) return "claude";
   if (env.CODEX_SANDBOX) return "codex";
+  if (env.GROK_AGENT) return "grok";
   return detectHostFromProcessTree(processOptions);
 }
 

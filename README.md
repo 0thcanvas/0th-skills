@@ -123,7 +123,8 @@ what a child actually received.
 - Claude retains `web-researcher` and Codex retains `0th_researcher` for explicit focused research packets; neither is a mandatory phase
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
-- Codex-hosted counterpart review defaults to the `agy` driver, which shells out to Antigravity CLI print mode using the model selected in Antigravity. If `agy` is not on `PATH`, set `AGY_BIN` before invoking the companion process.
+- Codex-hosted counterpart review defaults to the `grok` driver, which uses Grok Build headless JSON mode. If `grok` is not on `PATH`, set `GROK_BIN` before invoking the companion process.
+- Grok Build can also be detected as the host for counterpart routing; Grok-hosted reviews default to Codex.
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
 - On Codex-hosted runs, explicit requests for legacy Claude Code review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
@@ -178,9 +179,16 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 - Confirm the plugin exposes the nine skills under `codex-skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
-### Antigravity CLI
+### Grok Build
 
-- Once `agy` is available on `PATH`, run `agy install` to complete shell setup, or set `AGY_BIN=/absolute/path/to/agy` before invoking `scripts/counterpart-companion.mjs`
+- Install Grok Build so `grok` is on `PATH`, or set `GROK_BIN=/absolute/path/to/grok`
+- The driver uses `grok -p … --output-format json` and resumes multi-round reviews by session id
+- Authenticate through the normal Grok login flow; never place credentials in prompts or arguments
+- Existing `~/.0th/reviewer-config.json` mappings remain explicit overrides and are not rewritten
+
+### Antigravity CLI (optional)
+
+- Use `--driver agy`, config, or `COUNTERPART_REVIEWER=agy` to opt in. Once `agy` is available on `PATH`, run `agy install`, or set `AGY_BIN=/absolute/path/to/agy`
 - The `agy` driver is intentionally single-shot for now: Antigravity supports `--conversation`, but print-mode resume currently emits prior assistant transcript text along with the new response
 
 ### Claude Code
@@ -204,6 +212,12 @@ On failure, the runner writes `${VERIFICATION_REPORT_DIR:-verification-report}/r
 Hook installation is user-scope because repo-local Codex hooks are not the validated path yet. The repo ships hook scripts and tests, but it does not auto-install or mutate `~/.codex/config.toml`, `~/.claude/settings.json`, or any user config.
 
 ## Release notes
+
+### 0.3.4
+
+- Added a Grok Build counterpart-review driver using verified headless JSON and session-resume CLI contracts.
+- Added Grok host detection and default routing: Claude→Codex, Codex→Grok, and Grok→Codex.
+- Kept Agy available as an explicit optional driver and preserved existing reviewer-config overrides.
 
 ### 0.3.3
 
@@ -356,14 +370,18 @@ The script auto-detects the host and loads the counterpart from `~/.0th/reviewer
   "version": 1,
   "counterparts": {
     "claude": "codex",
-    "codex": "claude"
+    "codex": "grok",
+    "grok": "codex"
   }
 }
 ```
 
+The defaults above are written only when the config file does not exist. Existing mappings remain
+operator-owned overrides.
+
 Override per-call with `--driver <name>` or per-session with `COUNTERPART_REVIEWER=<name>`.
 
-Available drivers: `codex`, `claude`. To add a new driver, create `scripts/drivers/<name>.mjs` implementing the driver contract (see spec) and add it to the allowlist in `counterpart-companion.mjs`.
+Available drivers: `codex`, `claude`, `grok`, and optional `agy`. To add a new driver, create `scripts/drivers/<name>.mjs` implementing the driver contract (see spec) and add it to the allowlist in `counterpart-companion.mjs`.
 
 Review state is stored at:
 - `$OTH_SKILLS_STATE_DIR` if set
