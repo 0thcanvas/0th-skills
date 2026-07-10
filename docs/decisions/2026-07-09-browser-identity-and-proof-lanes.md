@@ -21,4 +21,3 @@ evidence of real-user browser behavior.
 ## Depends On
 - `references/browser-control-policy.md`
 - Browser Kit real-Chrome `Extensions.loadUnpacked` support.
-

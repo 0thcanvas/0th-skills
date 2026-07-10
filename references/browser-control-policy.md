@@ -33,4 +33,3 @@ Browser names are exact application identities, not Chromium-family aliases.
    Obtain the required Computer Use confirmation immediately before installing/loading the extension.
 4. If the real-Chrome UI path also fails, report the exact blocker. Never silently substitute Brave,
    Chrome for Testing, managed Chromium, or the in-app browser.
-

@@ -13,4 +13,3 @@ _Avoid_: Chrome, real-user browser
 
 **Real-environment proof** — Evidence gathered in real Google Chrome with the dedicated `agent` profile.
 _Avoid_: browser test, Playwright proof
-
