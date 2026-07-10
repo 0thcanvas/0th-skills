@@ -43,7 +43,7 @@ function initRepoWithRemote() {
   const remote = path.join(root, "remote.git");
   const local = path.join(root, "local");
 
-  sh(root, ["git", "init", "--bare", remote]);
+  sh(root, ["git", "init", "--bare", "--initial-branch", "main", remote]);
   fs.mkdirSync(local);
   sh(local, ["git", "init", "-b", "main"]);
   sh(local, ["git", "config", "user.email", "test@example.com"]);
@@ -58,7 +58,7 @@ function initRepoWithRemote() {
 
 function pushRemoteCommit(remote, message, content) {
   const clone = path.join(path.dirname(remote), `remote-work-${message.replace(/\W+/g, "-")}`);
-  sh(path.dirname(remote), ["git", "clone", remote, clone]);
+  sh(path.dirname(remote), ["git", "clone", "--branch", "main", remote, clone]);
   sh(clone, ["git", "config", "user.email", "test@example.com"]);
   sh(clone, ["git", "config", "user.name", "Test User"]);
   writeFile(clone, "memory.txt", content);

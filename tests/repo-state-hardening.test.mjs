@@ -102,7 +102,7 @@ test("preflight surfaces a structured memory_sync_failed flag when memory-sync t
   // gate can branch on it.
 
   const upstream = tempDir();
-  sh(upstream, ["git", "init", "--bare", "-q"]);
+  sh(upstream, ["git", "init", "--bare", "-q", "--initial-branch", "main"]);
   const work = tempDir();
   initRepo(work);
   sh(work, ["git", "remote", "add", "origin", upstream]);
@@ -111,7 +111,7 @@ test("preflight surfaces a structured memory_sync_failed flag when memory-sync t
 
   // Add a commit upstream we'll need to pull.
   const clone = tempDir();
-  sh(clone, ["git", "clone", "-q", upstream, clone]);
+  sh(clone, ["git", "clone", "-q", "--branch", "main", upstream, clone]);
   sh(clone, ["git", "config", "user.email", "x@y.z"]);
   sh(clone, ["git", "config", "user.name", "X"]);
   fs.writeFileSync(path.join(clone, "NEW.md"), "added\n");
