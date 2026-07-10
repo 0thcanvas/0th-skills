@@ -205,7 +205,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
-### Unreleased — Skills Kernel
+### 0.3.3
 
 - Migrated nine skills to one root-task kernel with single-root default execution, live
   capability gating, bounded packets, explicit authority, and shared closeout.
@@ -221,6 +221,16 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
   routine work no longer spawns a fleet because a workflow phase exists.
 - Preserved proof tiers, stack minimums, secret safety, session-backed evidence, Memory v2, product
   acceptance, PR-specific merge approval, and honest blocked outcomes.
+- Made browser identity exact: `Chrome` means the dedicated real Google Chrome profile, Brave is
+  personal unless explicitly requested, and managed test browsers remain hermetic-only fallbacks.
+- Added Browser Kit and Computer Use recovery paths for extension-loading, anti-bot, login, and
+  session-sensitive failures instead of treating an adapter failure as missing source evidence.
+- Reduced the estimated active Build startup context by about half through compact Memory startup,
+  deferred delegation mechanics, and a smaller shared Kernel and Build contract.
+- Added runtime-only plugin packaging so tests, evaluation artifacts, and authoring documentation do
+  not inflate the installed plugin cache.
+- Standardized project secret consumption on environment variables populated from an existing
+  mounted or ignored local environment, with 1Password references kept out of application code.
 
 ### 0.3.2
 
