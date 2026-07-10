@@ -87,13 +87,13 @@ test("Codex invocation metadata stays compact", () => {
   );
 });
 
-test("published docs describe the current ten-skill surface", () => {
+test("published docs describe the current nine-skill surface", () => {
   const readme = fs.readFileSync(readmePath, "utf8");
   const marketplace = JSON.parse(fs.readFileSync(claudeMarketplacePath, "utf8"));
   const marketplaceDescription = marketplace.plugins[0].description;
 
-  assert.match(readme, /ten skills under `codex-skills\/`/);
-  assert.doesNotMatch(readme, /\bnine skills\b/i);
-  assert.match(marketplaceDescription, /\b10 workflow skills\b/);
+  assert.match(readme, /nine skills under `codex-skills\/`/);
+  assert.doesNotMatch(readme, /\bten skills under `codex-skills\/`/i);
+  assert.match(marketplaceDescription, /\b9 workflow skills\b/);
   assert.doesNotMatch(marketplaceDescription, /\b5 core workflow skills\b/i);
 });

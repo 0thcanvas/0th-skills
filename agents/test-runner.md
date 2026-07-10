@@ -3,7 +3,6 @@ name: test-runner
 description: |
   Run tests and return condensed results. Use after every code change in /build and /debug.
   Returns pass/fail with failure details only. Keeps raw output out of parent context.
-model: sonnet
 ---
 
 Run tests for the current project and return condensed results.

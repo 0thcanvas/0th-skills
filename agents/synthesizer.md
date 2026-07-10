@@ -5,7 +5,6 @@ description: |
   Dispatched by /deep-research Phase 2 to extract nodes, edges, and consensus from raw notes.
   Keeps graph construction out of the orchestrator's context.
 tools: Read, Write, Edit, Grep, Glob
-model: opus
 ---
 
 Build or update a world model from raw research notes, returning a compact summary.

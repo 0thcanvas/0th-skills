@@ -10,12 +10,11 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 - `debug` — investigate root cause before fixing (includes a 10-way feedback-loop ladder)
 - `ship` — review and land through a PR
 - `research` — run source-aware research across docs, GitHub, papers, and the broader web
-- `deep-research` — multi-phase research loop for hard or impossible-seeming problems: feasibility, decision, and survey modes; uses a `KB_ROOT`-backed research workspace as persistent external memory; orchestrates host-native research plus synthesis and experiment agents through 8 phases
+- `deep-research` — explicitly budgeted multi-phase research for file-backed world models, contradiction analysis, reusable surveys, and feasibility experiments
 - `improve-architecture` — find deepening opportunities in a codebase using Module/Interface/Depth/Seam vocabulary plus the deletion test; run periodically, not per-feature
 - `retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log; classify each, surface patterns when ≥ 3 entries cross a bucket, propose actions
-- `zoom-out` — user-triggered micro-skill: ask the agent to step up a layer of abstraction and map an unfamiliar code area (not implicitly invoked)
 
-`think / plan / build / debug / ship` remain the core workflow. `research` and `deep-research` are supporting capabilities the core skills can invoke when the answer lives outside the repo. `improve-architecture` is a periodic structural-quality skill; `zoom-out` is a user-driven utility.
+`think / plan / build / debug / ship` remain the core workflow. `research` is the default external-evidence capability; `deep-research` is an expensive, explicitly budgeted escalation. `improve-architecture` is a periodic structural-quality skill.
 
 ## Project Vocabulary (`CONTEXT.md`)
 
@@ -26,7 +25,7 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 - **Format.** Bold term, one-line definition, `_Avoid_:` line listing rejected aliases. Group with `## Language`, `## Relationships`, `## Flagged ambiguities`.
 - **Multi-context repos.** Place `CONTEXT-MAP.md` at the root linking to per-context `CONTEXT.md` files inside each module. Most projects need only the single root file.
 
-`/think`, `/build`, `/debug`, `/improve-architecture`, `/zoom-out`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
+`/think`, `/build`, `/debug`, `/improve-architecture`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
 
 ## Knowledge Base
 
@@ -96,16 +95,26 @@ visible.
 Portable skills do not require these profiles. They default to one root agent and route optional
 packets through [`references/skills-kernel.md`](references/skills-kernel.md) only after a live
 capability check. The manifests below remain available for explicit compatibility and specialist
-use; their configured model names are not proof that the current runtime honored a requested model
-or effort.
+use. Role manifests describe behavior and tools; local files under
+`~/.0th/skills/config/model-routing/` own compute-class-to-model mapping, and runtime receipts prove
+what a child actually received.
 
 - Claude-specific agent manifests live under `agents/*.md`
 - Codex-native subagent manifests live under `.codex/agents/*.toml`
 - Codex project-level agent policy lives under `.codex/config.toml`
 - The markdown files are the Claude-side manifests; the Codex TOML files are the native manifest format Codex actually loads
 - The `.codex/` directory is intentionally hidden on macOS because it is native tool config, not product source
-- Claude-side model policy is pinned in `agents/*.md` for now: `test-runner` and `web-researcher` use `sonnet`, while review and implementation helpers use `opus`
-- Codex-side manifests pin `model`, `model_reasoning_effort`, and `sandbox_mode` so the published behavior does not depend on a user's defaults
+- Claude and Codex role manifests do not pin models or effort; explicit compatibility use inherits the session unless the harness adapter supplies a launch plan
+- `adapters/templates/*.models.json` provides safe local configuration structure; bundled
+  `adapters/*.models.json` disables economy/balanced routing and inherits frontier as a fail-closed fallback
+- Active mappings live outside the plugin at `~/.0th/skills/config/model-routing/<harness>.json`;
+  set `OTH_SKILLS_ROUTING_DIR` only when another local configuration root is required
+- Initialize with `node scripts/0th.mjs routing init --harness <name>` and diagnose live controls
+  with `routing doctor`; pass `--runtime-json <path>`, or use Codex's token-consuming opt-in
+  `--live-probe` to populate a version- and routing-bound local cache
+- `scripts/0th.mjs capabilities` emits the selected launch plan only when a live exact model/effort
+  pair can honor it; concrete Codex plans run through `scripts/0th.mjs dispatch`, and
+  `scripts/0th.mjs attest` verifies the resulting receipt
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
 - `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
   it as automatic routing policy
@@ -121,7 +130,7 @@ or effort.
 
 ### Agent types
 
-- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `retro`, `zoom-out`
+- **Skills** are the user-facing workflows under `skills/`: `think`, `plan`, `build`, `debug`, `ship`, `research`, `deep-research`, `improve-architecture`, `retro`
 - **Work agents** are the task helpers that do implementation, review, testing, exploration, or research
 - **Bridge review helper** is `ask-counterpart-review`: a prompt wrapper around the companion script
 - **Companion script** is `scripts/counterpart-companion.mjs` with drivers under `scripts/drivers/`
@@ -136,7 +145,7 @@ or effort.
 | Read-only exploration | Built-in `Explore` agent | `0th_explorer` workflow profile over generic `explorer` |
 | Claude-only agents | `web-researcher`, `ask-counterpart-review` (plus deprecated shims) | n/a |
 | Codex-only profiles | n/a | `0th_explorer`, `0th_researcher` |
-| Native policy pinning | Per-agent `model` in frontmatter | Per-agent `model`, `model_reasoning_effort`, `sandbox_mode`, plus `.codex/config.toml` |
+| Compute selection | Local harness mapping plus runtime receipt | Local harness mapping plus runtime receipt |
 
 The goal is host-native parity, not identical files. When a behavior cannot be mirrored cleanly, document the asymmetry and keep the user-facing workflow explicit.
 
@@ -166,7 +175,7 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the ten skills under `codex-skills/`
+- Confirm the plugin exposes the nine skills under `codex-skills/`
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Antigravity CLI
@@ -198,8 +207,14 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### Unreleased — Skills Kernel
 
-- Migrated all ten skills to one root-task kernel with single-root default execution, live
+- Migrated nine skills to one root-task kernel with single-root default execution, live
   capability gating, bounded packets, explicit authority, and shared closeout.
+- Added a lightweight `build` lane for bounded non-ship T0/T1 changes; it keeps focused proof while
+  skipping gate artifacts that only ship-bound work consumes.
+- Made `deep-research` an explicitly budgeted expensive escalation and kept ordinary source-backed
+  work in `research` by default.
+- Removed the `zoom-out` micro-skill after a fresh-agent ablation found no quality advantage over a
+  direct code-mapping request.
 - Removed fixed host, model, effort, permanent-role, and mandatory-review choreography from shared
   skills and Codex wrappers.
 - Made research, synthesis, experiments, verification, and counterpart review evidence-triggered;

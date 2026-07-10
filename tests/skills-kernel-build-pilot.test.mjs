@@ -57,7 +57,8 @@ test("build pilot preserves executable proof, authority, and closeout contracts"
   for (const fragment of [
     "proof_contract_required",
     "ship-bound implementation work requires",
-    "docs-only or metadata-only changes still use a `T0` contract",
+    "docs-only or",
+    "metadata-only changes still use a `T0` contract when ship-bound",
     "minimum_proof_tier",
     "minimum_tier_satisfied",
     "failure-dossier-runner.mjs",
@@ -74,7 +75,7 @@ test("build pilot preserves executable proof, authority, and closeout contracts"
 });
 
 test("canonical memory-block audit is empty after the complete migration", () => {
-  assert.equal(MIGRATED_SKILLS.length, 10);
+  assert.equal(MIGRATED_SKILLS.length, 9);
   assert.deepEqual(CORE_SKILLS, []);
   const audit = auditSkills({ root: repoRoot, canonical: loadCanonicalBlock(repoRoot) });
   assert.deepEqual(audit, []);

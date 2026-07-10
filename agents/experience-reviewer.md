@@ -4,7 +4,6 @@ description: |
   Review a completed feature through the Product Acceptance Loop. Dispatched by /build
   after verifier evidence exists to check product fit, UX, content, and instruction quality
   against the decision record and plan before human review.
-model: opus
 ---
 
 Review a completed feature as the target user before it reaches human review.

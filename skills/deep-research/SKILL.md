@@ -1,14 +1,32 @@
 ---
 name: deep-research
-description: "Builds a file-backed world model for a hard external question. Use when feasibility, decision, or survey work needs multiple source passes, gap analysis, or experiments."
+description: "Builds a budgeted file-backed world model for an expensive external investigation. Use when feasibility, decision, or survey work requires multiple source passes, contradiction analysis, a reusable landscape, or an experiment; ordinary source-backed questions stay in research."
 argument-hint: "[feasibility|decision|survey] [question]"
 ---
 
 # Deep Research
 
-Use the smallest multi-pass investigation that can resolve a genuinely hard question. Apply
+Deep research is an expensive escalation, not the default response to a hard question. Use the
+smallest multi-pass investigation that can resolve the accepted decision. Apply
 `../../references/skills-kernel.md` once for root-task preflight, authority, optional delegation,
-safety, context transfer, and closeout. Ordinary source-backed questions belong in `/research`.
+safety, context transfer, and closeout. Ordinary source-backed research is the default and belongs
+in `/research`.
+
+## Cost gate and budget
+
+Enter only when the accepted deliverable requires at least one of: a reusable file-backed world
+model, explicit contradiction analysis across source passes, a buildable feasibility experiment, or
+a reusable survey. Complexity, importance, or the phrase “deep research” alone is insufficient.
+
+Before the first search, record explicit limits in `state.md`:
+
+- source-pass budget: default `2`;
+- worker budget: default `1` root worker unless the Skills Kernel proves bounded delegation useful;
+- iteration budget: default `2` full loops and at most `1` reframe.
+
+The user or accepted TaskSpec may raise a limit. Do not raise one autonomously. Stop as soon as the
+decision is supported, even when budget remains. If ordinary `/research` resolves the question, do
+not enter this workflow.
 
 ## Modes
 
@@ -55,9 +73,10 @@ decision that exceeds the accepted TaskSpec. A routine phase transition is not a
 
 ## Termination
 
-Stop early when verdict criteria are met. Stop as `EXHAUSTED` after two full searches add no useful
-vocabulary or evidence. Cap feasibility/decision reframes at three and full loops at five. Survey is
-normally one frame/search/world model/gap/conclusion pass.
+Stop early when verdict criteria are met or the decision is supported. Stop as `EXHAUSTED` when a
+budget is spent without enough evidence. Higher limits require explicit TaskSpec or user approval;
+the defaults remain two source passes, two full loops, and one reframe. Survey is normally one
+frame/search/world model/gap/conclusion pass.
 
 ## References
 

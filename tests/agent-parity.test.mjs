@@ -195,7 +195,7 @@ test("codex config pins conservative subagent orchestration defaults", () => {
   assert.match(config, /max_depth = 1/);
 });
 
-test("mirrored Claude agents have Codex counterparts with explicit runtime settings", () => {
+test("mirrored agents keep role behavior separate from adapter-owned compute selection", () => {
   for (const [agentName, config] of Object.entries(expectedMirrors)) {
     const claudePath = path.join(claudeAgentsDir, config.claudeFile);
     const codexPath = path.join(codexAgentsDir, config.codexFile);
@@ -217,10 +217,12 @@ test("mirrored Claude agents have Codex counterparts with explicit runtime setti
       `0th_${agentName.replaceAll("-", "_")}`,
       `${agentName} Codex manifest name should use the 0th_ native identifier`
     );
-    assert.ok(codexMeta.model, `${agentName} Codex manifest should pin a model`);
-    assert.ok(
+    assert.equal(claudeMeta.model, undefined, `${agentName} Claude role must not pin compute`);
+    assert.equal(codexMeta.model, undefined, `${agentName} Codex role must not pin compute`);
+    assert.equal(
       codexMeta.model_reasoning_effort,
-      `${agentName} Codex manifest should pin reasoning effort`
+      undefined,
+      `${agentName} Codex role must not pin reasoning effort`
     );
     assert.ok(codexMeta.sandbox_mode, `${agentName} Codex manifest should pin sandbox mode`);
 

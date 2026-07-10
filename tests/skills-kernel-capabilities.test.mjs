@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import {
   decideDelegation,
   loadHostCapabilities,
+  loadModelRouting,
   validateCapabilityPacket,
   validateHostCapabilities
 } from "../scripts/host-capabilities.mjs";
@@ -16,12 +17,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const adapterPath = path.join(repoRoot, "adapters", "codex.capabilities.json");
+const routingPath = path.join(repoRoot, "tests", "fixtures", "model-router", "codex-routing.json");
 const runtimePath = path.join(repoRoot, "tests", "fixtures", "skills-kernel", "codex-runtime-observed.json");
 const packetPath = path.join(repoRoot, "tests", "fixtures", "skills-kernel", "read-only-packet.json");
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
+
+const routing = loadModelRouting({ routingPath, harness: "codex" });
 
 test("portable capability schemas exist", () => {
   for (const relativePath of [
@@ -37,7 +41,7 @@ test("portable capability schemas exist", () => {
 test("documented-only capabilities cannot authorize delegation", () => {
   const capabilities = loadHostCapabilities({ adapterPath });
   const packet = readJson(packetPath);
-  const decision = decideDelegation({ capabilities, packet });
+  const decision = decideDelegation({ capabilities, packet, routing });
 
   assert.equal(decision.allowed, false);
   assert.equal(decision.topology, "single-root");
@@ -51,7 +55,7 @@ test("a live low-risk task rejects inherited xhigh when effort cannot be overrid
     now: new Date("2026-07-09T20:00:00Z")
   });
   const packet = readJson(packetPath);
-  const decision = decideDelegation({ capabilities, packet });
+  const decision = decideDelegation({ capabilities, packet, routing });
 
   assert.equal(decision.allowed, false);
   assert.ok(decision.reasons.includes("disproportionate_inherited_effort"));
@@ -64,16 +68,23 @@ test("an observed proportionate read-only worker is eligible", () => {
       runtimePath,
       now: new Date("2026-07-09T20:00:00Z")
     }),
-    reasoning_effort: "medium"
+    reasoning_effort: "medium",
+    available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
+    available_reasoning_efforts: ["medium", "high", "xhigh"],
+    available_model_effort_pairs: [
+      { model: "gpt-5.4-mini", reasoning_effort: "medium" },
+      { model: "gpt-5.4", reasoning_effort: "high" }
+    ],
+    model_override: true,
+    effort_override: true
   };
   const packet = readJson(packetPath);
-  const decision = decideDelegation({ capabilities, packet });
+  const decision = decideDelegation({ capabilities, packet, routing });
 
-  assert.deepEqual(decision, {
-    allowed: true,
-    topology: "bounded-worker",
-    reasons: []
-  });
+  assert.equal(decision.allowed, true);
+  assert.equal(decision.topology, "bounded-worker");
+  assert.deepEqual(decision.reasons, []);
+  assert.equal(decision.launch_plan.compute_class, "economy");
 });
 
 test("shared mutable work is rejected without workspace isolation", () => {
@@ -83,30 +94,38 @@ test("shared mutable work is rejected without workspace isolation", () => {
       runtimePath,
       now: new Date("2026-07-09T20:00:00Z")
     }),
-    reasoning_effort: "medium"
+    reasoning_effort: "medium",
+    available_models: ["gpt-5.6-sol", "gpt-5.4-mini", "gpt-5.4"],
+    available_reasoning_efforts: ["medium", "high", "xhigh"],
+    available_model_effort_pairs: [
+      { model: "gpt-5.4-mini", reasoning_effort: "medium" },
+      { model: "gpt-5.4", reasoning_effort: "high" }
+    ],
+    model_override: true,
+    effort_override: true
   };
   const packet = {
     ...readJson(packetPath),
     mutation_scope: "mutable",
     shared_mutable_state: true
   };
-  const decision = decideDelegation({ capabilities, packet });
+  const decision = decideDelegation({ capabilities, packet, routing });
 
   assert.equal(decision.allowed, false);
   assert.ok(decision.reasons.includes("workspace_isolation_required"));
 });
 
-test("explicit effort requests require an observed override control", () => {
+test("adapter-selected effort requires an observed override control", () => {
   const capabilities = {
     ...loadHostCapabilities({
       adapterPath,
       runtimePath,
       now: new Date("2026-07-09T20:00:00Z")
     }),
-    reasoning_effort: "medium"
+    model: "gpt-5.4-mini"
   };
-  const packet = { ...readJson(packetPath), requested_effort: "high" };
-  const decision = decideDelegation({ capabilities, packet });
+  const packet = readJson(packetPath);
+  const decision = decideDelegation({ capabilities, packet, routing });
 
   assert.equal(decision.allowed, false);
   assert.ok(decision.reasons.includes("effort_override_unavailable"));

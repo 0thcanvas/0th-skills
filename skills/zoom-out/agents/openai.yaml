@@ -1,6 +1,0 @@
-interface:
-  display_name: "Zoom Out"
-  short_description: "Step up a layer of abstraction and map the area's modules and callers."
-  default_prompt: "$zoom-out"
-policy:
-  allow_implicit_invocation: false

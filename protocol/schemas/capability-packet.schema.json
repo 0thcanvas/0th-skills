@@ -11,8 +11,9 @@
     "mutation_scope",
     "shared_mutable_state",
     "evidence_advantage",
-    "requested_model",
-    "requested_effort",
+    "work_kind",
+    "compute_class",
+    "escalation_class",
     "task_risk",
     "budget",
     "output_schema"
@@ -24,8 +25,21 @@
     "mutation_scope": { "enum": ["read-only", "mutable"] },
     "shared_mutable_state": { "type": "boolean" },
     "evidence_advantage": { "type": "string", "minLength": 1 },
-    "requested_model": { "type": ["string", "null"] },
-    "requested_effort": { "enum": ["proportionate", "inherit", "low", "medium", "high", "xhigh", "max"] },
+    "work_kind": {
+      "enum": [
+        "source_discovery",
+        "evidence_extraction",
+        "test_execution",
+        "log_condensation",
+        "bounded_implementation",
+        "routine_review",
+        "cross_source_synthesis",
+        "architecture",
+        "high_risk_implementation"
+      ]
+    },
+    "compute_class": { "enum": ["auto", "economy", "balanced", "frontier", "inherit"] },
+    "escalation_class": { "type": ["string", "null"], "enum": [null, "balanced", "frontier"] },
     "task_risk": { "enum": ["low", "medium", "high", "critical"] },
     "budget": {
       "type": "object",

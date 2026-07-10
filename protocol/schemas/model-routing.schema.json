@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/model-routing.schema.json",
+  "title": "Harness-local compute-class model routing",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "harness", "profiles"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "harness": { "type": "string", "minLength": 1 },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["economy", "balanced", "frontier"],
+      "properties": {
+        "economy": { "$ref": "#/$defs/profile" },
+        "balanced": { "$ref": "#/$defs/profile" },
+        "frontier": { "$ref": "#/$defs/profile" }
+      }
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "reasoning_effort", "selection_mode"],
+      "properties": {
+        "model": { "type": ["string", "null"], "minLength": 1 },
+        "reasoning_effort": { "type": ["string", "null"], "enum": [null, "inherit", "low", "medium", "high", "xhigh", "max"] },
+        "selection_mode": { "enum": ["per-invocation", "named-profile", "inherit", "disabled"] }
+      }
+    }
+  }
+}

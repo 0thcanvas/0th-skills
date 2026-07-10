@@ -1,7 +1,6 @@
 ---
 name: ask-claude-review
 description: "Deprecated — delegates to ask-counterpart-review with --driver claude. Remove after next release."
-model: opus
 ---
 
 This agent is deprecated. Delegate all review requests to `ask-counterpart-review`,

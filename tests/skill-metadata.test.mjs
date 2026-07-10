@@ -17,10 +17,6 @@ const memoryContractPath = path.join(repoRoot, "references", "memory-contract.md
 const workingArtifactsContractPath = path.join(repoRoot, "references", "working-artifacts.md");
 const skillsKernelPath = path.join(repoRoot, "references", "skills-kernel.md");
 
-// `zoom-out` is intentionally excluded: its `disable-model-invocation: true` (and
-// matching `allow_implicit_invocation: false` in agents/openai.yaml) is a deliberate
-// design — it's a user-triggered micro-skill — and conflicts with the
-// `allow_implicit_invocation: true` invariant this test enforces for core skills.
 const skillNames = ["build", "debug", "deep-research", "improve-architecture", "plan", "research", "retro", "ship", "think"];
 
 function read(filePath) {
@@ -57,23 +53,6 @@ test("model-invoked skill descriptions state what they do and when to use them",
   }
 });
 
-test("user-invoked skill descriptions stay human-facing", () => {
-  const shared = read(path.join(skillsRoot, "zoom-out", "SKILL.md"));
-  const wrapper = read(path.join(codexSkillsRoot, "zoom-out", "SKILL.md"));
-  const metadata = read(path.join(skillsRoot, "zoom-out", "agents", "openai.yaml"));
-
-  assert.match(shared, /^disable-model-invocation:\s*true$/m);
-  assert.doesNotMatch(wrapper, /^disable-model-invocation:/m);
-  assert.match(metadata, /allow_implicit_invocation:\s*false/);
-  for (const source of [shared, wrapper]) {
-    assert.doesNotMatch(
-      source,
-      /^description:\s*"Use when /m,
-      "user-invoked zoom-out should not spend description text on model trigger phrasing"
-    );
-  }
-});
-
 test("each skill has Codex openai.yaml metadata with explicit UI copy", () => {
   for (const skillName of skillNames) {
     const metadataPath = path.join(skillsRoot, skillName, "agents", "openai.yaml");
@@ -105,18 +84,6 @@ test("Codex skill entrypoints delegate to shared workflows without Claude-only f
     );
   }
 
-  const zoomOutSource = read(path.join(codexSkillsRoot, "zoom-out", "SKILL.md"));
-  assert.doesNotMatch(
-    zoomOutSource,
-    /^description:\s*"Use when /m,
-    "zoom-out Codex entrypoint is user-invoked, so its description should stay human-facing"
-  );
-  assert.doesNotMatch(zoomOutSource, /^argument-hint:/m, "zoom-out Codex entrypoint should omit argument-hint");
-  assert.match(
-    zoomOutSource,
-    /\(\.\.\/\.\.\/skills\/zoom-out\/SKILL\.md\)/,
-    "zoom-out Codex entrypoint should link to the shared workflow"
-  );
 });
 
 test("skill reference links resolve to real files", () => {
@@ -272,8 +239,6 @@ test("shared memory contract separates open loops from durable memory claims", (
 // `retro` is intentionally excluded from the artifact-producing wiring: it writes incident logs
 // to `${KB_ROOT}/learning/skill-incidents/` (outside the repo doc tree), so the repo-doc lane of
 // the working-artifacts contract does not apply.
-// `zoom-out` is intentionally excluded: it is a read-only mapping skill that does not write
-// artifacts, matching its existing exclusion from the broader `skillNames` list above.
 const ARTIFACT_PRODUCING_SKILLS = [
   "build",
   "debug",

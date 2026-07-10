@@ -5,7 +5,6 @@ description: |
   Dispatched by /deep-research Phase 1 Pass 2 and Phase 5 for detailed extraction.
   Returns structured findings — architecture details, methods, quantitative results.
 tools: WebSearch, WebFetch, Read, Grep
-model: opus
 ---
 
 Deep-dive into a single technical source and return structured, quantitative findings.

@@ -41,7 +41,8 @@ Delegation is optional and requires all of:
 
 1. independent or isolated work;
 2. a concrete evidence advantage, context-isolation advantage, or measured latency advantage;
-3. a bounded capability packet with task, inputs, output schema, authority, budget, and stop rules;
+3. a bounded capability packet with task, work kind, compute class, inputs, output schema, authority,
+   budget, escalation, and stop rules;
 4. a live, fresh capability record showing the requested controls actually exist;
 5. no unsafe shared mutable state.
 
@@ -58,6 +59,36 @@ Delegate only when it returns `allowed: true`. Documentation, requested profile 
 model/effort settings are not runtime evidence. Ordered work, stale observations, missing isolation,
 unsupported overrides, or disproportionate inherited effort stay single-root. Do not create a
 reviewer, verifier, researcher, or fleet merely because a workflow phase has that name.
+
+Portable packets use `compute_class: auto|economy|balanced|frontier|inherit`; they never contain a
+model name. `source_discovery`, `evidence_extraction`, `test_execution`, and `log_condensation`
+default to economy; bounded implementation and routine review default to balanced; cross-source
+synthesis, architecture, and high-risk implementation default to frontier. High and critical risk
+raise the floor. Active harness mappings live in
+`~/.0th/skills/config/model-routing/<harness>.json` or `OTH_SKILLS_ROUTING_DIR`; bundled adapter files
+are inherit-only safety fallbacks, not authoritative model choices. An explicit `--routing-json`
+override takes precedence over local configuration, which takes precedence over the bundled fallback.
+
+Use `scripts/0th.mjs routing init --harness <name>` to create a safe local template without
+overwriting an existing file. Use `routing doctor` with a live runtime record before relying on a
+concrete route. On Codex, `routing doctor --harness codex --live-probe` can create version-,
+configuration-, and freshness-bound evidence; it consumes provider tokens and is never implicit.
+Model and effort overrides plus the exact observed model/effort pair must all pass.
+
+An allowed decision includes a launch plan and `launch_id`. For a concrete Codex plan, use
+`scripts/0th.mjs dispatch` with prompt and output-schema files; the adapter pins model and effort,
+sends the prompt on stdin, and emits the result, JSONL events, and receipt. An `inherit` plan uses
+the native harness spawn path. Other harnesses use their own controlled adapter or native runtime
+metadata. Then verify the receipt:
+
+```bash
+node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" attest \
+  --launch-plan-json <launch-plan.json> \
+  --receipt-json <execution-receipt.json>
+```
+
+No receipt, an unverifiable runtime, or a model/effort mismatch invalidates cost routing for that
+dispatch. Stop or escalate once to the packet's stronger class; do not repeat same-tier retries.
 
 ## Safety and evidence
 
@@ -95,6 +126,7 @@ as soon as it is no longer required.
 
 ## Shared references
 
+- `model-routing.md`
 - `memory-contract.md`
 - `workflow-verification.md`
 - `specialist-routing.md`

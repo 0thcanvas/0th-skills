@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: "Builds world models. Use when research needs multiple passes."
+description: "Builds budgeted world models. Use when research needs contradiction analysis or experiments."
 ---
 
 # Deep Research

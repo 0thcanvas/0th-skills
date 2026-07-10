@@ -4,7 +4,6 @@ description: |
   Implement a single slice with TDD in isolation. Dispatched by /build for context-isolated
   implementation. Receives full slice spec and context — never inherits parent session.
   Reports DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED.
-model: opus
 ---
 
 Implement a single vertical slice using TDD.

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://0thcanvas.com/schemas/execution-receipt.schema.json",
+  "title": "Observed child execution receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "launch_id",
+    "harness",
+    "actual_model",
+    "actual_reasoning_effort",
+    "source",
+    "observed_at",
+    "adapter",
+    "runtime_version",
+    "thread_id",
+    "attestation_basis"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "launch_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "harness": { "type": "string", "minLength": 1 },
+    "actual_model": { "type": "string", "minLength": 1 },
+    "actual_reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+    "source": { "enum": ["session-metadata", "runtime-probe"] },
+    "observed_at": { "type": "string", "format": "date-time" },
+    "adapter": { "type": "string", "minLength": 1 },
+    "runtime_version": { "type": "string", "minLength": 1 },
+    "thread_id": { "type": "string", "minLength": 1 },
+    "attestation_basis": { "enum": ["explicit-launch-completed", "runtime-metadata"] }
+  }
+}
