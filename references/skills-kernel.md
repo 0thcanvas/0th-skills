@@ -1,7 +1,7 @@
 # Skills Kernel
 
-This contract applies to every 0th workflow. Skill files define domain behavior; this file owns
-startup, authority, execution topology, safety, context transfer, and closeout.
+Skill files define domain behavior; this Kernel owns shared startup, authority, execution topology,
+safety, context transfer, and closeout.
 
 ## Root-task preflight
 
@@ -64,14 +64,18 @@ the root context.
 Return exit status, evidence paths, concerns, and next action. Apply `retro_open_loop_closeout` so
 skipped verification, blocked real environments, repeated failures, and unfinished work stay visible.
 
-Run the Memory Write Gate from `memory-contract.md`. Durable claims use `memory remember`, never
-hand-edited `claims.jsonl`; “nothing durable” is valid. Unfinished work uses `memory open-loop`.
+Use the executable Memory Write Gate:
+`node "${OTH_SKILLS_ROOT}/scripts/memory.mjs" write-gate <event flags>`. Read `memory-contract.md` only
+when it cannot classify the event. Durable claims use `memory remember`, never hand-edited `claims.jsonl`;
+“nothing durable” is valid. Unfinished work uses `memory open-loop`.
 
 Keep gate evidence uncommitted under `${VERIFICATION_REPORT_DIR:-verification-report}`. Promote only
 compact conclusions. After merge, close, abandonment, or worktree removal, delete raw evidence;
 summarize and delete sensitive browser/session material as soon as it is unnecessary.
 
 ## Shared references
+
+On-demand index, not a startup reading list. Load only when its triggering condition applies.
 
 - `model-routing.md`
 - `memory-contract.md`
