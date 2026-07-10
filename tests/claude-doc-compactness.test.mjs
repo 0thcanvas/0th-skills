@@ -24,14 +24,15 @@ test("CLAUDE.md contains only the exceptional browser and safety boundaries", ()
     ["Browser", "Safety"]
   );
   assert.match(source, /references\/browser-control-policy\.md/);
+  assert.match(source, /references\/secret-control-policy\.md/);
   assert.match(source, /resolved secret values/i);
-  assert.match(source, /op run --env-file/);
+  assert.match(source, /mounted.*\.env/i);
 });
 
 test("CLAUDE.md remains a small repository instruction file", () => {
   const lines = source.trimEnd().split("\n").length;
   const words = source.trim().split(/\s+/).length;
 
-  assert.ok(lines <= 18, `CLAUDE.md should be at most 18 lines, got ${lines}`);
-  assert.ok(words <= 160, `CLAUDE.md should be at most 160 words, got ${words}`);
+  assert.ok(lines <= 20, `CLAUDE.md should be at most 20 lines, got ${lines}`);
+  assert.ok(words <= 180, `CLAUDE.md should be at most 180 words, got ${words}`);
 });

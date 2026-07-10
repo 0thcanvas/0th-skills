@@ -8,9 +8,9 @@
 
 ## Safety
 
-- Resolved secret values never enter agent context, prompts, argv, logs, screenshots, browser
-  payloads, or committed files. Code reads secrets from environment variables or runtime bindings.
-- Keep only secret-manager references such as `op://...` in files. Inject values inside the target
-  process, for example `op run --env-file .env.1password -- <command>`.
-- Never use revealing secret-manager commands, environment dumps, or shell tracing around secrets.
-  If safe injection is unavailable, stop. Treat possible exposure as compromise and rotate.
+- Apply `references/secret-control-policy.md`. Prefer a mounted 1Password Environment `.env`; reuse
+  an existing valid environment instead of prompting for every command. A verified gitignored,
+  `chmod 600` plaintext `.env` is allowed only for project-scoped development secrets.
+- Run the consuming application without inspecting secret-file contents. Resolved secret values
+  never enter agent context, prompts, argv, logs, screenshots, browser payloads, diffs, or commits.
+  Contact 1Password only when the local environment is missing, stale, or being rotated.

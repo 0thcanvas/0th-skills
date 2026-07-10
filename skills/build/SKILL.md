@@ -103,7 +103,11 @@ Use a fresh `--run-id` per run. An unexpected failure switches to `/debug`; thre
 
 ## Secrets
 
-Code reads secrets from environment variables or runtime bindings. Run secret-dependent commands through the project safe runner. Never print resolved values, use revealing secret-manager commands, disable masking, or enable shell tracing. If no safe runner exists, return `BLOCKED` and name the required configuration.
+Apply `../../references/secret-control-policy.md`. Code reads secrets from environment variables or
+runtime bindings. Prefer the project's existing valid mounted or ignored local environment and run
+the consuming application; do not contact the secret manager for every command or inspect secret
+files. Never print resolved values, disable masking, or enable shell tracing. If no safe path exists,
+return `BLOCKED` and name the required configuration.
 
 ## Specialist Boundary
 

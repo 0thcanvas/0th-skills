@@ -92,10 +92,12 @@ dispatch. Stop or escalate once to the packet's stronger class; do not repeat sa
 
 ## Safety and evidence
 
-Never place resolved secret values in prompts, chat, command arguments, logs, diffs, or artifacts.
-Use the project’s safe runtime injection path and verify presence without printing values. Never dump
-environments, cookies, authorization headers, session storage, HAR bodies, or private browser payloads.
-If exposure may have occurred, identify the category without repeating the value and recommend rotation.
+Apply `secret-control-policy.md`. Use an existing valid local environment before contacting its
+secret manager, run the consuming application instead of reading secret files, and verify presence
+without printing values. Never place resolved secret values in prompts, chat, argv, logs, diffs,
+commits, or evidence. Never dump environments, cookies, authorization headers, session storage, HAR
+bodies, or private browser payloads. If exposure may have occurred, identify the category without
+repeating the value and recommend rotation.
 
 Claims follow the strongest available evidence. Tests prove test seams; visual claims need visual
 evidence; session-backed claims need session-backed evidence; live or destructive proof needs explicit
