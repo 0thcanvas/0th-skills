@@ -97,7 +97,7 @@ test("each migrated skill retains its defining contract", () => {
     debug: ["feedback loop", "root cause", "failing regression test", "blocked_real_env"],
     research: ["source buckets", "primary sources", "session-backed read receipt", "context_handoff"],
     "deep-research": ["feasibility", "decision", "survey", "world model", "bounded summaries"],
-    ship: ["ship-gate.mjs", "proof result tier", "PR-specific", "ready to merge"],
+    ship: ["ship-gate.mjs", "proof result tier", "PR-specific", "PR checks", "ready to merge"],
     retro: ["extract evidence", "redact", "classify", "aggregate", "candidate_new_category"],
     "improve-architecture": ["deepening", "Deletion test", "explicit user pick", "Do not refactor"]
   };

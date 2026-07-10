@@ -231,6 +231,8 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
   not inflate the installed plugin cache.
 - Standardized project secret consumption on environment variables populated from an existing
   mounted or ignored local environment, with 1Password references kept out of application code.
+- Added fresh-checkout CI as the authority for objective tests, made local test fixtures
+  self-contained, and hardened the local ship gate with commit binding and evidence-file checks.
 
 ### 0.3.2
 

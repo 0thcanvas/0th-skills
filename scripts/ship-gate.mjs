@@ -9,10 +9,10 @@
 // is absent from stack_minimums_exercised, the report is missing/malformed, or
 // outcome is not PASS.
 //
-// Per docs/decisions/2026-05-03-self-testing-loop-architecture.md.
+// Per docs/decisions/2026-07-10-verification-authority.md.
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
 
@@ -317,6 +317,64 @@ export function validateTrackedVerificationArtifacts(repoPath, reportDir) {
   );
 
   return { ok: false, reasons };
+}
+
+export function validateEvidencePaths(repoPath, evidencePaths, label = "evidence") {
+  const reasons = [];
+  const root = resolve(repoPath);
+
+  for (const evidencePath of evidencePaths ?? []) {
+    if (typeof evidencePath !== "string" || evidencePath.trim() === "") continue;
+    if (isAbsolute(evidencePath)) {
+      reasons.push(`${label} path '${evidencePath}' must be repository-relative`);
+      continue;
+    }
+
+    const absolutePath = resolve(root, evidencePath);
+    const relativePath = relative(root, absolutePath);
+    if (relativePath === ".." || relativePath.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) || isAbsolute(relativePath)) {
+      reasons.push(`${label} path '${evidencePath}' is outside the repository`);
+      continue;
+    }
+    if (!existsSync(absolutePath)) {
+      reasons.push(`${label} path '${evidencePath}' does not exist`);
+      continue;
+    }
+
+    let stats;
+    try {
+      stats = statSync(absolutePath);
+    } catch (err) {
+      reasons.push(`${label} path '${evidencePath}' cannot be inspected: ${err.message}`);
+      continue;
+    }
+    if (!stats.isFile()) reasons.push(`${label} path '${evidencePath}' is not a file`);
+    else if (stats.size === 0) reasons.push(`${label} path '${evidencePath}' is empty`);
+  }
+
+  return { ok: reasons.length === 0, reasons };
+}
+
+export function validateProofHead(report, currentHead) {
+  const reasons = [];
+  if (typeof report?.verified_head !== "string" || report.verified_head.trim() === "") {
+    reasons.push("verified_head must be a non-empty commit id");
+  } else if (currentHead && report.verified_head !== currentHead) {
+    reasons.push(`verified_head '${report.verified_head}' does not match current HEAD '${currentHead}'`);
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+
+export function resolveCurrentHead(repoPath) {
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: repoPath,
+      stdio: ["ignore", "pipe", "ignore"],
+      encoding: "utf8"
+    }).trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 export function validateProductAcceptanceReport(report, options = {}) {
@@ -714,6 +772,33 @@ function main() {
       console.error(`ship-gate:   - ${reason}`);
     }
     process.exit(1);
+  }
+
+  const proofHead = validateProofHead(proofResultReport, resolveCurrentHead(repoPath));
+  if (!proofHead.ok) {
+    console.error("ship-gate: proof commit binding FAILED.");
+    for (const reason of proofHead.reasons) console.error(`ship-gate:   - ${reason}`);
+    process.exit(1);
+  }
+
+  const proofEvidence = validateEvidencePaths(repoPath, proofResultReport.evidence_paths, "proof evidence");
+  if (!proofEvidence.ok) {
+    console.error("ship-gate: proof evidence path gate FAILED.");
+    for (const reason of proofEvidence.reasons) console.error(`ship-gate:   - ${reason}`);
+    process.exit(1);
+  }
+
+  if (acceptanceReport.required === true) {
+    const acceptanceEvidence = validateEvidencePaths(
+      repoPath,
+      acceptanceReport.evidence_paths,
+      "product acceptance evidence"
+    );
+    if (!acceptanceEvidence.ok) {
+      console.error("ship-gate: product acceptance evidence path gate FAILED.");
+      for (const reason of acceptanceEvidence.reasons) console.error(`ship-gate:   - ${reason}`);
+      process.exit(1);
+    }
   }
 
   if (expected.length === 0) {

@@ -12,6 +12,8 @@ import {
   resolveRepoRoot,
   scanTrackedFilesForLocalPathLeaks,
   validateCounterpartReviewEvidence,
+  validateEvidencePaths,
+  validateProofHead,
   validateProofContract,
   validateProofResult,
   validateProductAcceptanceReport,
@@ -72,6 +74,12 @@ function writeProofContract(dir, payload = {}) {
 
 function writeProofResult(dir, payload = {}) {
   fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
+  const evidencePaths = payload.evidence_paths ?? ["verification-report/test-output.txt"];
+  for (const evidencePath of evidencePaths) {
+    const absolutePath = path.join(dir, evidencePath);
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    if (!fs.existsSync(absolutePath)) fs.writeFileSync(absolutePath, "verified fixture evidence\n");
+  }
   fs.writeFileSync(
     path.join(dir, "verification-report", "proof-result.json"),
     JSON.stringify({
@@ -82,7 +90,8 @@ function writeProofResult(dir, payload = {}) {
       required_evidence: ["unit test output"],
       outcome: "PASS",
       minimum_tier_satisfied: true,
-      evidence_paths: ["verification-report/test-output.txt"],
+      evidence_paths: evidencePaths,
+      verified_head: "unborn-fixture",
       checked_at: new Date().toISOString(),
       ...payload
     })
@@ -807,6 +816,28 @@ test("validateProofResult: required evidence paths cannot be empty", () => {
   assert.match(result.reasons.join("\n"), /evidence_paths must be a non-empty array/);
 });
 
+test("validateEvidencePaths: rejects missing, empty, and outside-repo evidence", () => {
+  const repo = makeTempRepo();
+  fs.writeFileSync(path.join(repo, "empty.txt"), "");
+  const result = validateEvidencePaths(repo, [
+    "missing.txt",
+    "empty.txt",
+    "../outside.txt"
+  ], "proof evidence");
+
+  assert.equal(result.ok, false);
+  assert.match(result.reasons.join("\n"), /missing\.txt.*does not exist/);
+  assert.match(result.reasons.join("\n"), /empty\.txt.*is empty/);
+  assert.match(result.reasons.join("\n"), /outside the repository/);
+});
+
+test("validateProofHead: binds proof to the current commit", () => {
+  assert.equal(validateProofHead({ verified_head: "abc123" }, "abc123").ok, true);
+  const stale = validateProofHead({ verified_head: "abc123" }, "def456");
+  assert.equal(stale.ok, false);
+  assert.match(stale.reasons.join("\n"), /does not match current HEAD/);
+});
+
 test("validateProductAcceptanceReport: required acceptance with empty evidence_paths fails", () => {
   const now = new Date("2026-05-10T20:30:00.000Z");
   const result = validateProductAcceptanceReport({
@@ -870,6 +901,11 @@ test("ship-gate end-to-end: required:true PASS happy path exits 0", () => {
       evidence_paths: ["verification-report/screenshots/onboarding-step-1.png"],
       reviewed_at: new Date().toISOString()
     })
+  );
+  fs.mkdirSync(path.join(repo, "verification-report", "screenshots"), { recursive: true });
+  fs.writeFileSync(
+    path.join(repo, "verification-report", "screenshots", "onboarding-step-1.png"),
+    "fixture screenshot evidence\n"
   );
   writeCounterpartReviewSkipped(repo);
   writeProofContract(repo, {

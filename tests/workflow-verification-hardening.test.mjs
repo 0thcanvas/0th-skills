@@ -53,9 +53,12 @@ function writeGateFixture(repo, proofResultOverrides = {}, reportOverrides = {})
     outcome: "PASS",
     minimum_tier_satisfied: true,
     evidence_paths: ["verification-report/browser-proof.txt"],
+    verified_head: "unborn-fixture",
     checked_at: now,
     ...proofResultOverrides
   });
+
+  fs.writeFileSync(path.join(reportDir, "browser-proof.txt"), "verified browser fixture\n");
 
   writeJson(path.join(reportDir, "report.json"), {
     outcome: "PASS",
