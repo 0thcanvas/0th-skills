@@ -55,6 +55,11 @@ For large logs, use `context_handoff`: summary, source pointers, unresolved gaps
 targets. Never place raw secrets, cookies, headers, HAR bodies, or private browser payloads into a
 handoff.
 
+For MV3 Chrome-extension bugs, apply `../../references/browser-control-policy.md`. Use Browser Kit
+with `browser-kit session open --provider chrome --profile agent --ext …`; after one documented
+programmatic recovery attempt, use Computer Use against Google Chrome to load the unpacked extension
+and obtain confirmation at the required boundary.
+
 ## 3. Fix and prove
 
 When fixes are authorized:

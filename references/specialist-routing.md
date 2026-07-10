@@ -121,12 +121,16 @@ Use this capability when verification or investigation depends on the user's aut
 state, browser extension context, private dashboard, shared tab, or current browser session. Browser
 Kit is the preferred managed adapter for bb-browser-backed Chrome sessions when available; bb-browser
 or other host browser automation may be used when Browser Kit is unavailable or the task requires
-arbitrary page state inspection.
+arbitrary page state inspection. Apply `references/browser-control-policy.md`: browser names are
+exact identities, agent-driven Chrome uses real Google Chrome with profile `agent`, and Brave is
+eligible only when explicitly requested.
 
 Adapter failures are part of the receipt, not proof about the page. If Browser Kit or bb-browser is
 unavailable because the daemon, MCP registration, provider launch, or session attach failed, attempt
 one documented recovery path when safe before falling back. If recovery still fails, record
 `adapter_unavailable`, the exact command or error, and the next available session-backed path tried.
+For a required real-Chrome UI action, Computer Use targets Google Chrome as the same-browser fallback;
+Chrome for Testing, managed Chromium, Brave, and the in-app browser are not silent substitutes.
 If the blocker is a local port collision with OpenCLI Browser Bridge or another tool on
 `localhost:19825`, prefer moving Browser Kit with `--cdp-port <port> --daemon-port <port>` or
 `BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`; do not kill the other session unless the user

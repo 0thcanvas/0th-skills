@@ -36,8 +36,9 @@ that often challenge generic fetches, choose the evidence lane before searching:
 
 - Public claims: ordinary search/fetch can discover public sources and pointers.
 - User-visible logged-in content: prefer OpenCLI when an adapter exists.
-- Arbitrary page state, challenge diagnosis, or current tab state: use Browser Kit/BB Browser real
-  Chrome, then computer-use when a real UI path is the only available route.
+- Arbitrary page state, challenge diagnosis, or current tab state: apply
+  `../../../references/browser-control-policy.md`, use Browser Kit/BB Browser real Google Chrome
+  with profile `agent`, then computer-use against Google Chrome when a real UI path is required.
 
 OpenCLI Browser Bridge owns `localhost:19825`. When both OpenCLI and Browser Kit are needed, move
 Browser Kit with `--cdp-port <port> --daemon-port <port>` or `BROWSER_KIT_CDP_PORT` /

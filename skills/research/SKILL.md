@@ -62,7 +62,9 @@ must include the failed command or boundary.
 
 If Browser Kit conflicts with another CDP owner, move it with `--cdp-port`, `--daemon-port`,
 `BROWSER_KIT_CDP_PORT`, or `BROWSER_KIT_DAEMON_PORT`; do not kill the other browser session by
-default. OpenCLI and browser tools remain read-only unless the user explicitly authorizes a write.
+default. Apply `../../references/browser-control-policy.md`: real-Chrome work uses profile `agent`,
+Computer Use targets Google Chrome as the UI fallback, and no other browser identity is substituted
+silently. OpenCLI and browser tools remain read-only unless the user explicitly authorizes a write.
 
 ## Output
 
