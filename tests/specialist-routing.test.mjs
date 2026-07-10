@@ -167,11 +167,8 @@ test("fetch-only research agents hand back session blockers instead of treating 
 });
 
 test("host-facing docs and Codex wrappers expose the specialist routing contract compactly", () => {
-  const claude = read("CLAUDE.md");
   const readme = read("README.md");
 
-  assert.match(claude, /0th remains the workflow orchestrator/);
-  assert.match(claude, /references\/specialist-routing\.md/);
   assert.match(readme, /Specialist Routing/);
   assert.match(readme, /capability\/workflow boundary/);
 
