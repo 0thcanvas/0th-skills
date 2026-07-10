@@ -17,7 +17,8 @@ action.
 - Use `scripts/memory.mjs open-loop` for writes and status changes (`add`, `block`, `close`,
   `drop`, `reopen`, plus `list` for read access). `scripts/open-loop.mjs` holds the canonical
   implementation; direct invocation is supported for tests and migration tooling.
-- Use `scripts/memory.mjs task-brief` for the generated startup brief.
+- Use `scripts/memory.mjs startup --query "<task keywords>"` for bounded startup retrieval. Reserve
+  `task-brief` for explicit broad open-loop audits.
 - If task-brief regeneration fails after an open-loop write, the task mutation is preserved and the
   command result reports `brief_error` with `brief_updated: false`.
 

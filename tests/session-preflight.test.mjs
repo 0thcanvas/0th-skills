@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { runPreflight } from "../scripts/session-preflight.mjs";
+import { compactPreflightResult, runPreflight } from "../scripts/session-preflight.mjs";
 
 function sh(cwd, args) {
   return execFileSync(args[0], args.slice(1), {
@@ -226,4 +226,44 @@ test("preflight from a non-repo workspace returns a structured advisory with chi
     }
   ]);
   assert.equal(result.advisory.state_path, repoStateFile);
+});
+
+test("compact preflight reports sync counts without embedding verbose arrays", () => {
+  const compact = compactPreflightResult({
+    repo_root: "/tmp/repo",
+    repo_state_file: "/tmp/state.json",
+    branch: "feature",
+    clean: true,
+    upstream: "origin/main",
+    upstream_relation: "ahead",
+    ahead: 2,
+    behind: 0,
+    before_head: "a".repeat(40),
+    after_head: "b".repeat(40),
+    fetched_at: "2026-07-10T00:00:00.000Z",
+    fetch_ok: true,
+    action: "ahead_only",
+    memory_sync_failed: false,
+    drift_sync_failed: false,
+    repo_state_unreadable: false,
+    warnings: [],
+    drift_sync: {
+      from_revision: "a".repeat(40),
+      to_revision: "b".repeat(40),
+      changed_sources: Array.from({ length: 200 }, (_, index) => `file-${index}.md`),
+      affected_claim_ids: Array.from({ length: 20 }, (_, index) => `claim-${index}`),
+      brief_updated: true
+    },
+    previous_repo_state: { last_seen_head: "a".repeat(40) },
+    repo_state: { lock: { lock_path: "/tmp/lock" } }
+  });
+
+  assert.equal(compact.drift_sync.changed_source_count, 200);
+  assert.equal(compact.drift_sync.affected_claim_count, 20);
+  assert.equal(compact.drift_sync.brief_updated, true);
+  assert.equal("changed_sources" in compact.drift_sync, false);
+  assert.equal("affected_claim_ids" in compact.drift_sync, false);
+  assert.equal("previous_repo_state" in compact, false);
+  assert.equal("repo_state" in compact, false);
+  assert.ok(JSON.stringify(compact).length < 2000);
 });

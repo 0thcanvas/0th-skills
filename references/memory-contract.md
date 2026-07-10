@@ -54,12 +54,11 @@ inspect the resolved project paths, global paths, routing rules, and plugin/cach
 Open loops are unfinished actions, blockers, and handoff items. They are not durable memory
 claims; do not store TODOs as memory claims.
 
-Track open loops through `scripts/memory.mjs open-loop`, then generate the open-loop brief with
-`scripts/memory.mjs task-brief` at session start after the memory brief. Use `repo` scope for work
-tied to one checkout, `project` scope for work spanning repos in the same product, and `global`
-scope only for cross-project operating concerns. `memory.mjs` is the unified entrypoint; the
-named per-command scripts (`memory-write.mjs`, `open-loop.mjs`, `memory-recall.mjs`, etc.) hold
-the canonical implementation and remain usable directly for tests and migration work.
+Track open loops through `scripts/memory.mjs open-loop`. At root-task startup, retrieve only relevant
+loops through `scripts/memory.mjs startup --query "<task keywords>"`; generate `task-brief` only for
+an explicit broad open-loop audit. Use `repo` scope for one checkout, `project` scope for work
+spanning repos in one product, and `global` scope only for cross-project operating concerns.
+`memory.mjs` is the unified entrypoint; named scripts remain usable for tests and migration work.
 
 Normal agents should use the unified entrypoint:
 

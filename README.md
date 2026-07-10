@@ -29,8 +29,8 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 
 ## Knowledge Base
 
-Memory v2 runtime is the canonical agent recall path. Generated global/project briefs, compact
-recall, source-pack expansion, and open-loop briefs are read before any markdown KB browsing.
+Memory v2 runtime is the canonical agent recall path. Root tasks use one compact, task-keyed startup
+packet; full briefs, source packs, and evidence expand only on demand.
 Projects may still maintain a markdown knowledge base as source material, import/export storage, or
 human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
 [PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
@@ -364,9 +364,10 @@ Memory v2 runtime state is also local user state, not project-repo content. Norm
 use the unified command surface:
 
 ```bash
-node scripts/memory.mjs preflight
-node scripts/memory.mjs brief
-node scripts/memory.mjs task-brief
+node scripts/memory.mjs startup --query "repo preflight memory optimization"
+node scripts/memory.mjs preflight --verbose # diagnostics only
+node scripts/memory.mjs brief                # explicit broad-state audit only
+node scripts/memory.mjs task-brief           # explicit open-loop audit only
 node scripts/memory.mjs write-gate --event-type research --claim "..." --source-id memory-systems-world-model --evidence-path sources/memory/source-pack.jsonl --confidence high
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
 node scripts/memory.mjs recall --global-only --source-id memory-systems-world-model --limit 5
@@ -375,6 +376,10 @@ node scripts/memory.mjs source-pack expand --id memory-systems-world-model
 node scripts/memory.mjs doctor
 node scripts/memory.mjs runtime-eval
 ```
+
+`startup` combines compact preflight state with at most three relevant claims and two relevant open
+loops. It omits verbose drift arrays and does not load generated briefs. Use returned ids and source
+pointers with targeted `recall` or `expand` only when they affect the task.
 
 By default project-scoped memory, evidence, repo-state, and open-loop commands store generated
 JSONL/brief files at:
@@ -421,5 +426,17 @@ Smoke-check the repo or an installed plugin copy with:
 node scripts/install-smoke-check.mjs --repo-root .
 node scripts/install-smoke-check.mjs --repo-root . --cache-root ~/.codex/plugins/cache/mini-local/0th-skills/local
 ```
+
+Build the installable runtime staging directory outside the checkout before a local release:
+
+```bash
+RUNTIME_PLUGIN_DIR="${RUNTIME_PLUGIN_DIR:?Set an absolute staging path}"
+node scripts/package-runtime-plugin.mjs --source . --output "$RUNTIME_PLUGIN_DIR" --force
+node "${RUNTIME_PLUGIN_DIR}/scripts/install-smoke-check.mjs" --repo-root "$RUNTIME_PLUGIN_DIR"
+```
+
+The runtime package keeps skills, agents, scripts, schemas, adapters, and required decision evidence.
+It excludes tests, verification artifacts, eval/plan history, feedback files, and repository-only
+documentation. Point the local marketplace symlink at this staging directory before reinstalling.
 
 The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

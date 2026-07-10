@@ -9,6 +9,7 @@ import { isInvokedAsCli } from "./lib/cli.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const COMMANDS = new Map([
+  ["startup", ["memory-startup.mjs"]],
   ["preflight", ["session-preflight.mjs"]],
   ["remember", ["memory-write.mjs"]],
   ["write", ["memory-write.mjs"]],
@@ -37,6 +38,7 @@ function helpText() {
     "Usage: node scripts/memory.mjs <command> [options]",
     "",
     "Agent workflow commands:",
+    "  startup          Return compact repo state and task-relevant memory.",
     "  preflight        Fetch/reconcile repo state before work.",
     "  brief            Generate the compact memory brief.",
     "  task-brief       Generate the open-loop brief.",
@@ -56,6 +58,7 @@ function helpText() {
     "  runtime-eval     Run executable Memory v2 runtime fixtures.",
     "",
     "Examples:",
+    "  node scripts/memory.mjs startup --query \"memory startup token optimization\"",
     "  node scripts/memory.mjs brief",
     "  node scripts/memory.mjs recall --query \"repo preflight\" --limit 5",
     "  node scripts/memory.mjs remember --type decision --claim \"...\" --evidence-path docs/x.md --confidence high",

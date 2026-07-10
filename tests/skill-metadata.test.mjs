@@ -365,15 +365,15 @@ test("the Skills Kernel centralizes startup, memory, and open-loop lifecycle", (
   const source = read(skillsKernelPath);
 
   assert.match(source, /once per root task/);
-  assert.match(source, /memory\.mjs" preflight/);
-  assert.match(source, /global memory brief, then the project memory brief/);
-  assert.match(source, /open-loop brief/);
-  assert.match(source, /receipt stays fresh/);
+  assert.match(source, /memory\.mjs" startup --query/);
+  assert.match(source, /relevant claims and open loops/);
+  assert.match(source, /Do not generate or read the full.*briefs by default/i);
+  assert.match(source, /phases reuse the receipt/);
   assert.match(source, /Memory Write Gate/);
   assert.match(source, /memory remember/);
-  assert.match(source, /do not hand-edit runtime `claims\.jsonl`/);
+  assert.match(source, /never\s+hand-edited `claims\.jsonl`/);
   assert.match(source, /memory open-loop/);
-  assert.match(source, /not as a memory claim/);
+  assert.match(source, /Unfinished work uses `memory open-loop`/);
   assert.doesNotMatch(source, /\$HOME\/0thcanvas|\/Users\/mini\/0thcanvas/);
 });
 

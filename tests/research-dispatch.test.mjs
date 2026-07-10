@@ -13,6 +13,7 @@ function read(relativePath) {
 
 test("portable workflows use capability-gated packets instead of permanent dispatch roles", () => {
   const kernel = read("references/skills-kernel.md");
+  const delegation = read("references/delegation.md");
   const phaseGuide = read("skills/deep-research/references/phase-guide.md");
   const sharedSkills = ["debug", "think", "plan", "research", "deep-research"]
     .map((name) => read(`skills/${name}/SKILL.md`));
@@ -20,10 +21,11 @@ test("portable workflows use capability-gated packets instead of permanent dispa
     .map((name) => read(`codex-skills/${name}/SKILL.md`));
 
   assert.match(kernel, /Default: one root agent/);
-  assert.match(kernel, /capability packet/);
-  assert.match(kernel, /live, fresh capability record/);
+  assert.match(kernel, /references\/delegation\.md/);
   assert.match(kernel, /evidence advantage/);
-  assert.match(kernel, /disproportionate inherited effort/);
+  assert.match(delegation, /capability packet/);
+  assert.match(delegation, /live, fresh capability record/);
+  assert.match(delegation, /disproportionate inherited effort/);
 
   for (const source of sharedSkills) {
     assert.match(source, /\.\.\/\.\.\/references\/skills-kernel\.md/);

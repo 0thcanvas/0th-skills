@@ -20,19 +20,16 @@ test("build pilot is a thin what-and-when portable skill", () => {
   const wordCount = source.trim().split(/\s+/).length;
 
   assert.match(source, /^description: "Implements .* Use when /m);
-  assert.ok(lineCount < 220, `build pilot should stay below 220 lines, got ${lineCount}`);
-  assert.ok(wordCount < 1200, `build pilot should stay below 1,200 words, got ${wordCount}`);
+  assert.ok(lineCount < 120, `build pilot should stay below 120 lines, got ${lineCount}`);
+  assert.ok(wordCount < 700, `build pilot should stay below 700 words, got ${wordCount}`);
 });
 
-test("build pilot defaults to one root agent and fails closed through observed capabilities", () => {
+test("build uses the kernel default and defers delegation mechanics", () => {
   const source = read("skills/build/SKILL.md");
 
   for (const fragment of [
     "Default: one root agent",
-    "node scripts/0th.mjs capabilities",
-    "live capability record",
-    "bounded capability packet",
-    "disproportionate",
+    "references/delegation.md",
     "CONTRACT_INVALIDATED",
     "SCOPE_EXPANSION_REQUIRED"
   ]) {
@@ -45,7 +42,12 @@ test("build pilot defaults to one root agent and fails closed through observed c
     "0th_verifier",
     "0th_experience_reviewer",
     "explicitly dispatch",
-    "Do not continue in the main thread"
+    "Do not continue in the main thread",
+    "node scripts/0th.mjs capabilities",
+    "--runtime-json",
+    "--packet-json",
+    "scripts/0th.mjs dispatch",
+    "scripts/0th.mjs attest"
   ]) {
     assert.equal(source.includes(forbidden), false, `build pilot should not include ${forbidden}`);
   }

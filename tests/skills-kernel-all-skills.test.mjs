@@ -68,9 +68,9 @@ test("the shared kernel owns preflight, authority, delegation, secrets, and clos
     "Root-task preflight",
     "once per root task",
     "TaskSpec",
-    "capabilities",
     "Default: one root agent",
     "evidence advantage",
+    "delegation.md",
     "CONTRACT_INVALIDATED",
     "SCOPE_EXPANSION_REQUIRED",
     "External writes",
@@ -80,6 +80,12 @@ test("the shared kernel owns preflight, authority, delegation, secrets, and clos
     "retro_open_loop_closeout"
   ]) {
     assert.ok(kernel.includes(fragment), `kernel should include ${JSON.stringify(fragment)}`);
+  }
+
+  assert.doesNotMatch(kernel, /routing init|--live-probe|launch-plan-json/);
+  const delegation = read("references/delegation.md");
+  for (const fragment of ["capability packet", "live, fresh capability record", "routing init", "launch-plan-json"]) {
+    assert.ok(delegation.includes(fragment), `delegation reference should preserve ${JSON.stringify(fragment)}`);
   }
 });
 
