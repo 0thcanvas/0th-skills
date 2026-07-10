@@ -160,7 +160,7 @@ test("detectHost: grok binary ancestor returns 'grok' without GROK_AGENT", () =>
     clearHostEnv();
     const processes = new Map([
       [30, { ppid: 20, command: "/bin/zsh" }],
-      [20, { ppid: 10, command: "/Users/tester/.grok/bin/grok" }],
+      [20, { ppid: 10, command: "/opt/grok/bin/grok" }],
       [10, { ppid: 1, command: "/sbin/launchd" }]
     ]);
 
