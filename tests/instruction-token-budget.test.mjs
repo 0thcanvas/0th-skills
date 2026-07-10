@@ -24,3 +24,22 @@ test("build plus kernel stays below the active instruction budget", () => {
   assert.ok(buildTokens <= 1350, `build budget exceeded: ${buildTokens} tokens`);
   assert.ok(kernelTokens + buildTokens <= 2450, `active build instructions exceed budget: ${kernelTokens + buildTokens} tokens`);
 });
+
+test("shared references are an on-demand index, not an eager read set", () => {
+  const kernel = read("references/skills-kernel.md");
+  const build = read("skills/build/SKILL.md");
+
+  assert.match(kernel, /Shared references.*index.*not.*startup reading list/is);
+  assert.match(kernel, /load.*only when.*triggering condition applies/i);
+  assert.match(build, /lightweight build lane.*do not load.*stack-minimums\.md/is);
+  assert.match(build, /full-lane work.*read.*stack-minimums\.md/is);
+});
+
+test("memory closeout uses the executable gate before the full contract", () => {
+  const kernel = read("references/skills-kernel.md");
+  const build = read("skills/build/SKILL.md");
+
+  assert.match(kernel, /memory\.mjs" write-gate/);
+  assert.match(kernel, /read `memory-contract\.md` only\s+when/i);
+  assert.doesNotMatch(build, /Run the Memory Write Gate from\s+`\.\.\/\.\.\/references\/memory-contract\.md`/);
+});

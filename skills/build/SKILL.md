@@ -28,7 +28,8 @@ ship-bound implementation work requires `verification-report/proof-contract.json
 Use the lightweight build lane only for bounded non-ship T0/T1 work needing no UI, live/session
 proof, specialist, delegation, or subjective acceptance. Infer the TaskSpec, run focused tests and
 the relevant nearby suite, do not create `verification-report` artifacts, follow repository branch
-and commit policy, and report proof directly. Promote when any condition stops being true.
+and commit policy, and report proof directly. Do not load `stack-minimums.md` in this lane. Promote
+when any condition stops being true.
 
 ## Slice loop
 
@@ -57,10 +58,10 @@ Use a fresh `--run-id`. An unexpected failure routes to `/debug`; three failed a
 
 ## Verification
 
-Read `../../references/stack-minimums.md`, detect every applicable stack, and exercise each minimum.
-Tests alone cannot satisfy T2+. For full-lane work, persist `verification-report/brief.txt` and
-`proof-result.json`; only `outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Missing
-required runtime evidence is `BLOCKED_REAL_ENV`, never a lower proof tier.
+For full-lane work, read `../../references/stack-minimums.md`, detect every applicable stack, and
+exercise each minimum. Tests alone cannot satisfy T2+. Persist `verification-report/brief.txt` and
+`proof-result.json`; only `outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Missing required
+runtime evidence is `BLOCKED_REAL_ENV`, never a lower proof tier.
 
 For UI, canvas, SVG, animation, overlay, or responsive work: Name the visual invariant.
 If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior, screenshot inspection for fit,
@@ -77,6 +78,7 @@ Use `ask-counterpart-review` only when another context has a named evidence adva
 
 Report status, tests, proof tier, evidence, acceptance, and concerns. Apply `retro_open_loop_closeout`
 from `../../references/workflow-verification.md`: skipped verification, blocked environments,
-repeated failures, and unfinished work remain visible. Run the Memory Write Gate from
-`../../references/memory-contract.md`; use `memory remember` for durable claims and `memory open-loop`
-for unfinished work. Gate evidence stays uncommitted and follows `../../references/working-artifacts.md`.
+repeated failures, and unfinished work remain visible. Apply the Kernel's command-first Memory Write
+Gate; read `../../references/memory-contract.md` only if the executable gate cannot classify the event.
+Use `memory remember` for durable claims and `memory open-loop` for unfinished work. Gate evidence
+stays uncommitted and follows `../../references/working-artifacts.md`.
