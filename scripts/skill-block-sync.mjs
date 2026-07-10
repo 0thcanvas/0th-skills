@@ -15,8 +15,8 @@
 //   --write   replace the in-file block in every SKILL.md with the
 //             canonical one (used by humans after editing the reference)
 //
-// The companion test tests/skill-metadata.test.mjs runs --check on every
-// CI run, so drift becomes loud instead of silent.
+// All model-invoked skills now use references/skills-kernel.md, so this tool
+// remains only for auditing older checkouts during migration.
 
 import fs from "node:fs";
 import path from "node:path";

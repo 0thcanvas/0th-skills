@@ -29,8 +29,8 @@ When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tig
 
 ## Knowledge Base
 
-Memory v2 runtime is the canonical agent recall path. Generated global/project briefs, compact
-recall, source-pack expansion, and open-loop briefs are read before any markdown KB browsing.
+Memory v2 runtime is the canonical agent recall path. Root tasks use one compact, task-keyed startup
+packet; full briefs, source packs, and evidence expand only on demand.
 Projects may still maintain a markdown knowledge base as source material, import/export storage, or
 human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
 [PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
@@ -205,7 +205,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
-### Unreleased — Skills Kernel
+### 0.3.3
 
 - Migrated nine skills to one root-task kernel with single-root default execution, live
   capability gating, bounded packets, explicit authority, and shared closeout.
@@ -221,6 +221,18 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
   routine work no longer spawns a fleet because a workflow phase exists.
 - Preserved proof tiers, stack minimums, secret safety, session-backed evidence, Memory v2, product
   acceptance, PR-specific merge approval, and honest blocked outcomes.
+- Made browser identity exact: `Chrome` means the dedicated real Google Chrome profile, Brave is
+  personal unless explicitly requested, and managed test browsers remain hermetic-only fallbacks.
+- Added Browser Kit and Computer Use recovery paths for extension-loading, anti-bot, login, and
+  session-sensitive failures instead of treating an adapter failure as missing source evidence.
+- Reduced the estimated active Build startup context by about half through compact Memory startup,
+  deferred delegation mechanics, and a smaller shared Kernel and Build contract.
+- Added runtime-only plugin packaging so tests, evaluation artifacts, and authoring documentation do
+  not inflate the installed plugin cache.
+- Standardized project secret consumption on environment variables populated from an existing
+  mounted or ignored local environment, with 1Password references kept out of application code.
+- Added fresh-checkout CI as the authority for objective tests, made local test fixtures
+  self-contained, and hardened the local ship gate with commit binding and evidence-file checks.
 
 ### 0.3.2
 
@@ -266,9 +278,9 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 ### 0.2.2
 
 - Added the self-testing loop, slice 1: a workspace-shared `references/stack-minimums.md` matrix (electron-desktop, chrome-mv3-extension, web-app, cli, service, browser-kit-escape-hatch) plus the `stack_minimums_exercised` JSON evidence contract written to `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`
-- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, exercises each via the Playwright → Browser Kit MCP → computer-use chain, and refuses to honor brief language attempting to lower the floor
+- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, selects the hermetic or real-environment proof lane, and refuses to honor brief language attempting to lower the floor
 - Wired `/build` to construct verifier briefs that name matched stack ids (no escape language) and `/ship` to invoke the new `scripts/ship-gate.mjs` before `gh pr create` — fail-closed on missing/malformed/empty/wrong-stack reports or non-PASS outcome. First non-LLM enforcement layer in 0th's flow
-- Switched the verifier to Playwright by default for feature-specific UI checks; Browser Kit is the documented managed wrapper around `bb-browser` for logged-in / real-session / shared-tab cases only
+- Added `references/browser-control-policy.md`: Playwright-managed browsers are limited to explicitly hermetic automation; real Google Chrome with profile `agent` is required for extensions, authentication, anti-bot behavior, real sessions, and user-environment proof, with Computer Use as the same-browser fallback
 - Added a teardown contract to verifier and implementer subagents — "whatever you spawn, you stop" — covering dev servers, Browser Kit tabs (`browser_close_all` only closes the current MCP session's tabs), containers/ports, temp dirs, and reconciling test data per the existing hygiene rule
 - gitignored `verification-report/` so verifier artifacts stay out of PR diffs
 - Extended `tests/agent-parity.test.mjs` to require the new Step 0 fragments and the teardown fragments in both hosts; added 16 new unit tests in `tests/ship-gate.test.mjs` covering stack detection and report validation
@@ -364,9 +376,10 @@ Memory v2 runtime state is also local user state, not project-repo content. Norm
 use the unified command surface:
 
 ```bash
-node scripts/memory.mjs preflight
-node scripts/memory.mjs brief
-node scripts/memory.mjs task-brief
+node scripts/memory.mjs startup --query "repo preflight memory optimization"
+node scripts/memory.mjs preflight --verbose # diagnostics only
+node scripts/memory.mjs brief                # explicit broad-state audit only
+node scripts/memory.mjs task-brief           # explicit open-loop audit only
 node scripts/memory.mjs write-gate --event-type research --claim "..." --source-id memory-systems-world-model --evidence-path sources/memory/source-pack.jsonl --confidence high
 node scripts/memory.mjs recall --query "repo preflight" --limit 5
 node scripts/memory.mjs recall --global-only --source-id memory-systems-world-model --limit 5
@@ -375,6 +388,10 @@ node scripts/memory.mjs source-pack expand --id memory-systems-world-model
 node scripts/memory.mjs doctor
 node scripts/memory.mjs runtime-eval
 ```
+
+`startup` combines compact preflight state with at most three relevant claims and two relevant open
+loops. It omits verbose drift arrays and does not load generated briefs. Use returned ids and source
+pointers with targeted `recall` or `expand` only when they affect the task.
 
 By default project-scoped memory, evidence, repo-state, and open-loop commands store generated
 JSONL/brief files at:
@@ -421,5 +438,17 @@ Smoke-check the repo or an installed plugin copy with:
 node scripts/install-smoke-check.mjs --repo-root .
 node scripts/install-smoke-check.mjs --repo-root . --cache-root ~/.codex/plugins/cache/mini-local/0th-skills/local
 ```
+
+Build the installable runtime staging directory outside the checkout before a local release:
+
+```bash
+RUNTIME_PLUGIN_DIR="${RUNTIME_PLUGIN_DIR:?Set an absolute staging path}"
+node scripts/package-runtime-plugin.mjs --source . --output "$RUNTIME_PLUGIN_DIR" --force
+node "${RUNTIME_PLUGIN_DIR}/scripts/install-smoke-check.mjs" --repo-root "$RUNTIME_PLUGIN_DIR"
+```
+
+The runtime package keeps skills, agents, scripts, schemas, adapters, and required decision evidence.
+It excludes tests, verification artifacts, eval/plan history, feedback files, and repository-only
+documentation. Point the local marketplace symlink at this staging directory before reinstalling.
 
 The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

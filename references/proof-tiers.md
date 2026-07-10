@@ -45,14 +45,17 @@ After verification, the verifier writes `${VERIFICATION_REPORT_DIR:-verification
   "required_evidence": ["<evidence item>", "<evidence item>"],
   "outcome": "PASS|BLOCKED_REAL_ENV",
   "minimum_tier_satisfied": true,
+  "verified_head": "<full commit id verified by this result>",
   "evidence_paths": ["verification-report/<evidence-path>"],
   "blocked_reason": null,
   "checked_at": "2026-05-10T20:30:00.000Z"
 }
 ```
 
-`/ship` fails closed when `proof-result.json` is missing, stale, malformed, has
-`outcome != "PASS"`, `minimum_tier_satisfied != true`, or no evidence paths.
+`/ship` fails closed when `proof-result.json` is missing, stale, malformed, bound to a different
+commit, has `outcome != "PASS"`, `minimum_tier_satisfied != true`, or cites missing/empty evidence.
+This is a local consistency guardrail. Fresh-checkout CI is the independent authority for objective
+T0/T1 command execution when the repository provides it.
 
 `verification-report/` is local gate evidence, not source. Evidence paths may point at ignored
 local files; do not commit bulky raw outputs just to make those paths browsable in GitHub. Put the

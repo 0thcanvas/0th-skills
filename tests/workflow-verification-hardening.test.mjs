@@ -53,9 +53,12 @@ function writeGateFixture(repo, proofResultOverrides = {}, reportOverrides = {})
     outcome: "PASS",
     minimum_tier_satisfied: true,
     evidence_paths: ["verification-report/browser-proof.txt"],
+    verified_head: "unborn-fixture",
     checked_at: now,
     ...proofResultOverrides
   });
+
+  fs.writeFileSync(path.join(reportDir, "browser-proof.txt"), "verified browser fixture\n");
 
   writeJson(path.join(reportDir, "report.json"), {
     outcome: "PASS",
@@ -288,15 +291,13 @@ test("research workflows use context handoffs instead of raw context accumulatio
 test("closeout surfaces retro and open-loop follow-through", () => {
   const build = read("skills/build/SKILL.md");
   const retro = read("skills/retro/SKILL.md");
-  const claude = read("CLAUDE.md");
   const readme = read("README.md");
 
-  for (const source of [build, retro, claude, readme]) {
+  for (const source of [build, retro, readme]) {
     assert.match(source, /retro_open_loop_closeout/);
   }
 
   assert.match(build, /skipped verification/);
   assert.match(retro, /skipped verification/);
-  assert.match(claude, /Workflow Verification/);
   assert.match(readme, /Workflow Verification/);
 });

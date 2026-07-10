@@ -11,7 +11,8 @@ required.
 
 Evidence:
 - Production extension build completed.
-- Unpacked extension loaded into Chrome/Brave or Chrome-for-Testing.
+- Unpacked extension loaded into real Google Chrome with Browser Kit profile `agent`; Brave requires
+  an explicit operator request, and a managed test browser cannot satisfy real-environment proof.
 - Target page or popup opened.
 - Content script or popup exercised the changed behavior.
 - Background service worker stayed alive long enough to respond, or was rediscovered after idle.

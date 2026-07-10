@@ -21,6 +21,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 
+function makeVerificationTempDir(prefix) {
+  const reportDir = path.join(repoRoot, "verification-report");
+  fs.mkdirSync(reportDir, { recursive: true });
+  return fs.mkdtempSync(path.join(reportDir, prefix));
+}
+
 const capabilities = {
   schema_version: 1,
   harness: "codex",
@@ -231,7 +237,7 @@ test("routing adapters validate and load independently by harness", () => {
 });
 
 test("routing resolution prefers explicit, then local, then bundled fallback", () => {
-  const tempDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "routing-precedence-"));
+  const tempDir = makeVerificationTempDir("routing-precedence-");
   const localPath = path.join(tempDir, "codex.json");
   const explicitPath = path.join(tempDir, "explicit.json");
   fs.writeFileSync(localPath, `${JSON.stringify(routing)}\n`);
@@ -361,7 +367,7 @@ test("public CLI emits a launch plan and verifies its receipt", () => {
     thread_id: "thread-test",
     attestation_basis: "runtime-metadata"
   };
-  const tempDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "receipt-"));
+  const tempDir = makeVerificationTempDir("receipt-");
   const launchPath = path.join(tempDir, "launch.json");
   const receiptPath = path.join(tempDir, "receipt.json");
   fs.writeFileSync(launchPath, `${JSON.stringify(routed.delegation.launch_plan)}\n`);
@@ -379,7 +385,7 @@ test("public CLI emits a launch plan and verifies its receipt", () => {
 });
 
 test("routing init writes isolated local config once and doctor reports readiness", () => {
-  const configDir = fs.mkdtempSync(path.join(repoRoot, "verification-report", "routing-init-"));
+  const configDir = makeVerificationTempDir("routing-init-");
   const init = spawnSync(process.execPath, [
     "scripts/0th.mjs", "routing", "init",
     "--harness", "codex",
@@ -415,7 +421,7 @@ test("routing init writes isolated local config once and doctor reports readines
 });
 
 test("routing commands resolve bundled plugin assets outside the plugin working directory", () => {
-  const targetCwd = fs.mkdtempSync(path.join(repoRoot, "verification-report", "external-cwd-"));
+  const targetCwd = makeVerificationTempDir("external-cwd-");
   const configDir = path.join(targetCwd, "config");
   const result = spawnSync(process.execPath, [
     path.join(repoRoot, "scripts", "0th.mjs"),

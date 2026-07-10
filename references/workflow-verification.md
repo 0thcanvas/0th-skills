@@ -34,12 +34,17 @@ enforces these through `scripts/ship-gate.mjs`:
 Required closeout fields from the proof result:
 - `minimum_proof_tier`
 - `minimum_tier_satisfied`
+- `verified_head`
 - `outcome`
 - `evidence_paths`
 - `blocked_reason` when outcome is not `PASS`
 
 Docs-only or metadata-only changes still use a `T0` contract when they are ship-bound. Do not add a
 separate waiver or not-applicable proof schema.
+
+The local gate checks internal consistency, evidence-file existence, and commit freshness. It does
+not independently prove an agent executed a command. Fresh-checkout CI owns objective T0/T1 command
+proof when available, and `/ship` must inspect those PR checks before claiming ready-to-merge.
 
 ### `blocked_real_env`
 

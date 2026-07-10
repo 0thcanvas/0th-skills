@@ -5,18 +5,17 @@ startup, authority, execution topology, safety, context transfer, and closeout.
 
 ## Root-task preflight
 
-Run this once per root task, before domain work:
+Run once per root task: infer 3–8 keywords and run
+`node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
+Use its compact repo state, relevant claims and open loops, and pointers. Expand only an id or source
+that affects the task; read decision, plan, `CONTEXT.md`, or repo evidence only when pointed there.
 
-1. Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`.
-2. Generate and read the global memory brief, then the project memory brief.
-3. Generate and read the open-loop brief.
-4. Read only the decision, plan, `CONTEXT.md`, files, and evidence those briefs or the task point to.
+Do not generate or read the full global, project, or open-loop briefs by default. Use targeted
+`memory recall` when the packet exposes a gap; use full briefs only for explicit broad-state audits.
 
-Record a compact receipt with repo root, branch, HEAD, dirty state, brief paths, relevant open loops,
-and `observed_at`. The receipt stays fresh while the root task, repo identity, HEAD, and material
-working-tree state are unchanged. Nested phases reuse it; they do not repeat startup. Refresh it
-after a branch/HEAD change, external mutation, resume into a new root task, or evidence that makes the
-receipt stale.
+Cache repo root, branch, HEAD, dirty state, packet paths, relevant loops, and `observed_at`. Nested
+phases reuse the receipt while task, repo, HEAD, and material tree state are unchanged. Refresh after
+HEAD/external mutation, a new root task, or evidence that makes it stale.
 
 ## TaskSpec and authority
 
@@ -35,67 +34,18 @@ the proof tier to manufacture completion.
 
 ## Execution topology
 
-**Default: one root agent.** The root reads, acts, verifies, and synthesizes.
-
-Delegation is optional and requires all of:
-
-1. independent or isolated work;
-2. a concrete evidence advantage, context-isolation advantage, or measured latency advantage;
-3. a bounded capability packet with task, work kind, compute class, inputs, output schema, authority,
-   budget, escalation, and stop rules;
-4. a live, fresh capability record showing the requested controls actually exist;
-5. no unsafe shared mutable state.
-
-Evaluate the packet through:
-
-```bash
-node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" capabilities \
-  --harness <runtime-harness> \
-  --runtime-json <observed-capabilities.json> \
-  --packet-json <capability-packet.json>
-```
-
-Delegate only when it returns `allowed: true`. Documentation, requested profile names, or assumed
-model/effort settings are not runtime evidence. Ordered work, stale observations, missing isolation,
-unsupported overrides, or disproportionate inherited effort stay single-root. Do not create a
-reviewer, verifier, researcher, or fleet merely because a workflow phase has that name.
-
-Portable packets use `compute_class: auto|economy|balanced|frontier|inherit`; they never contain a
-model name. `source_discovery`, `evidence_extraction`, `test_execution`, and `log_condensation`
-default to economy; bounded implementation and routine review default to balanced; cross-source
-synthesis, architecture, and high-risk implementation default to frontier. High and critical risk
-raise the floor. Active harness mappings live in
-`~/.0th/skills/config/model-routing/<harness>.json` or `OTH_SKILLS_ROUTING_DIR`; bundled adapter files
-are inherit-only safety fallbacks, not authoritative model choices. An explicit `--routing-json`
-override takes precedence over local configuration, which takes precedence over the bundled fallback.
-
-Use `scripts/0th.mjs routing init --harness <name>` to create a safe local template without
-overwriting an existing file. Use `routing doctor` with a live runtime record before relying on a
-concrete route. On Codex, `routing doctor --harness codex --live-probe` can create version-,
-configuration-, and freshness-bound evidence; it consumes provider tokens and is never implicit.
-Model and effort overrides plus the exact observed model/effort pair must all pass.
-
-An allowed decision includes a launch plan and `launch_id`. For a concrete Codex plan, use
-`scripts/0th.mjs dispatch` with prompt and output-schema files; the adapter pins model and effort,
-sends the prompt on stdin, and emits the result, JSONL events, and receipt. An `inherit` plan uses
-the native harness spawn path. Other harnesses use their own controlled adapter or native runtime
-metadata. Then verify the receipt:
-
-```bash
-node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" attest \
-  --launch-plan-json <launch-plan.json> \
-  --receipt-json <execution-receipt.json>
-```
-
-No receipt, an unverifiable runtime, or a model/effort mismatch invalidates cost routing for that
-dispatch. Stop or escalate once to the packet's stronger class; do not repeat same-tier retries.
+**Default: one root agent.** Consider delegation only when the user requests it or independent work
+has a named evidence advantage. Before delegating, read `references/delegation.md` and require its
+capability gate to return `allowed: true`; otherwise remain single-root.
 
 ## Safety and evidence
 
-Never place resolved secret values in prompts, chat, command arguments, logs, diffs, or artifacts.
-Use the project’s safe runtime injection path and verify presence without printing values. Never dump
-environments, cookies, authorization headers, session storage, HAR bodies, or private browser payloads.
-If exposure may have occurred, identify the category without repeating the value and recommend rotation.
+Apply `secret-control-policy.md`. Use an existing valid local environment before contacting its
+secret manager, run the consuming application instead of reading secret files, and verify presence
+without printing values. Never place resolved secret values in prompts, chat, argv, logs, diffs,
+commits, or evidence. Never dump environments, cookies, authorization headers, session storage, HAR
+bodies, or private browser payloads. If exposure may have occurred, identify the category without
+repeating the value and recommend rotation.
 
 Claims follow the strongest available evidence. Tests prove test seams; visual claims need visual
 evidence; session-backed claims need session-backed evidence; live or destructive proof needs explicit
@@ -111,18 +61,15 @@ the root context.
 
 ## Closeout
 
-Return an exit status, evidence paths, unresolved concerns, and any required next action. Apply
-`retro_open_loop_closeout`: skipped verification, blocked real environments, repeated failures, and
-unfinished work remain visible.
+Return exit status, evidence paths, concerns, and next action. Apply `retro_open_loop_closeout` so
+skipped verification, blocked real environments, repeated failures, and unfinished work stay visible.
 
-Run the Memory Write Gate from `memory-contract.md`. Durable claims go through `memory remember`;
-do not hand-edit runtime `claims.jsonl`. “nothing durable” is valid. Track unfinished work through
-`memory open-loop`, not as a memory claim.
+Run the Memory Write Gate from `memory-contract.md`. Durable claims use `memory remember`, never
+hand-edited `claims.jsonl`; “nothing durable” is valid. Unfinished work uses `memory open-loop`.
 
-Gate-consumed evidence belongs under `${VERIFICATION_REPORT_DIR:-verification-report}` and remains
-uncommitted. Promote only compact durable conclusions. Delete raw local evidence after merge, close,
-abandonment, or worktree removal; sensitive browser/session material is summarized safely and deleted
-as soon as it is no longer required.
+Keep gate evidence uncommitted under `${VERIFICATION_REPORT_DIR:-verification-report}`. Promote only
+compact conclusions. After merge, close, abandonment, or worktree removal, delete raw evidence;
+summarize and delete sensitive browser/session material as soon as it is unnecessary.
 
 ## Shared references
 

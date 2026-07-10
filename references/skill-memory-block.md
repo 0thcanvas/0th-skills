@@ -1,34 +1,20 @@
 <!--
-This is the single source of truth for the five-section memory + open-loop
-preamble that every core SKILL.md embeds verbatim (Repo Preflight, Memory
-Brief, Open Loop Brief, Memory Integration, Open Loop Integration).
+This is the legacy source for the memory + open-loop preamble that core skills embedded before the
+Skills Kernel migration. It remains only as migration evidence; active workflows use
+`references/skills-kernel.md`.
 
 The PR #19 cross-review flagged the duplication: nine SKILL.md files carry
 the same ~1.5 KB block, with no test enforcing identity. If the block in
 one skill diverges, agents on that skill read a contradictory instruction
 and there is no failure signal.
 
-`tests/skill-block-sync.test.mjs` reads this file via
-`scripts/skill-block-sync.mjs`, extracts the canonical block, and asserts
-every core SKILL.md contains it byte-for-byte. (`tests/skill-metadata.test.mjs`
-only spot-checks that the preflight invocation is present; it does not
-enforce the full byte-for-byte sync.) To update the block, edit it here;
-the byte-for-byte test will fail until every SKILL.md is updated to match.
-Use `node scripts/skill-block-sync.mjs --check` (or `--write`) to audit /
-propagate changes.
+`scripts/skill-block-sync.mjs` now verifies that migrated skills link to the Kernel instead of
+propagating this block.
 -->
 
-## Repo Preflight
+## Legacy startup replacement
 
-Before trusting repo state, run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" preflight`. It fetches upstream, reconciles previously unseen HEAD drift, fast-forwards only clean behind branches, and warns on dirty or divergent states without merging, resetting, or stashing.
-
-## Memory Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief --scope global` and read the `output_file` path from its JSON result; if the global brief is missing or corrupt, warn visibly and continue with project memory. Then run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" brief` and read the project `output_file`. Memory v2 runtime is the canonical agent recall path. Read generated briefs before browsing indexes, raw notes, or legacy KB/Obsidian markdown manually. Treat markdown KB material as optional fallback, import/export source, or human-rendered evidence only. Do not load source packs at startup; recall or expand source packs on demand.
-
-## Open Loop Brief
-
-Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" task-brief` and read the `output_file` path from its JSON result after the memory brief; use it to resume unfinished work before starting new scope.
+Run `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<task keywords>"` once. It combines compact preflight state with bounded relevant claims and open loops. Expand returned ids on demand; do not read full generated briefs by default.
 
 ## Memory Integration
 

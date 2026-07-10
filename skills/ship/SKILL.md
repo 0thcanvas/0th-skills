@@ -54,6 +54,11 @@ Present the PR URL, file list, evidence status, proof status, and concerns. Stop
 Merge approval is PR-specific; a previous “ship it” or general automation instruction does not
 authorize the current PR.
 
+When the repository has PR checks, wait for them and inspect the result before saying **ready to
+merge**. A local ship-gate pass is a fast guardrail, not independent proof that test commands ran.
+If no CI check exists, report that missing enforcement explicitly instead of presenting the PR as
+independently verified.
+
 After explicit approval for this PR, squash-merge and delete the branch using the project workflow.
 
 ## 4. Local evidence closeout

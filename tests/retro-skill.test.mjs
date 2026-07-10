@@ -126,17 +126,11 @@ test("/retro skill has a Codex openai.yaml metadata file with explicit UI copy",
   assert.match(source, /short_description:/, "should define a short description");
 });
 
-test("CLAUDE.md skill table and routing rules include /retro", () => {
+test("CLAUDE.md does not duplicate the skill catalog", () => {
   const source = read(claudeMdPath);
-  assert.ok(
-    /\|\s*`?\/retro`?\s*\|/.test(source) || /\| `\/retro`/.test(source),
-    "CLAUDE.md skill table should list /retro"
-  );
-  assert.match(
-    source,
-    /\/retro/,
-    "CLAUDE.md should reference /retro in skill routing"
-  );
+  assert.doesNotMatch(source, /^## Skills$/m);
+  assert.doesNotMatch(source, /^## Skill Routing$/m);
+  assert.doesNotMatch(source, /\/retro/);
 });
 
 test("README skill list includes /retro", () => {

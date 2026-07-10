@@ -61,6 +61,46 @@ function childRepoCandidates(cwd) {
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
+function compactSyncResult(sync) {
+  if (!sync) return null;
+  return {
+    memory_file: sync.memory_file ?? null,
+    from_revision: sync.from_revision ?? null,
+    to_revision: sync.to_revision ?? null,
+    changed_source_count: Array.isArray(sync.changed_sources) ? sync.changed_sources.length : 0,
+    affected_claim_count: Array.isArray(sync.affected_claim_ids) ? sync.affected_claim_ids.length : 0,
+    brief_updated: sync.brief_updated ?? null,
+    brief_error: sync.brief_error ?? null
+  };
+}
+
+export function compactPreflightResult(result) {
+  const compact = {
+    repo_root: result.repo_root,
+    repo_state_file: result.repo_state_file,
+    branch: result.branch,
+    clean: result.clean,
+    upstream: result.upstream,
+    upstream_relation: result.upstream_relation,
+    ahead: result.ahead,
+    behind: result.behind,
+    before_head: result.before_head,
+    after_head: result.after_head,
+    fetched_at: result.fetched_at,
+    fetch_ok: result.fetch_ok,
+    action: result.action,
+    memory_sync_failed: result.memory_sync_failed,
+    drift_sync_failed: result.drift_sync_failed,
+    repo_state_unreadable: result.repo_state_unreadable,
+    warnings: result.warnings ?? []
+  };
+  if (result.cwd) compact.cwd = result.cwd;
+  if (result.advisory) compact.advisory = result.advisory;
+  if (result.drift_sync) compact.drift_sync = compactSyncResult(result.drift_sync);
+  if (result.memory_sync) compact.memory_sync = compactSyncResult(result.memory_sync);
+  return compact;
+}
+
 export function runPreflight({
   cwd = process.cwd(),
   allowPull = true,
@@ -287,12 +327,13 @@ export function runPreflight({
 function main() {
   const args = process.argv.slice(2);
   const allowPull = !args.includes("--no-pull");
+  const verbose = args.includes("--verbose");
   const memoryFileIndex = args.indexOf("--memory-file");
   const memoryFile = memoryFileIndex === -1 ? undefined : args[memoryFileIndex + 1];
   const repoStateFileIndex = args.indexOf("--repo-state-file");
   const repoStateFile = repoStateFileIndex === -1 ? undefined : args[repoStateFileIndex + 1];
   const result = runPreflight({ cwd: process.cwd(), allowPull, memoryFile, repoStateFile });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+  process.stdout.write(`${JSON.stringify(verbose ? result : compactPreflightResult(result), null, 2)}\n`);
 }
 
 if (isInvokedAsCli(import.meta.url)) {

@@ -54,18 +54,9 @@ test("all shared skills have migrated away from the duplicated legacy memory blo
   ]);
 });
 
-test("canonical block names every required section heading", () => {
-  // Defensive: if someone removes a section from the reference file, every
-  // SKILL.md will silently match a degraded canonical. Keep an independent
-  // check that the canonical itself names all five sections.
+test("legacy block points migrated workflows to compact startup", () => {
   const canonical = loadCanonicalBlock(repoRoot);
-  for (const heading of [
-    "## Repo Preflight",
-    "## Memory Brief",
-    "## Open Loop Brief",
-    "## Memory Integration",
-    "## Open Loop Integration"
-  ]) {
-    assert.match(canonical, new RegExp(`^${heading}$`, "m"), `canonical missing: ${heading}`);
-  }
+  assert.match(canonical, /^## Legacy startup replacement$/m);
+  assert.match(canonical, /memory\.mjs" startup --query/);
+  assert.match(canonical, /do not read full generated briefs by default/i);
 });

@@ -54,11 +54,12 @@ test("core workflow skills route specialists through the shared contract", () =>
 test("specialist routing is guarded by build and ship gates", () => {
   const build = read("skills/build/SKILL.md");
   const ship = read("skills/ship/SKILL.md");
+  const routing = read("references/specialist-routing.md");
 
   assert.match(build, /specialist handoff envelope/);
   assert.match(build, /specialist return receipt/);
-  assert.match(build, /re-run the proof and product acceptance gates/);
   assert.match(build, /does not satisfy proof by itself/);
+  assert.match(routing, /proof tier, verifier evidence, product acceptance, ship gate/);
 
   assert.match(ship, /specialist return receipts/);
   assert.match(ship, /proof contract depends on specialist evidence/);
@@ -84,8 +85,8 @@ test("visual and frontend work route through adapter evidence instead of copied 
 
   assert.match(routing, /plugin-owned internal workflow/);
   assert.match(routing, /do not copy the plugin body/);
-  assert.match(build, /visual target or frontend builder capability/);
-  assert.match(build, /screenshots, design QA, or browser QA/);
+  assert.match(build, /references\/specialist-routing\.md/);
+  assert.doesNotMatch(build, /plugin-owned internal workflow|frontend_app_builder/);
 });
 
 test("iOS and SwiftUI work distinguish compile proof from simulator proof", () => {
@@ -108,8 +109,8 @@ test("iOS and SwiftUI work distinguish compile proof from simulator proof", () =
     assert.ok(routing.includes(fragment), `iOS routing should include "${fragment}"`);
   }
 
-  assert.match(build, /iOS simulator capability/);
-  assert.match(build, /compile\/test proof does not claim simulator proof/);
+  assert.match(build, /references\/specialist-routing\.md/);
+  assert.match(routing, /Compile-only validation is not real app launch/);
 });
 
 test("logged-in browser work preserves private-session evidence boundaries", () => {
@@ -138,8 +139,8 @@ test("logged-in browser work preserves private-session evidence boundaries", () 
     assert.ok(routing.includes(fragment), `browser routing should include "${fragment}"`);
   }
 
-  assert.match(build, /logged-in browser capability/);
-  assert.match(build, /public search is not a substitute/);
+  assert.match(build, /references\/specialist-routing\.md/);
+  assert.match(routing, /public search is not a substitute/);
   assert.match(research, /\.\.\/\.\.\/references\/specialist-routing\.md/);
   assert.match(research, /session-backed read receipt/);
   assert.match(research, /challenge_or_session_blocked/);
@@ -167,11 +168,8 @@ test("fetch-only research agents hand back session blockers instead of treating 
 });
 
 test("host-facing docs and Codex wrappers expose the specialist routing contract compactly", () => {
-  const claude = read("CLAUDE.md");
   const readme = read("README.md");
 
-  assert.match(claude, /0th remains the workflow orchestrator/);
-  assert.match(claude, /references\/specialist-routing\.md/);
   assert.match(readme, /Specialist Routing/);
   assert.match(readme, /capability\/workflow boundary/);
 

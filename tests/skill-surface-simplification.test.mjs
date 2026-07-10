@@ -11,9 +11,9 @@ test("bounded non-ship T0 and T1 work uses the lightweight build lane", () => {
 
   assert.match(build, /lightweight build lane/i);
   assert.match(build, /bounded.*non-ship.*T0.*T1/i);
-  assert.match(build, /focused tests.*relevant.*suite/i);
-  assert.match(build, /do not create.*verification-report/i);
-  assert.match(build, /repository.*branch.*commit.*policy/i);
+  assert.match(build, /focused tests\s+and\s+the relevant nearby suite/i);
+  assert.match(build, /do not create `verification-report` artifacts/i);
+  assert.match(build, /repository branch\s+and commit policy/i);
 });
 
 test("deep research is an explicit budgeted escalation", () => {
