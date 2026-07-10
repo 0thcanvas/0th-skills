@@ -1,17 +1,10 @@
 # 0th Skills
 
-Repository-wide instructions only. Skill behavior and routing live in each `SKILL.md`; `README.md`
-owns the catalog and usage documentation.
+## Browser
 
-## Repository
-
-- Work on a feature branch and land through a PR.
-- Shared agent behavior changes update both `agents/*.md` and `.codex/agents/*.toml`. Document and
-  test intentional host asymmetry; update `.codex/config.toml` when Codex runtime policy changes.
-- `CLAUDE.md` is canonical; keep `AGENTS.md` as its symlink.
-- Plugin changes include source plus the installed cache, verified with the repository smoke check.
-- Browser names are exact identities. Apply `references/browser-control-policy.md`; Chrome means real
-  Google Chrome with Browser Kit profile `agent`, while Brave is explicit-request-only.
+- Browser names are exact identities. Apply `references/browser-control-policy.md`: Chrome means real
+  Google Chrome with Browser Kit profile `agent`; Brave is explicit-request-only; managed test
+  browsers never silently substitute for real Chrome.
 
 ## Safety
 

@@ -126,11 +126,11 @@ test("/retro skill has a Codex openai.yaml metadata file with explicit UI copy",
   assert.match(source, /short_description:/, "should define a short description");
 });
 
-test("CLAUDE.md delegates /retro discovery to skill metadata", () => {
+test("CLAUDE.md does not duplicate the skill catalog", () => {
   const source = read(claudeMdPath);
-  assert.match(source, /Skill behavior and routing live in each `SKILL\.md`/);
   assert.doesNotMatch(source, /^## Skills$/m);
   assert.doesNotMatch(source, /^## Skill Routing$/m);
+  assert.doesNotMatch(source, /\/retro/);
 });
 
 test("README skill list includes /retro", () => {
