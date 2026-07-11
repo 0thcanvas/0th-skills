@@ -62,6 +62,11 @@ a mounted 1Password Environment or `op run --env-file` when configured. The bloc
 name each attempted safe runner and its sanitized error; otherwise `BLOCKED` or `BLOCKED_REAL_ENV`
 is premature.
 
+For recurring credential-dependent work, the mounted 1Password Environment is the steady-state
+runner. Read it directly through the consuming application's loader. Repeated `op run` calls are not
+a configured environment; `op run` remains a one-off or bootstrap fallback and should launch one
+consuming process, not wrap every probe.
+
 ### `retro_open_loop_closeout`
 
 At workflow boundaries, explicitly consider whether the session created durable memory, an open

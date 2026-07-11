@@ -17,3 +17,4 @@
 - A missing variable in the current process is not proof that the credential is unavailable. Before
   credential-related `BLOCKED` or `BLOCKED_REAL_ENV`, complete the project-scoped safe-runner
   preflight in `references/secret-control-policy.md` and retry the consuming command inside it.
+- Recurring work reads a stable mounted 1Password Environment directly; repeated `op run` calls are one-off or bootstrap fallback, not the steady state.

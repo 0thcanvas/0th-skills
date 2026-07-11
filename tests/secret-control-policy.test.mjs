@@ -43,6 +43,27 @@ test("credential blockers require the complete safe-runner preflight", () => {
   assert.match(workflow, /attempted safe runner/i);
 });
 
+test("recurring secret workflows reuse one mounted Environment instead of repeated op run", () => {
+  assert.match(policy, /recurring.*steady state.*mounted 1Password Environment/is);
+  assert.match(policy, /FIFO|UNIX.*named pipe/i);
+  assert.match(policy, /directly through.*loader.*without wrapping.*`op run`/is);
+  assert.match(policy, /`op run --env-file`.*one-off.*bootstrap.*fallback/is);
+  assert.match(policy, /terminal-session.*authorization.*repeated prompts/is);
+
+  for (const file of [
+    "CLAUDE.md",
+    "agents/verifier.md",
+    ".codex/agents/0th-verifier.toml",
+    "references/workflow-verification.md",
+  ]) {
+    const source = read(file);
+    assert.match(source, /recurring/i, file);
+    assert.match(source, /mounted 1Password Environment/i, file);
+    assert.match(source, /one-off|bootstrap/i, file);
+    assert.match(source, /repeated.*`op run`|`op run`.*repeated/is, file);
+  }
+});
+
 test("shared workflow and build skill route to the canonical secret policy", () => {
   assert.match(read("references/skills-kernel.md"), /secret-control-policy\.md/);
   assert.match(read("skills/build/SKILL.md"), /secret-control-policy\.md/);
