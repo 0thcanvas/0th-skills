@@ -31,6 +31,18 @@ test("secret policy keeps resolved values outside agent-visible output", () => {
   assert.match(policy, /missing, stale, or explicitly being rotated/i);
 });
 
+test("credential blockers require the complete safe-runner preflight", () => {
+  assert.match(policy, /missing variable in the current process is not proof/i);
+  assert.match(policy, /op run --env-file/);
+  assert.match(policy, /before\s+(?:returning|reporting) `BLOCKED` or `BLOCKED_REAL_ENV`/i);
+  assert.match(policy, /attempted safe runner/i);
+
+  const workflow = read("references/workflow-verification.md");
+  assert.match(workflow, /credential-dependent proof/i);
+  assert.match(workflow, /missing variables in the current process alone/i);
+  assert.match(workflow, /attempted safe runner/i);
+});
+
 test("shared workflow and build skill route to the canonical secret policy", () => {
   assert.match(read("references/skills-kernel.md"), /secret-control-policy\.md/);
   assert.match(read("skills/build/SKILL.md"), /secret-control-policy\.md/);
@@ -42,5 +54,18 @@ test("Claude and Codex verifiers share the local environment precedence", () => 
     assert.match(source, /mounted 1Password Environment/i, file);
     assert.match(source, /ignored.*\.env/i, file);
     assert.match(source, /missing, stale, or explicitly being rotated/i, file);
+    assert.match(source, /missing variable in the current process is not proof/i, file);
+    assert.match(source, /op run --env-file/i, file);
+    assert.match(source, /attempted safe runner/i, file);
   }
+});
+
+test("workspace prompt rejects process-env-only blockers and kernel routes to policy", () => {
+  const workspace = read("CLAUDE.md");
+  assert.match(workspace, /missing variable in the current process is not proof/i);
+  assert.match(workspace, /BLOCKED/i);
+
+  const kernel = read("references/skills-kernel.md");
+  assert.match(kernel, /Apply `secret-control-policy\.md`/);
+  assert.match(kernel, /BLOCKED_REAL_ENV/);
 });
