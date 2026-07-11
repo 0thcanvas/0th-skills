@@ -5,20 +5,22 @@ narrowest project runtime boundary that works; they never receive resolved value
 
 ## Local development contract
 
-1. Each project declares a reference-only template and a stable generated env path for its
-   project-scoped development configuration.
-2. An explicit project sync command is the only normal operation that contacts 1Password. It must
+1. Each project declares its environments in `.0th-secrets.json`, with a reference-only template
+   and stable generated env path for each project-scoped development configuration.
+2. The shared `0th secrets` CLI owns path resolution, validation, synchronization, metadata checks,
+   and cleanup. Projects configure it; they do not reimplement secret-file mechanics.
+3. `0th secrets sync` is the only normal operation that contacts 1Password. It must
    verify the target is ignored with `git check-ignore -q -- <path>`, resolve references directly to
    a temporary owner-only file with `op inject --in-file ... --out-file ... --file-mode 0600`, and
    atomically replace the stable generated file. Resolved output must never pass through stdout.
-3. Normal starts, tests, probes, and agent commands use the generated file through the consuming
+4. Normal starts, tests, probes, and agent commands use the generated file through the consuming
    application's env-file or dotenv loader. They do not contact 1Password and continue to work when
    1Password is locked. Sync only during initial setup, after an intentional rotation/change, or
    when the generated file is missing.
-4. The generated env file is a plaintext local development cache. It must be a regular file owned
+5. The generated env file is a plaintext local development cache. It must be a regular file owned
    by the current user, have mode `600`, remain gitignored, and be removable with a documented clean
    command. Do not copy it between projects, machines, worktrees, or deployment targets.
-5. Production deployment reconstructs configuration through the deployment platform, a 1Password
+6. Production deployment reconstructs configuration through the deployment platform, a 1Password
    service identity, or another approved runtime secret manager. It never uploads the developer's
    generated local file.
 
@@ -34,8 +36,8 @@ returning `BLOCKED` or `BLOCKED_REAL_ENV` for a missing credential:
 1. Try the consuming command with the generated local environment or normal application loader.
 2. Check only the generated file's existence, regular-file type, ownership, mode, and ignored state.
    Do not inspect env-file contents or borrow another project's environment.
-3. When the generated file is missing or explicitly stale after rotation, run the documented project
-   sync once. Do not invoke 1Password independently for every later command. A reference template
+3. When the generated file is missing or explicitly stale after rotation, run `0th secrets sync`
+   once through the project's documented wrapper. Do not invoke 1Password independently for every later command. A reference template
    contains only `op://` references; resolved values may not be read.
 4. Run the actual consuming command through the generated file's normal loader. A presence-only
    child check may precede the command, but it does not replace the real probe.

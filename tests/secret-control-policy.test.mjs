@@ -10,7 +10,9 @@ const policy = read("references/secret-control-policy.md");
 
 test("recurring development uses an explicit persistent local cache", () => {
   assert.match(policy, /1Password.*centralized source of truth/i);
-  assert.match(policy, /explicit project sync command.*only normal operation.*contacts 1Password/is);
+  assert.match(policy, /`0th secrets sync`.*only normal operation.*contacts 1Password/is);
+  assert.match(policy, /\.0th-secrets\.json/);
+  assert.match(policy, /do not reimplement secret-file mechanics/i);
   assert.match(policy, /git check-ignore/);
   assert.match(policy, /op inject --in-file.*--out-file.*--file-mode 0600/is);
   assert.match(policy, /atomically replace/i);
@@ -27,7 +29,7 @@ test("the cache is constrained to project development configuration", () => {
 
 test("credential blockers require the project loader and one intentional sync", () => {
   assert.match(policy, /missing variable in the current process is not proof/i);
-  assert.match(policy, /run the documented project\s*sync once/i);
+  assert.match(policy, /run `0th secrets sync`\s*once/i);
   assert.match(policy, /before\s+(?:returning|reporting) `BLOCKED` or `BLOCKED_REAL_ENV`/i);
   assert.match(policy, /attempted safe runner/i);
 
