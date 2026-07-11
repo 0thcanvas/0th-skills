@@ -55,6 +55,17 @@ partial evidence.
 Do not downgrade the proof tier because a real environment is inconvenient. Tests alone do not
 satisfy `T2`, `T3`, or `T4`.
 
+Credential-dependent proof is unavailable only after the credential-dependent preflight in
+`secret-control-policy.md`. Missing variables in the current process alone never establish a real
+environment blocker. Retry the proof through the project's generated local env file and normal
+application loader. If the file is missing or intentionally stale, run the documented sync once. The blocked report must
+name each attempted safe runner and its sanitized error; otherwise `BLOCKED` or `BLOCKED_REAL_ENV`
+is premature.
+
+For recurring credential-dependent work, the generated gitignored owner-only env file is the
+steady-state runner. Normal commands read it directly and do not contact 1Password. Only explicit
+setup or rotation syncs may contact 1Password.
+
 ### `retro_open_loop_closeout`
 
 At workflow boundaries, explicitly consider whether the session created durable memory, an open

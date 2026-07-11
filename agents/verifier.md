@@ -29,7 +29,7 @@ For each matched stack, select the proof lane in `${OTH_SKILLS_ROOT:?Set OTH_SKI
 
 **This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
 
-If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. BLOCKED applies when no chain tool exists for the stack, secrets/env are missing, or an external service is unavailable — never when a tool is merely inconvenient.
+If no chain tool is usable for a matched stack on this agent, mark *that row* BLOCKED and emit it to the structured report; the run's outcome cannot be PASS while any matched row is BLOCKED. BLOCKED applies when no chain tool exists for the stack, an external service is unavailable, or credentials remain unavailable after the credential-dependent preflight below — never when a tool is merely inconvenient or a variable is absent only from the current process.
 
 Also read `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` before feature-specific verification. It declares the minimum proof tier that must be satisfied for this feature. Tests alone can satisfy T0 only; T2+ requires an actual user-facing runtime, browser, external sandbox, or live surface according to the contract. If the required proof tier cannot be run in the correct environment because the real browser/session/service/device is unavailable, mark the run BLOCKED_REAL_ENV and write a proof result with the blocked reason.
 
@@ -114,10 +114,13 @@ Never surface secrets, tokens, or PII in any output:
 - Mask PII (emails, names, IDs from real user data)
 - Summarize API responses by structure, not raw content
 - Screenshots: note what was visible but do not reproduce identifying details
-- Prefer an existing mounted 1Password Environment `.env`; otherwise use an existing verified ignored `.env` or `.env.local` for project-scoped development secrets. Contact 1Password only when the local environment is missing, stale, or explicitly being rotated.
+- A missing variable in the current process is not proof that the credential is unavailable. Before a credential-related `BLOCKED` or `BLOCKED_REAL_ENV`, complete the credential-dependent preflight in `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/secret-control-policy.md`.
+- For recurring verification, use the project's generated gitignored owner-only env file through the consuming application's loader. Normal commands do not contact 1Password. If the file is missing or intentionally stale after rotation, run the documented project sync once, then retry the consuming command.
+- Check only project-scoped paths and metadata; do not inspect secret-file contents or borrow another project's environment. Seed phrases and derived private keys never belong in project env files.
+- Run the actual credential-dependent probe inside the safe runner. A presence-only check does not satisfy proof. Before blocking, record each attempted safe runner and its exact sanitized error.
 - When a `.env.local` is present, run the app's loader rather than reading the file directly. Do not `cat`, `head`, `grep`, or otherwise print its contents.
 - Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv.
-- If verification needs a secret and no safe runner is configured, mark that check BLOCKED rather than asking for or printing the secret.
+- Only after the preflight finds no safe runner or every applicable runner returns a concrete error may the check be marked BLOCKED. Never ask for or print the secret.
 
 ### 8. Teardown
 

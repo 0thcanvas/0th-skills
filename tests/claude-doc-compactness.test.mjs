@@ -26,7 +26,7 @@ test("CLAUDE.md contains only the exceptional browser and safety boundaries", ()
   assert.match(source, /references\/browser-control-policy\.md/);
   assert.match(source, /references\/secret-control-policy\.md/);
   assert.match(source, /resolved secret values/i);
-  assert.match(source, /mounted.*\.env/i);
+  assert.match(source, /`0th secrets`/i);
 });
 
 test("CLAUDE.md remains a small repository instruction file", () => {

@@ -62,6 +62,11 @@ Hard rule: no agent should run `op read`, `op item get --reveal`, `op inject` to
 
 To verify a secret is present without revealing its value, use `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"`. Run only with shell tracing off — `set -x` / `bash -x` would expand the test and leak the value. Never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`.
 
+Recurring project development secrets use the shared CLI, configured by a tracked
+`.0th-secrets.json` manifest. `0th secrets sync` is the only normal command that contacts
+1Password; `paths`, `check`, and `clean` are metadata-only lifecycle operations. Applications read
+the generated ignored mode-600 files directly. Seed phrases and derived private keys are rejected.
+
 ### Direct invocation
 
 When a skill is invoked directly, `$ARGUMENTS` means "the raw argument string passed to that

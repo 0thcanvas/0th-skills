@@ -8,6 +8,7 @@ import {
   validateLaunchPlan
 } from "./host-capabilities.mjs";
 import { runCodexDispatchCommand } from "./codex-exec-adapter.mjs";
+import { runSecretsCommand } from "./secrets.mjs";
 
 function usage() {
   return [
@@ -19,6 +20,7 @@ function usage() {
     "  routing init --harness <name> [--config-dir <path>] [--force]",
     "  routing doctor --harness <name> [--config-dir <path>] [--runtime-json <path>] [--live-probe]",
     "  dispatch --launch-plan-json <path> --prompt-file <path> --output-schema <path> --result-out <path> --events-out <path> --receipt-out <path> [--sandbox read-only|workspace-write]",
+    "  secrets <paths|output|check|sync|clean> [environment|all] [--manifest path]",
     ""
   ].join("\n");
 }
@@ -34,7 +36,10 @@ function main(argv) {
   else if (command === "attest") output = runAttestCommand(args);
   else if (command === "routing") output = runRoutingCommand(args);
   else if (command === "dispatch") output = runCodexDispatchCommand(args, { validateLaunchPlan });
-  else throw new Error(`unknown 0th command: ${command}`);
+  else if (command === "secrets") {
+    process.exitCode = runSecretsCommand(args);
+    return;
+  } else throw new Error(`unknown 0th command: ${command}`);
   process.stdout.write(`${JSON.stringify(output, null, 2)}\n`);
 }
 
