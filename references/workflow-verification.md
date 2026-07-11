@@ -57,15 +57,14 @@ satisfy `T2`, `T3`, or `T4`.
 
 Credential-dependent proof is unavailable only after the credential-dependent preflight in
 `secret-control-policy.md`. Missing variables in the current process alone never establish a real
-environment blocker. Retry the proof inside every applicable project-scoped safe runner, including
-a mounted 1Password Environment or `op run --env-file` when configured. The blocked report must
+environment blocker. Retry the proof through the project's generated local env file and normal
+application loader. If the file is missing or intentionally stale, run the documented sync once. The blocked report must
 name each attempted safe runner and its sanitized error; otherwise `BLOCKED` or `BLOCKED_REAL_ENV`
 is premature.
 
-For recurring credential-dependent work, the mounted 1Password Environment is the steady-state
-runner. Read it directly through the consuming application's loader. Repeated `op run` calls are not
-a configured environment; `op run` remains a one-off or bootstrap fallback and should launch one
-consuming process, not wrap every probe.
+For recurring credential-dependent work, the generated gitignored owner-only env file is the
+steady-state runner. Normal commands read it directly and do not contact 1Password. Only explicit
+setup or rotation syncs may contact 1Password.
 
 ### `retro_open_loop_closeout`
 
