@@ -13,6 +13,8 @@ authority, safety, and closeout. Read
 `$ARGUMENTS` narrows the incident focus; otherwise scan the current conversation. Skip when there
 was no concrete correction or workflow failure. `retro_open_loop_closeout` may trigger this skill
 after skipped verification, blocked proof, or repeated failure, but an incident still needs evidence.
+Requests such as “take a note” or “remember this” without a concrete incident route to the configured
+Memory write path or project KB instead; they do not enter `/retro` and must not fabricate an incident.
 
 ## Optional feedback migration
 

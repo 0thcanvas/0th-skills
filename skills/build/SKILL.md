@@ -31,6 +31,20 @@ the relevant nearby suite, do not create `verification-report` artifacts, follow
 and commit policy, and report proof directly. Do not load `stack-minimums.md` in this lane. Promote
 when any condition stops being true.
 
+## No-code Operational Lane
+
+Use only to build, sign, install, launch, restart, or verify an existing revision without a source
+or configuration edit. Confirm the exact revision, expected worktree state, target identity,
+signing/runtime prerequisites, and project runbook.
+
+Do not create a feature branch, TDD test, PR, or `verification-report` merely to perform the
+operation. Use the project runbook and owning tool or specialist, preserve user data, and capture
+build, signing, install, launch, and health evidence. Live or device actions still require
+effect-appropriate authority and real-environment proof.
+
+If a source or configuration edit becomes necessary, stop the operational lane and enter normal
+`/build` or `/debug` on a branch as appropriate.
+
 ## Slice loop
 
 For testable work: RED failing behavior test → GREEN smallest implementation → REFACTOR touched code

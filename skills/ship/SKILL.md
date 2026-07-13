@@ -15,6 +15,10 @@ Ship through a PR and stop before merge unless the user approves that specific P
 - `$ARGUMENTS` identifies the branch, diff, or landing target when invoked directly.
 - Shipping authorizes the normal branch push and PR creation workflow. It does not authorize merge,
   production deployment, unrelated external writes, or destructive cleanup.
+- A production-only deployment request does not enter `/ship`; follow the project deployment runbook
+  or operations workflow. Treat a combined ship-and-deploy request as separate phases. Ship authority
+  does not carry into deployment: obtain the deployment-specific authority, rollback plan, and
+  environment evidence before that phase.
 
 ## 1. Verify
 
