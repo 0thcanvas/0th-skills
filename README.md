@@ -218,6 +218,15 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### Unreleased
+
+- Separated production deployment from `/ship`; deployment follows the owning project's runbook and
+  requires its own authority and evidence.
+- Routed durable note requests to Memory or the project KB unless a concrete incident makes `/retro`
+  appropriate.
+- Added a no-code operational lane for building, signing, installing, launching, restarting, or
+  verifying an existing revision without manufacturing branch, TDD, PR, or ship-gate artifacts.
+
 ### 0.3.4
 
 - Added a Grok Build counterpart-review driver using verified headless JSON and session-resume CLI contracts.
