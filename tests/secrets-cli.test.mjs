@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
+  checkSecrets,
   cleanSecrets,
   loadSecretsManifest,
   runSecretsCommand,
@@ -92,4 +93,29 @@ test("public 0th secrets commands expose metadata without reading generated valu
   lines.length = 0;
   assert.equal(runSecretsCommand(["output", "api"], { cwd: root, write: line => lines.push(line) }), 0);
   assert.deepEqual(lines, [path.join(fs.realpathSync(root), ".env.api.local")]);
+});
+
+test("linked worktrees validate shared cache ignores from the storage checkout", () => {
+  const root = fixtureRepo();
+  execFileSync("git", ["add", ".gitignore", ".0th-secrets.json"], { cwd: root });
+  execFileSync(
+    "git",
+    [
+      "-c",
+      "user.name=0th Secrets Test",
+      "-c",
+      "user.email=secrets-test@example.invalid",
+      "commit",
+      "--quiet",
+      "-m",
+      "fixture"
+    ],
+    { cwd: root }
+  );
+  const linkedRoot = `${root}-linked`;
+  temporaryDirectories.push(linkedRoot);
+  execFileSync("git", ["worktree", "add", "--quiet", "--detach", linkedRoot], { cwd: root });
+  fs.writeFileSync(path.join(root, ".env.api.local"), "API_KEY=fixture\n", { mode: 0o600 });
+
+  assert.equal(checkSecrets({ cwd: linkedRoot, names: ["api"] }), true);
 });
