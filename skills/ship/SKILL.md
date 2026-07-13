@@ -73,6 +73,19 @@ delete `${VERIFICATION_REPORT_DIR:-verification-report}`. If it contains sensiti
 private screenshots, HARs, cookies, tokens, or secret-adjacent data, preserve only a safe summary and
 delete the raw files immediately.
 
+## 5. Worktree closeout
+
+When the PR is merged, closed, or abandoned, remove the agent-created dedicated worktree for this
+task by default. Never remove the primary checkout, a user-owned or shared worktree, or a worktree
+still needed for explicit follow-up.
+
+Before removal, confirm the worktree is clean and its branch has no unpushed commits. If the worktree
+is dirty or ownership is unclear, preserve it and report the exact blocker instead of deleting it.
+From a different registered checkout, delete its local gate evidence, run
+`git worktree remove <path>`, delete the feature branch if it still exists, and run
+`git worktree prune`. Read back `git worktree list` and confirm both the registration and filesystem
+path are absent before reporting cleanup complete.
+
 Apply `retro_open_loop_closeout` before handoff so skipped proof, blocked environments, repeated
 failures, and unfinished follow-up remain visible.
 
