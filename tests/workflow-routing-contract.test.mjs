@@ -14,6 +14,18 @@ test("production deployment is a separate operational phase from ship", () => {
   assert.match(ship, /ship authority.*does not carry into deployment/is);
 });
 
+test("ship removes its dedicated worktree after a terminal PR state", () => {
+  const ship = read("skills/ship/SKILL.md");
+
+  assert.match(ship, /agent-created.*dedicated worktree/is);
+  assert.match(ship, /merged, closed, or abandoned/is);
+  assert.match(ship, /clean.*unpushed/is);
+  assert.match(ship, /git worktree remove/is);
+  assert.match(ship, /git worktree prune/is);
+  assert.match(ship, /git worktree list.*path.*(?:absent|gone)/is);
+  assert.match(ship, /dirty.*ownership.*preserve.*report/is);
+});
+
 test("durable note requests route to Memory or the project KB without fabricating an incident", () => {
   const retro = read("skills/retro/SKILL.md");
 
