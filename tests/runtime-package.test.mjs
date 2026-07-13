@@ -6,7 +6,11 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { packageRuntimePlugin } from "../scripts/package-runtime-plugin.mjs";
+import {
+  currentRuntimeLinkPath,
+  packageRuntimePlugin,
+  registerCurrentRuntime
+} from "../scripts/package-runtime-plugin.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -64,5 +68,74 @@ test("runtime packager refuses to overwrite or recurse into the source", () => {
   assert.throws(
     () => packageRuntimePlugin({ sourceRoot: repoRoot, outputRoot: path.join(repoRoot, "runtime-dist") }),
     /outside the source root/i
+  );
+});
+
+test("runtime packager registers a stable current link for shell consumers", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-runtime-current-"));
+  const outputRoot = path.join(temporaryRoot, "plugin");
+  const homeDir = path.join(temporaryRoot, "home");
+
+  const result = packageRuntimePlugin({
+    sourceRoot: repoRoot,
+    outputRoot,
+    registerCurrent: true,
+    env: {},
+    homeDir
+  });
+
+  const runtimeLink = path.join(homeDir, ".0th", "skills", "runtime", "current");
+  assert.equal(result.runtime_link, runtimeLink);
+  assert.equal(fs.realpathSync(runtimeLink), fs.realpathSync(outputRoot));
+  assert.equal(fs.existsSync(path.join(runtimeLink, "scripts", "0th.mjs")), true);
+});
+
+test("runtime packager refuses to overwrite the currently registered runtime", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-runtime-live-"));
+  const outputRoot = path.join(temporaryRoot, "plugin-v1");
+  const homeDir = path.join(temporaryRoot, "home");
+  const options = {
+    sourceRoot: repoRoot,
+    outputRoot,
+    registerCurrent: true,
+    env: {},
+    homeDir
+  };
+
+  packageRuntimePlugin(options);
+  assert.throws(
+    () => packageRuntimePlugin({ ...options, force: true, registerCurrent: false }),
+    /currently registered runtime/i
+  );
+  assert.equal(fs.existsSync(path.join(outputRoot, "scripts", "0th.mjs")), true);
+});
+
+test("runtime registration switches from a complete v1 package to a complete v2 package", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-runtime-switch-"));
+  const homeDir = path.join(temporaryRoot, "home");
+  const sharedOptions = { sourceRoot: repoRoot, registerCurrent: true, env: {}, homeDir };
+  const outputV1 = path.join(temporaryRoot, "plugin-v1");
+  const outputV2 = path.join(temporaryRoot, "plugin-v2");
+
+  packageRuntimePlugin({ ...sharedOptions, outputRoot: outputV1 });
+  packageRuntimePlugin({ ...sharedOptions, outputRoot: outputV2 });
+
+  const runtimeLink = currentRuntimeLinkPath({ env: {}, homeDir });
+  assert.equal(fs.realpathSync(runtimeLink), fs.realpathSync(outputV2));
+  assert.equal(fs.existsSync(path.join(runtimeLink, "scripts", "0th.mjs")), true);
+  assert.equal(fs.existsSync(path.join(outputV1, "scripts", "0th.mjs")), true);
+});
+
+test("runtime registration refuses to replace a non-link user path", () => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-runtime-path-"));
+  const homeDir = path.join(temporaryRoot, "home");
+  const outputRoot = path.join(temporaryRoot, "plugin");
+  packageRuntimePlugin({ sourceRoot: repoRoot, outputRoot });
+  const runtimeLink = currentRuntimeLinkPath({ env: {}, homeDir });
+  fs.mkdirSync(runtimeLink, { recursive: true });
+
+  assert.throws(
+    () => registerCurrentRuntime({ runtimeRoot: outputRoot, env: {}, homeDir }),
+    /not a symlink/i
   );
 });

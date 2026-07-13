@@ -465,13 +465,16 @@ node scripts/install-smoke-check.mjs --repo-root . --cache-root ~/.codex/plugins
 Build the installable runtime staging directory outside the checkout before a local release:
 
 ```bash
-RUNTIME_PLUGIN_DIR="${RUNTIME_PLUGIN_DIR:?Set an absolute staging path}"
-node scripts/package-runtime-plugin.mjs --source . --output "$RUNTIME_PLUGIN_DIR" --force
+RUNTIME_PLUGIN_DIR="${RUNTIME_PLUGIN_DIR:?Set a fresh absolute staging path}"
+node scripts/package-runtime-plugin.mjs --source . --output "$RUNTIME_PLUGIN_DIR" --register-current
 node "${RUNTIME_PLUGIN_DIR}/scripts/install-smoke-check.mjs" --repo-root "$RUNTIME_PLUGIN_DIR"
 ```
 
 The runtime package keeps skills, agents, scripts, schemas, adapters, and required decision evidence.
 It excludes tests, verification artifacts, eval/plan history, feedback files, and repository-only
-documentation. Point the local marketplace symlink at this staging directory before reinstalling.
+documentation. `--register-current` atomically points the user-state runtime link at this staging
+directory so shell consumers can find the shared CLI without a versioned cache path. Point the local
+marketplace symlink at the same staging directory before reinstalling. Each registered release uses
+a fresh staging directory; the packager refuses to overwrite the currently registered runtime.
 
 The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

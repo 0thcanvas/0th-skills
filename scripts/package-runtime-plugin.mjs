@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { isInvokedAsCli } from "./lib/cli.mjs";
+import { resolveStateRoot } from "./runtime-state.mjs";
 
 const EXCLUDED_EXACT = new Set([
   ".git",
@@ -51,10 +53,28 @@ function inventory(root, { exclude = false } = {}) {
   };
 }
 
+export function currentRuntimeLinkPath({
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  return path.join(resolveStateRoot({ env, homeDir }), "runtime", "current");
+}
+
+function linkResolvesTo(linkPath, targetPath) {
+  try {
+    return fs.realpathSync(linkPath) === fs.realpathSync(targetPath);
+  } catch {
+    return false;
+  }
+}
+
 export function packageRuntimePlugin({
   sourceRoot = process.cwd(),
   outputRoot,
-  force = false
+  force = false,
+  registerCurrent = false,
+  env = process.env,
+  homeDir = os.homedir()
 } = {}) {
   const source = path.resolve(sourceRoot);
   if (!outputRoot) throw new Error("runtime package output is required");
@@ -66,6 +86,12 @@ export function packageRuntimePlugin({
     throw new Error(`source is not a Codex plugin root: ${source}`);
   }
   if (fs.existsSync(output)) {
+    const runtimeLink = currentRuntimeLinkPath({ env, homeDir });
+    if (linkResolvesTo(runtimeLink, output)) {
+      throw new Error(
+        `refusing to overwrite the currently registered runtime; choose a fresh output path: ${output}`
+      );
+    }
     if (!force) throw new Error(`runtime package output already exists: ${output}`);
     fs.rmSync(output, { recursive: true, force: true });
   }
@@ -80,6 +106,9 @@ export function packageRuntimePlugin({
     }
   });
   const runtimeInventory = inventory(output);
+  const runtimeLink = registerCurrent
+    ? registerCurrentRuntime({ runtimeRoot: output, env, homeDir })
+    : null;
 
   return {
     source_root: source,
@@ -87,8 +116,33 @@ export function packageRuntimePlugin({
     copied_file_count: runtimeInventory.file_count,
     excluded_file_count: sourceInventory.file_count - runtimeInventory.file_count,
     source_estimated_tokens: sourceInventory.estimated_tokens,
-    runtime_estimated_tokens: runtimeInventory.estimated_tokens
+    runtime_estimated_tokens: runtimeInventory.estimated_tokens,
+    runtime_link: runtimeLink
   };
+}
+
+export function registerCurrentRuntime({
+  runtimeRoot,
+  env = process.env,
+  homeDir = os.homedir()
+} = {}) {
+  const runtime = path.resolve(runtimeRoot);
+  const dispatcher = path.join(runtime, "scripts", "0th.mjs");
+  if (!fs.existsSync(dispatcher)) {
+    throw new Error(`runtime dispatcher is missing: ${dispatcher}`);
+  }
+
+  const linkPath = currentRuntimeLinkPath({ env, homeDir });
+  fs.mkdirSync(path.dirname(linkPath), { recursive: true, mode: 0o700 });
+  if (fs.existsSync(linkPath) && !fs.lstatSync(linkPath).isSymbolicLink()) {
+    throw new Error(`runtime link path exists and is not a symlink: ${linkPath}`);
+  }
+
+  const temporaryLink = `${linkPath}.tmp-${process.pid}`;
+  fs.rmSync(temporaryLink, { force: true });
+  fs.symlinkSync(runtime, temporaryLink, "dir");
+  fs.renameSync(temporaryLink, linkPath);
+  return linkPath;
 }
 
 function parseArgs(argv) {
@@ -98,6 +152,7 @@ function parseArgs(argv) {
     if (token === "--source") options.sourceRoot = argv[++index];
     else if (token === "--output") options.outputRoot = argv[++index];
     else if (token === "--force") options.force = true;
+    else if (token === "--register-current") options.registerCurrent = true;
     else throw new Error(`Unknown runtime package option: ${token}`);
   }
   return options;
