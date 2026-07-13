@@ -58,10 +58,10 @@ function assertOwnerOnlyRegularFile(filePath, label) {
   }
 }
 
-function assertIgnored(filePath, cwd) {
+function assertIgnored(filePath, storageRoot) {
   try {
     execFileSync("git", ["check-ignore", "-q", "--", filePath], {
-      cwd,
+      cwd: storageRoot,
       stdio: ["ignore", "ignore", "pipe"]
     });
   } catch {
@@ -131,7 +131,7 @@ export function checkSecrets({ cwd = process.cwd(), manifestPath, names } = {}) 
   for (const name of selectEnvironments(manifest, names)) {
     const environment = manifest.environments[name];
     assertOwnerOnlyRegularFile(environment.output, `${name} generated environment`);
-    assertIgnored(environment.output, manifest.roots.worktreeRoot);
+    assertIgnored(environment.output, manifest.roots.storageRoot);
   }
   return true;
 }
@@ -146,14 +146,14 @@ export function syncSecrets({
   for (const name of selectEnvironments(manifest, names)) {
     const environment = manifest.environments[name];
     assertOwnerOnlyRegularFile(environment.references, `${name} reference template`);
-    assertIgnored(environment.references, manifest.roots.worktreeRoot);
-    assertIgnored(environment.output, manifest.roots.worktreeRoot);
+    assertIgnored(environment.references, manifest.roots.storageRoot);
+    assertIgnored(environment.output, manifest.roots.storageRoot);
     validateReferenceTemplate(fs.readFileSync(environment.references, "utf8"));
     const temporaryDirectory = fs.mkdtempSync(
       path.join(path.dirname(environment.output), `${path.basename(environment.output)}.tmp-`)
     );
     const temporaryOutput = path.join(temporaryDirectory, "environment");
-    assertIgnored(temporaryOutput, manifest.roots.worktreeRoot);
+    assertIgnored(temporaryOutput, manifest.roots.storageRoot);
     try {
       inject("op", [
         "inject",
