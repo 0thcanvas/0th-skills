@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Implements a known code change with proof-gated TDD. Use when the user asks to build, add, change, or fix a known solution."
+description: "Implements approved changes with proof-gated TDD. Use when building or fixing a known solution."
 argument-hint: "[instruction or plan path]"
 ---
 
@@ -12,6 +12,8 @@ Apply `../../references/skills-kernel.md` once. This file owns only build-specif
 
 - Enter for a requested implementation, approved decision, or build-ready plan.
 - Switch to `/think` for unresolved design and `/debug` for an unexpected failure.
+- External/live work requires an approved `/plan` acquisition/operations contract before
+  code/calls; else `CONTRACT_INVALIDATED`.
 - `$ARGUMENTS` is the instruction or plan path when invoked directly.
 - **Default: one root agent.** Only when delegation has a concrete advantage, read
   `../../references/delegation.md`; otherwise do not load its mechanics.

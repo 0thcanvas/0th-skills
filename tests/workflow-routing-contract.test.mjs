@@ -43,3 +43,18 @@ test("build defines a no-code operational lane for an existing revision", () => 
   assert.match(build, /source or configuration edit.*normal\s+`\/build` or `\/debug`/is);
   assert.match(build, /build, signing, install, launch, and health evidence/is);
 });
+
+test("external acquisition requires an approved cost and authorization plan", () => {
+  const plan = read("skills/plan/SKILL.md");
+  const build = read("skills/build/SKILL.md");
+
+  assert.match(plan, /external API.*paid data.*webhook/is);
+  assert.match(plan, /## Acquisition Contract/);
+  assert.match(plan, /push, stream, polling, or snapshot semantics/is);
+  assert.match(plan, /OAuth\/consent/is);
+  assert.match(plan, /billing unit.*worst-case cost/is);
+  assert.match(plan, /maximum live-probe budget.*stop condition/is);
+  assert.match(plan, /Unknown pricing, authorization, or event semantics.*BLOCKED_BY_SPEC/is);
+  assert.match(build, /External\/live work requires an approved `\/plan`/);
+  assert.match(build, /CONTRACT_INVALIDATED/);
+});
