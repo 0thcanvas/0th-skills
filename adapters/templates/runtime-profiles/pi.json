@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "profile_id": "pi",
+  "harness": "pi",
+  "topology": {
+    "mode": "single-agent",
+    "max_workers": 1,
+    "workspace_isolation": "none"
+  },
+  "state": {
+    "workflow_store": "0th-state",
+    "ambient_memory": "none"
+  },
+  "capabilities": {}
+}

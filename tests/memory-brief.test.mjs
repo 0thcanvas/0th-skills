@@ -29,7 +29,7 @@ function writeJsonl(filePath, entries) {
   fs.writeFileSync(filePath, entries.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
 }
 
-test("memory brief summarizes key memory categories with cited evidence", () => {
+test("memory brief summarizes only active reusable claims with cited evidence", () => {
   const claims = [
     {
       id: "decision-1",
@@ -74,7 +74,7 @@ test("memory brief summarizes key memory categories with cited evidence", () => 
   assert.match(brief, /## Vocabulary[\s\S]*read-set reconciliation/);
   assert.match(brief, /## Recurring Incidents[\s\S]*skip KB writes/);
   assert.match(brief, /## Known Root Causes[\s\S]*Cart banner drift/);
-  assert.match(brief, /## Repo State Warnings[\s\S]*needs re-verification/);
+  assert.doesNotMatch(brief, /needs re-verification/);
   assert.match(brief, /source: references\/memory-contract.md/);
   assert.match(brief, /source: references\/memory-contract.md/);
 });
@@ -109,7 +109,7 @@ test("memory brief generation is deterministic", () => {
   assert.equal(second.written, true);
   assert.equal(firstText, secondText);
   assert.match(firstText, /Keep markdown as evidence/);
-  assert.match(firstText, /Branch has no upstream/);
+  assert.doesNotMatch(firstText, /Branch has no upstream/);
 });
 
 test("memory brief can generate the global startup brief without reading project memory", () => {

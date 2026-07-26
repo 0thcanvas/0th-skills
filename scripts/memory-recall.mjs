@@ -178,11 +178,27 @@ function evidenceResult(record, queryTokens, storeScope = "project") {
   };
 }
 
-function matchFilters(result, { kind, type, scope, lifecycleState, source, sourceId, brainId }) {
+function currentByDefault(result) {
+  if (result.kind === "claim") return result.lifecycle_state === "active";
+  if (result.kind === "open_loop") return ["open", "blocked"].includes(result.lifecycle_state);
+  return true;
+}
+
+function matchFilters(result, {
+  kind,
+  type,
+  scope,
+  lifecycleState,
+  source,
+  sourceId,
+  brainId,
+  includeNonCurrent
+}) {
   if (kind && result.kind !== kind) return false;
   if (type && result.type !== type) return false;
   if (scope && result.scope !== scope) return false;
   if (lifecycleState && result.lifecycle_state !== lifecycleState) return false;
+  if (!lifecycleState && !includeNonCurrent && !currentByDefault(result)) return false;
   if (source && !result.source_pointers.some((pointer) => String(pointer).includes(source))) return false;
   if (sourceId && result.source_id !== sourceId) return false;
   if (brainId && result.brain_id !== brainId) return false;
@@ -322,6 +338,7 @@ export function recallMemory({
   globalEvidenceFile = null,
   includeTasks = true,
   includeEvidence = true,
+  includeNonCurrent = false,
   allProjectTasks = false,
   storeScope = null
 } = {}) {
@@ -343,7 +360,16 @@ export function recallMemory({
       : resolveEvidencePaths({ cwd, scope: "global" }).evidenceFile
   );
   const queryTokens = tokens(query);
-  const filters = { kind, type, scope, lifecycleState, source, sourceId, brainId };
+  const filters = {
+    kind,
+    type,
+    scope,
+    lifecycleState,
+    source,
+    sourceId,
+    brainId,
+    includeNonCurrent
+  };
   const includeProjectStore = resolvedStoreScope !== "global";
   const includeGlobalStore = resolvedStoreScope !== "project";
   const degradedSources = [];
@@ -591,6 +617,10 @@ function parseArgs(argv) {
     }
     if (token === "--no-evidence") {
       options.includeEvidence = false;
+      continue;
+    }
+    if (token === "--include-non-current") {
+      options.includeNonCurrent = true;
       continue;
     }
     if (token === "--all-project-tasks") {

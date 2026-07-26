@@ -1,6 +1,8 @@
 # 0th Skills
 
-Lightweight development workflow for solo builders using Codex, Antigravity, and Claude Code where still needed.
+Provider-neutral development workflow for coding agents. Skills define outcomes, evidence, and
+stop conditions; host adapters own model names, orchestration commands, authentication, and tool
+bindings.
 
 ## Skills
 
@@ -33,18 +35,44 @@ write only when the discussion resolves domain vocabulary.
 
 ## Knowledge Base
 
-Memory v2 runtime is the canonical agent recall path. Root tasks use one compact, task-keyed startup
-packet; full briefs, source packs, and evidence expand only on demand.
-Projects may still maintain a markdown knowledge base as source material, import/export storage, or
-human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
-[PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
+The `memory` runtime is a compact continuity index, not a second documentation system. Root tasks
+retrieve active claims and open work through one task-keyed startup packet; historical states,
+source packs, and full evidence expand only on demand.
+
+A project may expose a markdown knowledge base as an optional evidence provider. Agents retrieve it
+only when the task, project instructions, or a memory pointer names it. They do not read or maintain
+a wiki merely because it exists. [PROTOCOL.md](PROTOCOL.md) defines this compatibility path.
 
 The markdown KB protocol assumes:
 
 - `KB_ROOT` is the canonical KB path contract
-- agents resolve the KB root from `KB_ROOT`, then project instructions, then a one-time user prompt
+- agents resolve the KB root from `KB_ROOT`, then project instructions; ask only when a requested
+  KB write has no configured root
 - the KB is plain markdown on disk
 - agents should not hardcode an Obsidian vault path or depend on Obsidian-only behavior
+
+## Runtime Profiles
+
+Skills do not embed personal providers or assume a coordinator/worker topology. An optional runtime
+profile maps portable capability names to local providers and describes the host's topology and
+state surfaces. It is configuration only: profile resolution never authorizes an effect and never
+proves that a provider, worker, session, or credential is currently available. Live capability
+evidence and normal authority rules still apply.
+
+```bash
+node scripts/0th.mjs profile validate --profile-json adapters/templates/runtime-profiles/minimal.json
+node scripts/0th.mjs profile init --template pi --profile-id pi --config-dir ~/.config/0th-skills/profiles
+node scripts/0th.mjs profile resolve --profile-json ~/.config/0th-skills/profiles/pi.json --capability logged_in_browser
+```
+
+The bundled `minimal`, `pi`, and `personal` templates demonstrate an empty single-agent host, Pi,
+and local personal provider bindings. A portability smoke can verify that another harness discovers
+the exact requested skills without invoking a model:
+
+```bash
+node scripts/skill-portability-smoke.mjs --harness pi \
+  --skill skills/think/SKILL.md --skill skills/build/SKILL.md
+```
 
 ## Secret Handling
 

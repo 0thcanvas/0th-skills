@@ -76,9 +76,10 @@ Use `templates/output-shape.md`:
 - recommendation or next experiment;
 - citations adjacent to the claims they support.
 
-For durable findings, write the appropriate KB `raw/` note using
-`templates/raw-findings-note.md`, update its index, and use the Memory Write Gate. Exploratory
-reports remain working artifacts.
+For durable findings, use the canonical owner already configured by the project. Write a KB
+`raw/` note with `templates/raw-findings-note.md` only when the KB owns that research; otherwise
+update the current research/contract artifact or keep a compact Memory pointer. Do not duplicate the
+same finding across all three. Exploratory reports remain working artifacts.
 
 ## References
 

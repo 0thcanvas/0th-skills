@@ -64,6 +64,7 @@ test("model-invoked descriptions state both what the skill does and when to use 
 test("the shared kernel owns preflight, authority, delegation, secrets, and closeout", () => {
   const kernel = read("references/skills-kernel.md");
 
+  assert.match(kernel, /OTH_SKILLS_ROOT.*two directories above.*SKILL\.md/is);
   for (const fragment of [
     "Root-task preflight",
     "once per root task",

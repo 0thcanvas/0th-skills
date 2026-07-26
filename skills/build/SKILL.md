@@ -15,9 +15,9 @@ Apply `../../references/skills-kernel.md` once.
 - External/live work needs explicit authority and a bounded effect contract, not an approved
   `/plan`. Infer known fields; ask only for missing authority or an outcome-level tradeoff, else
   `CONTRACT_INVALIDATED`.
-- `$ARGUMENTS` is the instruction or plan path when invoked directly.
-- **Default: one root agent.** Only when delegation has a concrete advantage, read
-  `../../references/delegation.md`; otherwise do not load its mechanics.
+- Direct invocation: `$ARGUMENTS` is the instruction or plan path.
+- **Default: one root agent.** Read `../../references/delegation.md` only when delegation has a
+  concrete advantage.
 
 ## Contract and Lightweight Build Lane
 
@@ -91,8 +91,7 @@ and a pixel assertion or screenshot assertion for coordinate-sensitive rendering
 
 For full-lane user-facing work, read `references/product-acceptance.md` and produce
 `verification-report/product-acceptance.json`. Mechanical/internal work records `NOT_REQUIRED` with
-a rationale. Review is optional. Use `ask-counterpart-review` only with evidence
-advantage. Findings are hypotheses; no review artifact is required.
+a rationale. Review is optional; use `ask-counterpart-review` only with evidence advantage.
 
 ## Closeout
 

@@ -3,6 +3,10 @@
 0th remains the workflow orchestrator. Specialist plugins and tools can provide capability, but
 they do not replace the 0th workflow gates.
 
+Runtime profiles may select a preferred provider or delegated worker for a portable capability.
+Treat that binding as discovery only: adapter availability, user authority, and return evidence
+must still be observed for the current invocation.
+
 ## Boundary
 
 Always route at the capability/workflow boundary: ask for a capability such as visual product design,

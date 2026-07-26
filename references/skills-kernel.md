@@ -5,6 +5,8 @@ safety, context transfer, and closeout.
 
 ## Root-task preflight
 
+Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
+
 Run once per root task: infer 3–8 keywords, then run
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
 Use compact repo state, claims, open loops, and pointers. Expand only task-relevant evidence; reserve
@@ -64,8 +66,8 @@ skipped verification, blocked real environments, repeated failures, and unfinish
 
 Use the executable Memory Write Gate:
 `node "${OTH_SKILLS_ROOT}/scripts/memory.mjs" write-gate <event flags>`. Read `memory-contract.md` only
-when it cannot classify the event. Durable claims use `memory remember`, never hand-edited `claims.jsonl`;
-“nothing durable” is valid. Unfinished work uses `memory open-loop`.
+when the gate cannot classify. Durable claims use `memory remember`, never hand-edited `claims.jsonl`.
+Otherwise “nothing durable.” Unfinished work uses `memory open-loop`.
 
 Keep gate evidence uncommitted under `${VERIFICATION_REPORT_DIR:-verification-report}`. Promote only
 compact conclusions. After merge, close, abandonment, or worktree removal, delete raw evidence;

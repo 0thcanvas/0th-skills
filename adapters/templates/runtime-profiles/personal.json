@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "profile_id": "personal",
+  "harness": "generic",
+  "topology": {
+    "mode": "single-agent",
+    "max_workers": 1,
+    "workspace_isolation": "none"
+  },
+  "state": {
+    "workflow_store": "0th-state",
+    "ambient_memory": "host-native"
+  },
+  "capabilities": {
+    "secret_runtime": {
+      "provider": "onepassword",
+      "invocation": "local",
+      "worker": null,
+      "bindings": [
+        "cli:op"
+      ],
+      "effects": [
+        "secret-use"
+      ],
+      "workspace": "host-managed",
+      "result_contract": "sanitized-receipt",
+      "required": false
+    },
+    "logged_in_browser": {
+      "provider": "browser-kit",
+      "invocation": "local",
+      "worker": null,
+      "bindings": [
+        "cli:browser-kit"
+      ],
+      "effects": [
+        "read",
+        "session-use"
+      ],
+      "workspace": "host-managed",
+      "result_contract": "session-backed-receipt",
+      "required": false
+    }
+  }
+}
