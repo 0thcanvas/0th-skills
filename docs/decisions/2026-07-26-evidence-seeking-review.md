@@ -21,6 +21,8 @@ content remain governed by the separate disclosure boundary.
 - Remove mandatory plan review and counterpart-review ship artifacts.
 - Keep product acceptance and executable proof as verification, not model consensus.
 - Keep self-review, fresh same-model review, and cross-model review available as optional tools.
+- Keep time-varying driver availability in local runtime config. Disabled/no-credit drivers fail
+  before invocation and do not trigger fallback review.
 
 ## Evidence
 - `docs/evals/2026-07-26-workflow-vnext-pilot.md`

@@ -129,10 +129,12 @@ what a child actually received.
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
 - Optional cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
 - Codex-hosted counterpart review defaults to the `grok` driver, which uses Grok Build headless JSON mode. If `grok` is not on `PATH`, set `GROK_BIN` before invoking the companion process.
-- Grok Build can also be detected as the host for counterpart routing; Grok-hosted reviews default to Codex.
+- Grok Build can also be detected as the host. A configured `enabled_drivers` set prevents any
+  no-credit driver from being selected, including explicit overrides.
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
-- On Codex-hosted runs, explicit requests for legacy Claude Code review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
+- Explicit driver requests still obey local availability; the companion fails before invocation
+  when the selected driver is not enabled.
 
 ### Agent types
 
@@ -401,6 +403,22 @@ The script auto-detects the host and loads the counterpart from `~/.0th/reviewer
 
 The defaults above are written only when the config file does not exist. Existing mappings remain
 operator-owned overrides.
+
+Current availability can be restricted without changing the portable skill:
+
+```json
+{
+  "version": 1,
+  "enabled_drivers": ["grok"],
+  "counterparts": {
+    "claude": "grok",
+    "codex": "grok"
+  }
+}
+```
+
+When a selected route or explicit `--driver` is outside `enabled_drivers`, the companion exits
+before launching it. It does not spend credit or manufacture a fallback reviewer.
 
 Override per-call with `--driver <name>` or per-session with `COUNTERPART_REVIEWER=<name>`.
 

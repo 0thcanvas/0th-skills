@@ -103,6 +103,7 @@ If the companion script exits non-zero:
 
 Do not manufacture a fallback requirement. A fresh same-model pass is a separate optional review
 topology and should be used only when fresh context itself is the named advantage.
+An unavailable or no-credit driver is a normal skip: do not probe or retry another driver.
 
 Rules:
 - If the counterpart fails to invoke, return the error; review unavailability is not a build blocker.

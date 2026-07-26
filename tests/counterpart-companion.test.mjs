@@ -13,6 +13,7 @@ const {
   sanitizeKey,
   detectHost,
   loadAndValidateConfig,
+  selectDriverName,
   stripAnsi,
   stripPreamble,
   DRIVER_ALLOWLIST,
@@ -236,6 +237,61 @@ test("loadAndValidateConfig: accepts a valid config", () => {
 
   const config = loadAndValidateConfig(cfgPath);
   assert.deepEqual(config, valid);
+});
+
+test("loadAndValidateConfig: accepts an explicit enabled driver set", () => {
+  const tmpDir = makeTmpDir();
+  const cfgPath = path.join(tmpDir, "reviewer-config.json");
+  const valid = {
+    version: 1,
+    enabled_drivers: ["grok"],
+    counterparts: {
+      claude: "grok",
+      codex: "grok",
+      grok: "codex"
+    }
+  };
+  fs.writeFileSync(cfgPath, JSON.stringify(valid));
+
+  assert.deepEqual(loadAndValidateConfig(cfgPath), valid);
+});
+
+test("loadAndValidateConfig: rejects unknown enabled drivers", () => {
+  const tmpDir = makeTmpDir();
+  const cfgPath = path.join(tmpDir, "reviewer-config.json");
+  fs.writeFileSync(
+    cfgPath,
+    JSON.stringify({
+      version: 1,
+      enabled_drivers: ["gpt"],
+      counterparts: { codex: "grok" }
+    })
+  );
+
+  assert.throws(() => loadAndValidateConfig(cfgPath), /unknown enabled driver "gpt"/);
+});
+
+test("selectDriverName: permits only the currently enabled reviewer", () => {
+  const config = {
+    version: 1,
+    enabled_drivers: ["grok"],
+    counterparts: {
+      claude: "grok",
+      codex: "grok",
+      grok: "codex"
+    }
+  };
+
+  assert.equal(selectDriverName({ config, host: "codex" }), "grok");
+  assert.equal(selectDriverName({ config, host: "claude" }), "grok");
+  assert.throws(
+    () => selectDriverName({ config, host: "grok" }),
+    /driver "codex" is unavailable.*enabled drivers: grok/i
+  );
+  assert.throws(
+    () => selectDriverName({ config, host: "codex", explicitDriver: "claude" }),
+    /driver "claude" is unavailable.*enabled drivers: grok/i
+  );
 });
 
 test("loadAndValidateConfig: rejects missing version", () => {
