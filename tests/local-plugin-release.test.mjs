@@ -48,6 +48,27 @@ function runGit(sourceRoot, args) {
   assert.equal(result.status, 0, result.stderr);
 }
 
+test("keeps local release guidance as a linked current runbook instead of a dated decision", () => {
+  const runbookPath = path.join(repoRoot, "references", "local-plugin-releases.md");
+  const historicalDecisionPath = path.join(
+    repoRoot,
+    "docs",
+    "decisions",
+    "2026-07-26-private-local-plugin-releases.md"
+  );
+  const readme = fs.readFileSync(path.join(repoRoot, "README.md"), "utf8");
+
+  assert.equal(fs.existsSync(runbookPath), true);
+  assert.equal(fs.existsSync(historicalDecisionPath), false);
+  assert.match(readme, /references\/local-plugin-releases\.md/);
+
+  const runbook = fs.readFileSync(runbookPath, "utf8");
+  assert.match(runbook, /private .* marketplace/i);
+  assert.match(runbook, /local-plugin-release\.mjs publish/);
+  assert.match(runbook, /local-plugin-release\.mjs activate/);
+  assert.match(runbook, /does not publish|never publishes/i);
+});
+
 test("publishes an immutable SemVer release into a private local marketplace", () => {
   const { registryRoot, homeDir } = temporaryReleaseState();
   const result = publishLocalRelease({

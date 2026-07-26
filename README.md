@@ -520,29 +520,8 @@ a fresh staging directory; the packager refuses to overwrite the currently regis
 ### Private local releases
 
 The plugin is released to a private marketplace on the current machine. This flow does not submit
-the plugin to the public Plugin Directory. GitHub remains the source, PR, and tag history.
-
-After merging a release commit, tag it with the manifest version and publish the immutable package:
-
-```bash
-git tag v0.4.0
-git push origin v0.4.0
-node scripts/local-plugin-release.mjs publish --install \
-  --replace-selector 0th-skills@mini-local
-```
-
-The default private registry is `~/.0th/plugins/marketplace`. Each SemVer release identifies exactly
-one commit and stores an integrity digest in the local release ledger. Publishing a different commit
-under an existing version fails closed.
-
-Inspect or roll back without rebuilding:
-
-```bash
-node scripts/local-plugin-release.mjs status
-node scripts/local-plugin-release.mjs activate --version 0.3.4 --install
-```
-
-New Codex tasks load the activated version; an already-running task keeps the plugin instructions it
-loaded at startup.
+the plugin to the public Plugin Directory. See
+[`references/local-plugin-releases.md`](references/local-plugin-releases.md) for the current
+versioning, publish, activation, and rollback contract.
 
 The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

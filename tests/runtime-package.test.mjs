@@ -26,6 +26,7 @@ test("runtime package keeps executable plugin surfaces and omits repository-only
     "skills/build/SKILL.md",
     "references/skills-kernel.md",
     "references/delegation.md",
+    "references/local-plugin-releases.md",
     "scripts/memory.mjs",
     "scripts/memory-startup.mjs",
     "scripts/install-smoke-check.mjs",
