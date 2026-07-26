@@ -220,7 +220,7 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
-### Unreleased
+### 0.4.0
 
 - Made planning mechanics agent-owned: direct execution for one bounded loop, adaptive checkpoints
   when evidence changes the next action, and formal plans only when prospective slices reduce
@@ -237,6 +237,10 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
   appropriate.
 - Added a no-code operational lane for building, signing, installing, launching, restarting, or
   verifying an existing revision without manufacturing branch, TDD, PR, or ship-gate artifacts.
+- Added private local plugin releases with immutable SemVer artifacts, a local release ledger,
+  integrity verification, explicit activation, and rollback without publishing to the universal
+  Plugin Directory.
+- Isolated counterpart failure-contract tests from the user's reviewer availability configuration.
 
 ### 0.3.4
 
@@ -512,5 +516,33 @@ documentation. `--register-current` atomically points the user-state runtime lin
 directory so shell consumers can find the shared CLI without a versioned cache path. Point the local
 marketplace symlink at the same staging directory before reinstalling. Each registered release uses
 a fresh staging directory; the packager refuses to overwrite the currently registered runtime.
+
+### Private local releases
+
+The plugin is released to a private marketplace on the current machine. This flow does not submit
+the plugin to the public Plugin Directory. GitHub remains the source, PR, and tag history.
+
+After merging a release commit, tag it with the manifest version and publish the immutable package:
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0
+node scripts/local-plugin-release.mjs publish --install \
+  --replace-selector 0th-skills@mini-local
+```
+
+The default private registry is `~/.0th/plugins/marketplace`. Each SemVer release identifies exactly
+one commit and stores an integrity digest in the local release ledger. Publishing a different commit
+under an existing version fails closed.
+
+Inspect or roll back without rebuilding:
+
+```bash
+node scripts/local-plugin-release.mjs status
+node scripts/local-plugin-release.mjs activate --version 0.3.4 --install
+```
+
+New Codex tasks load the activated version; an already-running task keeps the plugin instructions it
+loaded at startup.
 
 The routing fixture for manual/host checks lives at `tests/fixtures/skill-routing.fixture.json`.

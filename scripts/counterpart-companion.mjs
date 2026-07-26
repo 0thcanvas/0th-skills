@@ -40,7 +40,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const defaultStateDir = resolveDefaultStateDir();
 const configDir = path.join(os.homedir(), ".0th");
-const configPath = path.join(configDir, "reviewer-config.json");
+const configPath = process.env.COUNTERPART_CONFIG_PATH
+  ? path.resolve(process.env.COUNTERPART_CONFIG_PATH)
+  : path.join(configDir, "reviewer-config.json");
 
 function fail(message, code = 1) {
   process.stderr.write(`${message}\n`);

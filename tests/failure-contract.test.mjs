@@ -1,17 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const scriptPath = path.join(__dirname, "..", "scripts", "counterpart-companion.mjs");
+const isolatedConfigPath = path.join(
+  fs.mkdtempSync(path.join(os.tmpdir(), "0th-counterpart-contract-")),
+  "reviewer-config.json"
+);
 
 function run(args, env = {}) {
   return spawnSync("node", [scriptPath, ...args], {
     encoding: "utf8",
     cwd: __dirname,
-    env: { ...process.env, ...env },
+    env: {
+      ...process.env,
+      COUNTERPART_CONFIG_PATH: isolatedConfigPath,
+      ...env
+    },
     timeout: 10000,
   });
 }
