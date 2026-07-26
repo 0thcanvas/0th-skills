@@ -4,15 +4,16 @@ Product acceptance is required for complex, multi-slice, UI, content-heavy, onbo
 
 Write `verification-report/product-acceptance.json`. Judge against the decision record, plan acceptance criteria, explicit user brief, then repo standards. If those sources cannot judge subjective quality, return `BLOCKED_BY_SPEC`.
 
-For required acceptance, inspect user-facing evidence such as screenshots, browser notes, terminal output, or live-flow results. A diff alone cannot prove product quality. Max 3 product acceptance rounds; fix blockers and in-scope polish, rerun affected proof, and preserve deferred out-of-scope findings.
+For required acceptance, inspect user-facing evidence such as screenshots, browser notes, terminal
+output, or live-flow results. A diff alone cannot prove product quality. Iterate only while new
+evidence or an in-scope change justifies another pass; do not loop merely to satisfy a reviewer.
 
-Use another reviewer only when it has a named evidence advantage: fresh context plus an executable oracle, a distinct product surface, or a measured cross-model blind-spot advantage. Route it through the observed capability gate. `ask-counterpart-review` is risk-triggered, not a universal build step. Record unique blockers, duplicates, false positives, fixes accepted, and cost when available.
-
-Persist the review decision for `/ship`: write actual output to
-`verification-report/counterpart-review.md`, or write the exact availability blocker or a
-`NOT_REQUIRED:` rationale naming the absent evidence advantage to
-`verification-report/counterpart-review.skipped`. An unexplained skip is invalid and must not be
-reported as a clean review.
+Product acceptance is an evidence check, not mandatory model review. Use another reviewer only when
+it has a named evidence advantage such as fresh context, a distinct product surface, separate evidence
+access, or a measured capability difference; route cross-model review through
+`ask-counterpart-review`. Findings remain hypotheses; the implementer may reject them. When review
+is used, record its useful findings, false positives, accepted fixes, and cost if that information
+helps later evaluation. `/ship` does not require a review artifact or a skip explanation.
 
 Required report shape:
 

@@ -18,6 +18,7 @@ import { resolveLaunchPlan } from "../scripts/host-capabilities.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
+const probeSchemaPath = path.join(repoRoot, "protocol", "schemas", "codex-probe-output.schema.json");
 
 const routing = {
   schema_version: 1,
@@ -98,18 +99,20 @@ process.stdout.write(JSON.stringify({ type: "turn.completed", usage: { input_tok
 function setup() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "0th-codex-adapter-"));
   const schemaPath = path.join(directory, "output.schema.json");
-  fs.writeFileSync(schemaPath, JSON.stringify({
-    type: "object",
-    additionalProperties: false,
-    required: ["status"],
-    properties: { status: { const: "ready" } }
-  }));
+  fs.copyFileSync(probeSchemaPath, schemaPath);
   return { directory, schemaPath, codexBin: createFakeCodex(directory) };
 }
 
 function launchPlan() {
   return resolveLaunchPlan({ capabilities, packet: packet(), routing }).launch_plan;
 }
+
+test("bundled Codex live-probe schema declares the explicit property type required by Structured Outputs", () => {
+  const schema = JSON.parse(fs.readFileSync(probeSchemaPath, "utf8"));
+
+  assert.equal(schema.properties.status.type, "string");
+  assert.equal(schema.properties.status.const, "ready");
+});
 
 test("Codex exec args pin model and effort while keeping the prompt off argv", () => {
   const { directory, schemaPath } = setup();
@@ -129,6 +132,29 @@ test("Codex exec args pin model and effort while keeping the prompt off argv", (
   assert.ok(args.includes("read-only"));
   assert.equal(args.at(-1), "-");
   assert.equal(args.some((arg) => arg.includes("sensitive worker prompt")), false);
+});
+
+test("Codex exec args can isolate eval workers from user config and rules", () => {
+  const { directory, schemaPath } = setup();
+  const args = buildCodexExecArgs({
+    launchPlan: launchPlan(),
+    cwd: directory,
+    outputSchemaPath: schemaPath,
+    resultPath: path.join(directory, "result.json"),
+    sandbox: "workspace-write",
+    ignoreUserConfig: true,
+    ignoreRules: true,
+    isolateSkills: true
+  });
+
+  assert.ok(args.includes("--ignore-user-config"));
+  assert.ok(args.includes("--ignore-rules"));
+  assert.ok(args.includes("--skip-git-repo-check"));
+  assert.deepEqual(args.slice(args.indexOf("--disable"), args.indexOf("--skip-git-repo-check") + 1), [
+    "--disable", "plugins",
+    "--disable", "memories",
+    "--skip-git-repo-check"
+  ]);
 });
 
 test("Codex exec worker sends prompts over stdin and emits an attestable receipt", () => {
@@ -199,18 +225,23 @@ test("Codex exec worker rejects launch plans owned by another harness", () => {
 test("live probe cache is bound to routing fingerprint, Codex version, and freshness", () => {
   const { directory, schemaPath, codexBin } = setup();
   const cachePath = path.join(directory, "probe-cache.json");
+  const argsPath = path.join(directory, "probe-args.json");
   const cache = probeCodexRouting({
     routing,
     cwd: directory,
     outputSchemaPath: schemaPath,
     cachePath,
     codexBin,
-    env: process.env,
+    env: { ...process.env, FAKE_CODEX_ARGS_OUT: argsPath },
     now: new Date("2026-07-09T23:02:00Z")
   });
 
   assert.equal(cache.routing_fingerprint, routingFingerprint(routing));
   assert.equal(cache.profiles.economy.status, "ready");
+  const probeArgs = JSON.parse(fs.readFileSync(argsPath, "utf8"));
+  assert.ok(probeArgs.includes("--ignore-user-config"));
+  assert.ok(probeArgs.includes("--ignore-rules"));
+  assert.ok(probeArgs.includes("--skip-git-repo-check"));
   const loaded = loadCodexProbeCapabilities({
     cachePath,
     routing,

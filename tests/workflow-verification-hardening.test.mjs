@@ -82,10 +82,6 @@ function writeGateFixture(repo, proofResultOverrides = {}, reportOverrides = {})
     reviewed_at: now
   });
 
-  fs.writeFileSync(
-    path.join(reportDir, "counterpart-review.skipped"),
-    "Fixture: counterpart review not needed for temp gate test."
-  );
 }
 
 test("workflow hardening reference defines stable contract keys", () => {

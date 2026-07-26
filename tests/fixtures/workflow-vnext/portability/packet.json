@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "packet_id": "portable-contract-1",
+  "records": [
+    {
+      "id": "record-decision",
+      "kind": "decision",
+      "value": "retain-neutral-contract"
+    },
+    {
+      "id": "record-evidence",
+      "kind": "evidence",
+      "value": "adapter-owned-runtime"
+    }
+  ],
+  "open_loops": [
+    {
+      "id": "gap-performance",
+      "value": "Cross-harness performance parity remains untested."
+    }
+  ]
+}

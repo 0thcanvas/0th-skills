@@ -178,7 +178,7 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
 
   const build = read(path.join(skillsRoot, "build", "SKILL.md"));
   assert.match(build, /ask-counterpart-review/);
-  assert.match(build, /risk-triggered/);
+  assert.match(build, /Review is optional/);
 
   assert.doesNotMatch(
     read(path.join(skillsRoot, "ship", "SKILL.md")),
@@ -366,9 +366,9 @@ test("the Skills Kernel centralizes startup, memory, and open-loop lifecycle", (
 
   assert.match(source, /once per root task/);
   assert.match(source, /memory\.mjs" startup --query/);
-  assert.match(source, /relevant claims and open loops/);
-  assert.match(source, /Do not generate or read the full.*briefs by default/i);
-  assert.match(source, /phases reuse the receipt/);
+  assert.match(source, /claims, open loops/);
+  assert.match(source, /full briefs.*broad audits/i);
+  assert.match(source, /Reuse\s+the receipt/);
   assert.match(source, /Memory Write Gate/);
   assert.match(source, /memory remember/);
   assert.match(source, /never\s+hand-edited `claims\.jsonl`/);

@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "packet_hash": {
+      "type": "string"
+    },
+    "record_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "open_loop_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decision": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "packet_hash",
+    "record_ids",
+    "open_loop_ids",
+    "decision"
+  ],
+  "additionalProperties": false
+}

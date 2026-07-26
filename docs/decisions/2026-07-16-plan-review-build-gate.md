@@ -1,7 +1,7 @@
 # Plan Review Build Gate
 
 **Date:** 2026-07-16
-**Status:** active
+**Status:** superseded by `2026-07-26-evidence-adaptive-workflow.md`
 
 ## Decision
 Substantive implementation follows `/plan → independent plan-completeness review → /build`.

@@ -170,6 +170,19 @@ export function loadAndValidateConfig(cfgPath = configPath) {
     throw new Error("reviewer-config.json: missing or invalid 'counterparts' object.");
   }
 
+  if (config.enabled_drivers !== undefined) {
+    if (!Array.isArray(config.enabled_drivers)) {
+      throw new Error("reviewer-config.json: 'enabled_drivers' must be an array.");
+    }
+    for (const driver of config.enabled_drivers) {
+      if (!DRIVER_ALLOWLIST.includes(driver)) {
+        throw new Error(
+          `reviewer-config.json: unknown enabled driver "${driver}". Allowed drivers: ${DRIVER_ALLOWLIST.join(", ")}.`
+        );
+      }
+    }
+  }
+
   for (const [host, driver] of Object.entries(config.counterparts)) {
     if (!KNOWN_HOSTS.includes(host)) {
       throw new Error(
@@ -233,42 +246,49 @@ async function loadDriver(name) {
   return mod.default;
 }
 
+export function selectDriverName({
+  config,
+  host = null,
+  explicitDriver = null,
+  envDriver = null
+}) {
+  const driver = explicitDriver
+    || envDriver
+    || (host ? config.counterparts[host] : null)
+    || "codex";
+
+  if (!DRIVER_ALLOWLIST.includes(driver)) {
+    throw new Error(`Unknown driver "${driver}". Allowed: ${DRIVER_ALLOWLIST.join(", ")}.`);
+  }
+
+  if (Array.isArray(config.enabled_drivers) && !config.enabled_drivers.includes(driver)) {
+    const enabled = config.enabled_drivers.length ? config.enabled_drivers.join(", ") : "none";
+    throw new Error(
+      `Counterpart review unavailable: driver "${driver}" is unavailable. Enabled drivers: ${enabled}.`
+    );
+  }
+
+  return driver;
+}
+
 function resolveDriverName(options) {
-  // 1. --driver flag
-  if (options.driver) {
-    if (!DRIVER_ALLOWLIST.includes(options.driver)) {
-      fail(`Unknown driver "${options.driver}". Allowed: ${DRIVER_ALLOWLIST.join(", ")}.`);
-    }
-    return options.driver;
+  let config;
+  try {
+    config = loadAndValidateConfig();
+  } catch (err) {
+    fail(err.message);
   }
-
-  // 2. COUNTERPART_REVIEWER env var
-  if (process.env.COUNTERPART_REVIEWER) {
-    const envDriver = process.env.COUNTERPART_REVIEWER;
-    if (!DRIVER_ALLOWLIST.includes(envDriver)) {
-      fail(
-        `COUNTERPART_REVIEWER="${envDriver}" is not an allowed driver. Allowed: ${DRIVER_ALLOWLIST.join(", ")}.`
-      );
-    }
-    return envDriver;
-  }
-
-  // 3. Config file lookup by host
   const host = detectHost();
-  if (host) {
-    let config;
-    try {
-      config = loadAndValidateConfig();
-    } catch (err) {
-      fail(err.message);
-    }
-    if (config.counterparts[host]) {
-      return config.counterparts[host];
-    }
+  try {
+    return selectDriverName({
+      config,
+      host,
+      explicitDriver: options.driver,
+      envDriver: process.env.COUNTERPART_REVIEWER || null
+    });
+  } catch (err) {
+    fail(err.message);
   }
-
-  // 4. Default
-  return "codex";
 }
 
 // ---------------------------------------------------------------------------

@@ -599,61 +599,6 @@ export function validateProofResult(report, options = {}) {
   return { ok: reasons.length === 0, reasons };
 }
 
-export function validateCounterpartReviewEvidence(repoPath, reportDir) {
-  // /build must either produce a counterpart-review.md (the actual review output) or
-  // a counterpart-review.skipped file containing either the exact availability blocker or
-  // an explicit risk decision that review has no evidence advantage. This keeps review
-  // risk-triggered without allowing an unexplained skip to pass as clean.
-  const reviewPath = join(repoPath, reportDir, "counterpart-review.md");
-  const skippedPath = join(repoPath, reportDir, "counterpart-review.skipped");
-  const reasons = [];
-
-  const reviewExists = existsSync(reviewPath);
-  const skippedExists = existsSync(skippedPath);
-
-  if (reviewExists) {
-    let reviewContent;
-    try {
-      reviewContent = readFileSync(reviewPath, "utf8");
-    } catch (err) {
-      reasons.push(`could not read ${reportDir}/counterpart-review.md: ${err.message}`);
-      return { ok: false, reasons };
-    }
-    if (reviewContent.trim() === "") {
-      reasons.push(
-        `${reportDir}/counterpart-review.md is empty; must contain the actual counterpart review output`
-      );
-      return { ok: false, reasons };
-    }
-    return { ok: true, reasons };
-  }
-
-  if (!skippedExists) {
-    reasons.push(
-      `missing counterpart review evidence: expected ${reportDir}/counterpart-review.md or ${reportDir}/counterpart-review.skipped`
-    );
-    return { ok: false, reasons };
-  }
-
-  let skippedContent;
-  try {
-    skippedContent = readFileSync(skippedPath, "utf8");
-  } catch (err) {
-    reasons.push(`could not read ${reportDir}/counterpart-review.skipped: ${err.message}`);
-    return { ok: false, reasons };
-  }
-  const skipReason = skippedContent.trim();
-  const classifiedSkip = /(?:unavailable|quota|auth(?:entication|orization)?|network|not[_ -]?required|not needed|no\s+(?:independent\s+)?review\s+evidence advantage|disproportionate)/i;
-  if (skipReason === "" || !classifiedSkip.test(skipReason)) {
-    reasons.push(
-      `${reportDir}/counterpart-review.skipped must contain an availability blocker or a risk decision explaining why review has no evidence advantage`
-    );
-    return { ok: false, reasons };
-  }
-
-  return { ok: true, reasons };
-}
-
 function main() {
   const repoPath = resolveRepoRoot(process.cwd());
   const reportDir = process.env.VERIFICATION_REPORT_DIR ?? "verification-report";
@@ -711,15 +656,6 @@ function main() {
   if (!acceptanceResult.ok) {
     console.error("ship-gate: product acceptance gate FAILED.");
     for (const reason of acceptanceResult.reasons) {
-      console.error(`ship-gate:   - ${reason}`);
-    }
-    process.exit(1);
-  }
-
-  const counterpartResult = validateCounterpartReviewEvidence(repoPath, reportDir);
-  if (!counterpartResult.ok) {
-    console.error("ship-gate: counterpart review evidence gate FAILED.");
-    for (const reason of counterpartResult.reasons) {
       console.error(`ship-gate:   - ${reason}`);
     }
     process.exit(1);

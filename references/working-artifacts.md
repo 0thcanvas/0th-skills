@@ -25,8 +25,9 @@ hardcoding a home path. Resolve the state root using the same order as Memory v2
 
 Use checkout-local `${VERIFICATION_REPORT_DIR:-verification-report}` for gate-consumed evidence.
 This is an explicit local-state exception: `/build`, `/ship`, and `ship-gate` read proof contracts,
-proof results, verifier briefs, structured reports, product acceptance, and counterpart-review
-evidence from `verification-report`, but those files are normally ignored and not committed.
+proof results, verifier briefs, structured reports, and product acceptance from
+`verification-report`, but those files are normally ignored and not committed. Optional review
+output may live there temporarily, but no review or skip artifact is required by the ship gate.
 
 Do not commit raw command captures, large live JSON dumps, screenshots, HARs, browser/CDP payloads,
 or test logs from `verification-report`. Summarize the result in the PR body, promote a compact

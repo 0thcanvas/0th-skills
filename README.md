@@ -127,12 +127,14 @@ what a child actually received.
 - For explicit read-only helper use, Claude can use its built-in `Explore` agent while Codex retains the `0th_explorer` compatibility profile
 - Claude retains `web-researcher` and Codex retains `0th_researcher` for explicit focused research packets; neither is a mandatory phase
 - Codex optional agent settings such as `mcp_servers` and `skills.config` inherit from the parent session when omitted, so `0th_explorer` and `0th_researcher` stay lightweight by default
-- Cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
+- Optional cross-model review is script-driven through `scripts/counterpart-companion.mjs` with pluggable drivers under `scripts/drivers/`
 - Codex-hosted counterpart review defaults to the `grok` driver, which uses Grok Build headless JSON mode. If `grok` is not on `PATH`, set `GROK_BIN` before invoking the companion process.
-- Grok Build can also be detected as the host for counterpart routing; Grok-hosted reviews default to Codex.
+- Grok Build can also be detected as the host. A configured `enabled_drivers` set prevents any
+  no-credit driver from being selected, including explicit overrides.
 - The review agent is `ask-counterpart-review.md`; `ask-codex-review.md` and `ask-claude-review.md` are deprecated shims
 - Cross-model review details in this section are the authoritative reference for bridge-helper behavior and state handling
-- On Codex-hosted runs, explicit requests for legacy Claude Code review should use the `ask-claude-review` bridge helper or `scripts/counterpart-companion.mjs --driver claude` rather than treating Claude as unavailable
+- Explicit driver requests still obey local availability; the companion fails before invocation
+  when the selected driver is not enabled.
 
 ### Agent types
 
@@ -163,7 +165,7 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 - Claude-side `agents/*.md` frontmatter uses unprefixed kebab names (`implementer`, `reviewer`, etc.). The Claude plugin loader supplies the `0th:` namespace at invocation time, so callers use `0th:implementer`, `0th:reviewer`, `0th:web-researcher`, and so on.
 - Codex-side manifests use underscored names without a namespace separator: `0th_implementer`, `0th_reviewer`, `0th_experience_reviewer`, `0th_test_runner`, `0th_explorer`, `0th_researcher`, `0th_verifier`, `0th_synthesizer`, `0th_deep_researcher`, `0th_experimenter` — this matches Codex's TOML identifier rules (no colons, no hyphens)
 - `0th:verifier` (Claude) / `0th_verifier` (Codex) — exercises completed features as a real user before /ship
-- `0th:experience-reviewer` (Claude) / `0th_experience_reviewer` (Codex) — reviews completed features through the Product Acceptance Loop before human review
+- `0th:experience-reviewer` (Claude) / `0th_experience_reviewer` (Codex) — optional fresh-context product review when it has a named evidence advantage
 - When adding a new subagent, create both manifests and keep the behavior sections in sync when the agent is truly shared. If a subagent is intentionally host-specific, note the asymmetry here
 - `tests/agent-parity.test.mjs` is the guardrail for the current mirror set and asymmetry list
 
@@ -220,6 +222,15 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### Unreleased
 
+- Made planning mechanics agent-owned: direct execution for one bounded loop, adaptive checkpoints
+  when evidence changes the next action, and formal plans only when prospective slices reduce
+  coordination risk. External effects keep separate authority and effect-contract checks.
+- Made review fully optional and advisory. Reviewer findings are hypotheses; no plan, build, or ship
+  gate requires review output or a skip explanation.
+- Removed mandatory counterpart-review artifacts from `ship-gate` while retaining executable proof
+  and product-acceptance evidence.
+- Fixed the Codex live-probe schema by declaring the explicit string type required by Structured
+  Outputs.
 - Separated production deployment from `/ship`; deployment follows the owning project's runbook and
   requires its own authority and evidence.
 - Routed durable note requests to Memory or the project KB unless a concrete incident makes `/retro`
@@ -392,6 +403,22 @@ The script auto-detects the host and loads the counterpart from `~/.0th/reviewer
 
 The defaults above are written only when the config file does not exist. Existing mappings remain
 operator-owned overrides.
+
+Current availability can be restricted without changing the portable skill:
+
+```json
+{
+  "version": 1,
+  "enabled_drivers": ["grok"],
+  "counterparts": {
+    "claude": "grok",
+    "codex": "grok"
+  }
+}
+```
+
+When a selected route or explicit `--driver` is outside `enabled_drivers`, the companion exits
+before launching it. It does not spend credit or manufacture a fallback reviewer.
 
 Override per-call with `--driver <name>` or per-session with `COUNTERPART_REVIEWER=<name>`.
 

@@ -26,11 +26,11 @@ const expectedMirrors = {
     codexFile: "0th-reviewer.toml",
     claudeFile: "reviewer.md",
     requiredFragments: [
-      "VERDICT: APPROVE | CONCERNS | REJECT",
-      "Scope: CONTAINED | CREEP",
-      "beyond the slice scope",
-      "Any unsafe secret handling?",
-      "Treat resolved secret values or revealing secret commands as BLOCKERs"
+      "optional reviewer",
+      "FINDINGS:",
+      "Findings are hypotheses, not commands",
+      "accept or reject each finding",
+      "unsafe secret handling"
     ]
   },
   "experience-reviewer": {
@@ -39,9 +39,9 @@ const expectedMirrors = {
     requiredFragments: [
       "Product Acceptance Loop",
       "decision record, plan acceptance criteria, explicit user brief, then repo standards",
-      "BLOCKER | POLISH | NIT | OUT_OF_SCOPE | BLOCKED_BY_SPEC",
-      "Max 3 product acceptance rounds",
       "verification-report/product-acceptance.json",
+      "Findings are hypotheses, not commands",
+      "evidence-linked findings",
       "human-sounding copy",
       "Name the visual invariant",
       "If the claim is visual, the evidence must be visual",

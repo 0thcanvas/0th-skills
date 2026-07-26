@@ -65,7 +65,10 @@ export function buildCodexExecArgs({
   cwd,
   outputSchemaPath,
   resultPath,
-  sandbox = "read-only"
+  sandbox = "read-only",
+  ignoreUserConfig = false,
+  ignoreRules = false,
+  isolateSkills = false
 } = {}) {
   requireString(launchPlan?.model, "launchPlan.model");
   requireString(launchPlan?.reasoning_effort, "launchPlan.reasoning_effort");
@@ -76,7 +79,7 @@ export function buildCodexExecArgs({
   if (launchPlan.selection_mode === "inherit") {
     throw new Error("inherit launch plans must use the native spawn path");
   }
-  return [
+  const args = [
     "exec",
     "--model", launchPlan.model,
     "-c", `model_reasoning_effort=${JSON.stringify(launchPlan.reasoning_effort)}`,
@@ -86,8 +89,18 @@ export function buildCodexExecArgs({
     "--cd", path.resolve(cwd),
     "--output-schema", path.resolve(outputSchemaPath),
     "--output-last-message", path.resolve(resultPath),
-    "-"
   ];
+  if (ignoreUserConfig) args.push("--ignore-user-config");
+  if (ignoreRules) args.push("--ignore-rules");
+  if (isolateSkills) {
+    args.push(
+      "--disable", "plugins",
+      "--disable", "memories",
+      "--skip-git-repo-check"
+    );
+  }
+  args.push("-");
+  return args;
 }
 
 function executeCodexRequest({
@@ -99,14 +112,28 @@ function executeCodexRequest({
   eventsPath,
   sandbox,
   codexBin,
-  env
+  env,
+  timeoutMs,
+  ignoreUserConfig,
+  ignoreRules,
+  isolateSkills
 }) {
-  const args = buildCodexExecArgs({ launchPlan, cwd, outputSchemaPath, resultPath, sandbox });
+  const args = buildCodexExecArgs({
+    launchPlan,
+    cwd,
+    outputSchemaPath,
+    resultPath,
+    sandbox,
+    ignoreUserConfig,
+    ignoreRules,
+    isolateSkills
+  });
   const result = spawnSync(codexBin, args, {
     input: prompt,
     encoding: "utf8",
     env,
-    maxBuffer: DEFAULT_MAX_BUFFER
+    maxBuffer: DEFAULT_MAX_BUFFER,
+    timeout: timeoutMs
   });
   if (result.error) throw new Error(`failed to start Codex worker: ${result.error.message}`);
   fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
@@ -135,7 +162,11 @@ export function runCodexExecWorker({
   sandbox = "read-only",
   codexBin = "codex",
   env = process.env,
-  now = new Date()
+  now = new Date(),
+  timeoutMs,
+  ignoreUserConfig = false,
+  ignoreRules = false,
+  isolateSkills = false
 } = {}) {
   if (launchPlan?.harness !== "codex") {
     throw new Error("Codex exec adapter requires a codex launch plan");
@@ -153,7 +184,11 @@ export function runCodexExecWorker({
     eventsPath,
     sandbox,
     codexBin,
-    env
+    env,
+    timeoutMs,
+    ignoreUserConfig,
+    ignoreRules,
+    isolateSkills
   });
   const observedAt = now instanceof Date ? now : new Date(now);
   if (!Number.isFinite(observedAt.getTime())) throw new Error("now must be a valid date");
@@ -228,7 +263,10 @@ export function probeCodexRouting({
         eventsPath: path.join(tempDir, "events.jsonl"),
         sandbox: "read-only",
         codexBin,
-        env
+        env,
+        ignoreUserConfig: true,
+        ignoreRules: true,
+        isolateSkills: true
       });
       profiles[computeClass] = {
         model: profile.model,

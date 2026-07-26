@@ -1,19 +1,20 @@
 ---
 name: build
-description: "Implements approved changes with proof-gated TDD. Use when building or fixing a known solution."
+description: "Implements requested changes with proof-gated TDD. Use when building or fixing a known solution."
 argument-hint: "[instruction or plan path]"
 ---
 
 # Build
 
-Apply `../../references/skills-kernel.md` once. This file owns only build-specific behavior.
+Apply `../../references/skills-kernel.md` once.
 
 ## Route
 
-- Enter for a requested implementation, approved decision, or build-ready plan.
+- Enter for a requested implementation, resolved decision, or build-ready plan.
 - Switch to `/think` for unresolved design and `/debug` for an unexpected failure.
-- External/live work requires an approved `/plan` acquisition/operations contract before
-  code/calls; else `CONTRACT_INVALIDATED`.
+- External/live work needs explicit authority and a bounded effect contract, not an approved
+  `/plan`. Infer known fields; ask only for missing authority or an outcome-level tradeoff, else
+  `CONTRACT_INVALIDATED`.
 - `$ARGUMENTS` is the instruction or plan path when invoked directly.
 - **Default: one root agent.** Only when delegation has a concrete advantage, read
   `../../references/delegation.md`; otherwise do not load its mechanics.
@@ -22,6 +23,9 @@ Apply `../../references/skills-kernel.md` once. This file owns only build-specif
 
 Infer a compact TaskSpec from the Kernel. New evidence that breaks it is `CONTRACT_INVALIDATED`;
 work outside it is `SCOPE_EXPANSION_REQUIRED`.
+
+The agent selects the least coordination artifact in
+`../../references/execution-policy.md`; only formal-plan mode routes to `/plan`.
 
 Select the proof tier from `../../references/proof-tiers.md`. Under `proof_contract_required`,
 ship-bound implementation work requires `verification-report/proof-contract.json` with
@@ -87,8 +91,8 @@ and a pixel assertion or screenshot assertion for coordinate-sensitive rendering
 
 For full-lane user-facing work, read `references/product-acceptance.md` and produce
 `verification-report/product-acceptance.json`. Mechanical/internal work records `NOT_REQUIRED` with
-a concrete rationale. Review is risk-triggered, not automatic.
-Use `ask-counterpart-review` only when another context has a named evidence advantage.
+a rationale. Review is optional. Use `ask-counterpart-review` only with evidence
+advantage. Findings are hypotheses; no review artifact is required.
 
 ## Closeout
 

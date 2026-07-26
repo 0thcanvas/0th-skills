@@ -1,25 +1,25 @@
 # Skills Kernel
 
-Skill files define domain behavior; this Kernel owns shared startup, authority, execution topology,
+Skill files own domain behavior; this Kernel owns startup, authority, execution topology,
 safety, context transfer, and closeout.
 
 ## Root-task preflight
 
-Run once per root task: infer 3–8 keywords and run
+Run once per root task: infer 3–8 keywords, then run
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
-Use its compact repo state, relevant claims and open loops, and pointers. Expand only an id or source
-that affects the task; read decision, plan, `CONTEXT.md`, or repo evidence only when pointed there.
-
-Do not generate or read the full global, project, or open-loop briefs by default. Use targeted
-`memory recall` when the packet exposes a gap; use full briefs only for explicit broad-state audits.
-
-Cache repo root, branch, HEAD, dirty state, packet paths, relevant loops, and `observed_at`. Nested
-phases reuse the receipt while task, repo, HEAD, and material tree state are unchanged. Refresh after
-HEAD/external mutation, a new root task, or evidence that makes it stale.
+Use compact repo state, claims, open loops, and pointers. Expand only task-relevant evidence; reserve
+full briefs for broad audits. Cache repo, HEAD, dirty state, packet, loops, and `observed_at`. Reuse
+the receipt until mutation, a new task, or stale evidence.
 
 ## TaskSpec and authority
 
 Write or infer a bounded TaskSpec: outcome, acceptance, non-goals, proof need, risk, and authority.
+Ask one focused question only when evidence leaves multiple plausible outcome-level intentions that
+materially change acceptance, authority, or irreversible effects. Multiple implementation paths for
+one outcome are not ambiguity.
+
+Technical choices are agent-owned unless they change outcomes, cost/risk, lasting constraints, or
+authority. Never ask whether to plan; choose the smallest artifact.
 
 - Inspection, explanation, review, diagnosis, and planning authorize reads, not implementation.
 - Build/fix requests authorize in-scope local edits and non-destructive checks.
@@ -27,10 +27,9 @@ Write or infer a bounded TaskSpec: outcome, acceptance, non-goals, proof need, r
   other side effects require explicit user or repo-workflow authority.
 - Merge approval is specific to the current PR; never inherit it from a general “ship” instruction.
 
-Stop with `BLOCKED_BY_SPEC` when the requested outcome cannot be judged. New evidence that breaks an
-accepted premise returns `CONTRACT_INVALIDATED`. Work outside the bounded outcome returns
-`SCOPE_EXPANSION_REQUIRED`. Missing required runtime proof returns `BLOCKED_REAL_ENV`; do not lower
-the proof tier to manufacture completion.
+Use `BLOCKED_BY_SPEC` when the outcome cannot be judged, `CONTRACT_INVALIDATED` when evidence breaks
+a premise, `SCOPE_EXPANSION_REQUIRED` outside scope, and `BLOCKED_REAL_ENV` when runtime proof is
+missing. Never lower proof to manufacture completion.
 
 ## Execution topology
 
@@ -54,10 +53,9 @@ states and source limitations.
 
 ## Context handoff
 
-When a task spans phases or large evidence, use `context_handoff` from `workflow-verification.md`:
-carry a bounded summary, source pointers, unresolved gaps, and next read targets. Keep raw source
-material, logs, screenshots, and experiments in their owning files instead of accumulating them in
-the root context.
+When a task spans phases or large evidence, use `context_handoff` from `workflow-verification.md`
+and the `ResultPacket` in `execution-policy.md`. Keep raw evidence in its owning files instead of
+accumulating it in the root context.
 
 ## Closeout
 
@@ -78,6 +76,7 @@ summarize and delete sensitive browser/session material as soon as it is unneces
 On-demand index, not a startup reading list. Load only when its triggering condition applies.
 
 - `model-routing.md`
+- `execution-policy.md`
 - `memory-contract.md`
 - `workflow-verification.md`
 - `specialist-routing.md`

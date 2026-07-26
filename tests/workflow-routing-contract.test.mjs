@@ -44,9 +44,10 @@ test("build defines a no-code operational lane for an existing revision", () => 
   assert.match(build, /build, signing, install, launch, and health evidence/is);
 });
 
-test("external acquisition requires an approved cost and authorization plan", () => {
+test("external acquisition separates effect authority from internal planning", () => {
   const plan = read("skills/plan/SKILL.md");
   const build = read("skills/build/SKILL.md");
+  const policy = read("references/execution-policy.md");
 
   assert.match(plan, /external API.*paid data.*webhook/is);
   assert.match(plan, /## Acquisition Contract/);
@@ -55,6 +56,9 @@ test("external acquisition requires an approved cost and authorization plan", ()
   assert.match(plan, /billing unit.*worst-case cost/is);
   assert.match(plan, /maximum live-probe budget.*stop condition/is);
   assert.match(plan, /Unknown pricing, authorization, or event semantics.*BLOCKED_BY_SPEC/is);
-  assert.match(build, /External\/live work requires an approved `\/plan`/);
+  assert.match(build, /External\/live work needs explicit authority and a bounded effect contract/is);
+  assert.match(build, /not an approved\s+`\/plan`/i);
+  assert.match(policy, /target, authority, cost\s+ceiling, reversibility, and stop condition/is);
+  assert.match(policy, /ask the user only for missing authority or an outcome-level tradeoff/i);
   assert.match(build, /CONTRACT_INVALIDATED/);
 });
