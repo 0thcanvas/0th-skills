@@ -5,7 +5,6 @@
     "category": "decision",
     "required_capabilities": ["event_capture", "lifecycle_state", "source_provenance"],
     "evidence_paths": [
-      "docs/decisions/2026-05-10-0th-memory-v2.md",
       "references/memory-contract.md"
     ]
   },
@@ -79,7 +78,7 @@
     "category": "recurring_mistake",
     "required_capabilities": ["incident_aggregation", "event_capture", "source_provenance"],
     "evidence_paths": [
-      "docs/decisions/2026-05-03-skill-incident-log.md",
+      "skills/retro/references/incident-contract.md",
       "skills/retro/SKILL.md"
     ]
   },
@@ -89,7 +88,7 @@
     "category": "recurring_mistake",
     "required_capabilities": ["failure_artifacts", "source_provenance"],
     "evidence_paths": [
-      "docs/decisions/2026-05-04-self-testing-failure-dossiers.md"
+      "scripts/failure-dossier-runner.mjs"
     ]
   },
   {
@@ -98,8 +97,8 @@
     "category": "decision",
     "required_capabilities": ["backend_decision", "source_provenance"],
     "evidence_paths": [
-      "docs/decisions/2026-05-10-memory-backend-eval.md",
-      "docs/evals/2026-05-10-memory-backend-baselines.json"
+      "references/memory-contract.md",
+      "fixtures/memory-eval/backend-baselines.json"
     ]
   },
   {
@@ -108,7 +107,7 @@
     "category": "decision",
     "required_capabilities": ["verbatim_retrieval", "source_provenance"],
     "evidence_paths": [
-      "docs/decisions/2026-05-10-memory-backend-eval.md"
+      "references/memory-contract.md"
     ]
   },
   {
@@ -218,7 +217,7 @@
     "category": "benchmark_alignment",
     "required_capabilities": ["benchmark_alignment", "executable_eval", "source_provenance"],
     "evidence_paths": [
-      "docs/evals/2026-05-11-memory-public-benchmarks.md",
+      "fixtures/memory-eval/backend-baselines.json",
       "scripts/memory-eval.mjs",
       "tests/memory-runtime-hardening.test.mjs"
     ]

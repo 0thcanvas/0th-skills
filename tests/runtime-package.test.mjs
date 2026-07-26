@@ -33,7 +33,7 @@ test("runtime package keeps executable plugin surfaces and omits repository-only
     "protocol/schemas/task-spec.schema.json",
     "agents/verifier.md",
     ".codex/agents/0th-verifier.toml",
-    "docs/decisions/2026-05-03-skill-incident-log.md"
+    "skills/retro/references/incident-contract.md"
   ]) {
     assert.equal(fs.existsSync(path.join(outputRoot, relative)), true, `${relative} should ship`);
   }
@@ -41,6 +41,7 @@ test("runtime package keeps executable plugin surfaces and omits repository-only
   for (const relative of [
     "tests",
     "verification-report",
+    "docs/decisions",
     "docs/evals",
     "docs/plans",
     "README.md",

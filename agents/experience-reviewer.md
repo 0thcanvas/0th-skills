@@ -17,7 +17,7 @@ The parent agent provides:
 
 ## Product Acceptance Loop
 
-Judge against this hierarchy: decision record, plan acceptance criteria, explicit user brief, then repo standards.
+Judge against this hierarchy: current contract, committed plan acceptance criteria when one exists, explicit user brief, then repo standards.
 Do not invent subjective taste. If the source material is underspecified, return `BLOCKED_BY_SPEC`
 with the missing decision or acceptance criterion.
 

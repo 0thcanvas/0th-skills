@@ -422,6 +422,47 @@ test("memory-maintain --apply is idempotent — a second run produces no actions
   assert.equal(afterFirst, afterSecond, "second apply must leave the JSONL byte-identical");
 });
 
+test("memory maintenance does not report removed evidence for superseded claims", () => {
+  const dir = tempDir();
+  const memoryFile = path.join(dir, "claims.jsonl");
+  write(memoryFile, {
+    id: "historical-decision",
+    type: "decision",
+    claim: "An older decision was compacted into the current contract.",
+    scope: "repo",
+    lifecycle_state: "superseded",
+    created_at: "2026-05-01T00:00:00.000Z",
+    last_confirmed_at: "2026-05-01T00:00:00.000Z",
+    confidence: "high",
+    evidence_path: "docs/decisions/removed.md",
+    superseded_by: ["current-contract"]
+  });
+  write(memoryFile, {
+    id: "current-contract",
+    type: "decision",
+    claim: "The current contract owns the surviving behavior.",
+    scope: "repo",
+    lifecycle_state: "active",
+    created_at: "2026-07-26T00:00:00.000Z",
+    last_confirmed_at: "2026-07-26T00:00:00.000Z",
+    confidence: "high",
+    evidence_path: "references/current.md",
+    supersedes: ["historical-decision"]
+  });
+  fs.mkdirSync(path.join(dir, "references"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "references", "current.md"), "# Current\n");
+
+  const result = runMemoryMaintain({
+    cwd: dir,
+    memoryFile,
+    taskFile: path.join(dir, "tasks.jsonl"),
+    evidenceFile: path.join(dir, "events.jsonl"),
+    includeGlobal: false
+  });
+
+  assert.deepEqual(result.findings.missing_sources, []);
+});
+
 test("memory-maintain emits a stderr marker when brief regeneration fails after apply", () => {
   const dir = tempDir();
   const memoryFile = path.join(dir, "claims.jsonl");

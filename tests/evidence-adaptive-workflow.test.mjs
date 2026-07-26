@@ -54,8 +54,5 @@ test("plan is reserved for coordination need rather than ordered files alone", (
   assert.match(build, /not an approved\s+`\/plan`/i);
   assert.match(codexPlan, /multi-session or high-risk coordination/i);
   assert.doesNotMatch(codexPlan, /work needs ordering/i);
-  assert.match(
-    read("docs/decisions/2026-07-16-plan-review-build-gate.md"),
-    /superseded.*2026-07-26/is
-  );
+  assert.doesNotMatch(plan, /independent plan-completeness review/i);
 });

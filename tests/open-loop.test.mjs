@@ -100,7 +100,7 @@ test("addOpenLoop writes a normalized runtime loop and regenerates the brief", (
         scope: "repo",
         priority: "P1",
         next_action: "Wire startup briefs into every core skill.",
-        evidence_path: "docs/plans/2026-05-10-0th-memory-v2.md",
+        evidence_path: "references/memory-contract.md",
         source_paths: ["skills/build/SKILL.md", "skills/build/SKILL.md"]
       }
     });
@@ -205,7 +205,7 @@ test("updateOpenLoopStatus blocks, closes, and drops existing loops without losi
       project: "0th-skills",
       priority: "P2",
       next_action: "Expose open loops in session startup.",
-      evidence_path: "docs/decisions/2026-05-10-0th-memory-v2.md"
+      evidence_path: "references/memory-contract.md"
     }
   });
 
@@ -237,7 +237,7 @@ test("updateOpenLoopStatus blocks, closes, and drops existing loops without losi
   [loop] = readJsonl(taskFile);
   assert.equal(loop.status, "done");
   assert.equal(loop.closed_at, "2026-05-11T00:00:00.000Z");
-  assert.equal(loop.evidence_path, "docs/decisions/2026-05-10-0th-memory-v2.md");
+  assert.equal(loop.evidence_path, "references/memory-contract.md");
 
   updateOpenLoopStatus({
     cwd: repo,

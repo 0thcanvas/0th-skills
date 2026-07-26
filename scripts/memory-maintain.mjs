@@ -297,7 +297,10 @@ function applyOwnerContextRepairs({ claims, repairs, actions }) {
 }
 
 function missingSourceCandidates(cwd, records) {
-  return sourceFindings(cwd, records).filter((entry) => !entry.relocated_path);
+  const currentRecords = records.filter(
+    (record) => !["archived", "superseded"].includes(record.lifecycle_state)
+  );
+  return sourceFindings(cwd, currentRecords).filter((entry) => !entry.relocated_path);
 }
 
 function relocationCandidates(cwd, records) {

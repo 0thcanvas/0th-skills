@@ -18,6 +18,7 @@ const EXCLUDED_EXACT = new Set([
 const EXCLUDED_TREES = [
   "tests",
   "verification-report",
+  "docs/decisions",
   "docs/evals",
   "docs/plans"
 ];

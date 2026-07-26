@@ -2,7 +2,7 @@
 - <what changed and why, 2-3 bullets>
 
 ## Decision
-<link to decision record if one exists>
+<link to the current contract or committed decision if one exists>
 
 ## Test Evidence
 - <test suite output summary: X passing, 0 failing>

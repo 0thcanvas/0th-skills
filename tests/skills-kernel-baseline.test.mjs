@@ -12,21 +12,6 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
-test("skills-kernel baseline records the pre-migration behavior and runtime boundary", () => {
-  const source = read("docs/evals/2026-07-09-skills-kernel-baseline.md");
-  for (const fragment of [
-    "368 passed, 0 failed",
-    "415 lines, 3,210 words",
-    "gpt-5.6-sol",
-    "Root reasoning effort: `xhigh`",
-    "Child model override exposed by the current delegation interface: no",
-    "Child effort override exposed by the current delegation interface: no",
-    "the correct default is one root agent"
-  ]) {
-    assert.ok(source.includes(fragment), `baseline should include ${JSON.stringify(fragment)}`);
-  }
-});
-
 test("skills-kernel corpus contains eight uniquely tagged task shapes", () => {
   const tasks = JSON.parse(read("tests/fixtures/skills-kernel/tasks.json"));
   assert.equal(tasks.length, 8);

@@ -4,7 +4,7 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 
 ## Skills
 
-- `think` — turn an idea into a short decision record
+- `think` — turn unresolved requirements or tradeoffs into an explicit decision
 - `plan` — break a decision into vertical slices
 - `build` — implement with TDD on a feature branch
 - `debug` — investigate root cause before fixing (includes a 10-way feedback-loop ladder)
@@ -18,14 +18,18 @@ Lightweight development workflow for solo builders using Codex, Antigravity, and
 
 ## Project Vocabulary (`CONTEXT.md`)
 
-When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tight glossary of canonical terms, *avoid* aliases, key relationships, and flagged ambiguities. The implementer and reviewer subagents re-derive vocabulary every time they spawn — `CONTEXT.md` collapses that overhead and keeps naming consistent across files, tests, and decision records.
+When a project accumulates domain jargon, keep a `CONTEXT.md` at its root: a tight glossary of canonical terms, *avoid* aliases, key relationships, and flagged ambiguities. The implementer and reviewer subagents re-derive vocabulary every time they spawn — `CONTEXT.md` collapses that overhead and keeps naming consistent across files, tests, and current contracts.
 
 - **Domain only.** Concepts unique to this project. General programming terms (timeouts, retries, error types) don't belong even if used heavily.
-- **Lazy creation.** Writes happen only at decision-capture time. `/think` writes in Step 4 (Decide) and `/improve-architecture` writes in Step 5 (Hand off), both alongside the decision record. Never mid-grill — design conversations don't silently mutate the repo.
+- **Lazy creation.** Writes happen only when domain language is actually resolved. `/think` and
+  `/improve-architecture` may update it alongside the smallest durable decision record. Never
+  mid-grill — design conversations don't silently mutate the repo.
 - **Format.** Bold term, one-line definition, `_Avoid_:` line listing rejected aliases. Group with `## Language`, `## Relationships`, `## Flagged ambiguities`.
 - **Multi-context repos.** Place `CONTEXT-MAP.md` at the root linking to per-context `CONTEXT.md` files inside each module. Most projects need only the single root file.
 
-`/think`, `/build`, `/debug`, `/improve-architecture`, and the implementer/reviewer subagents all read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both write only at decision-capture time.
+`/think`, `/build`, `/debug`, `/improve-architecture`, and the implementer/reviewer subagents all
+read `CONTEXT.md` when present. `/think` and `/improve-architecture` are the only writers, and both
+write only when the discussion resolves domain vocabulary.
 
 ## Knowledge Base
 
@@ -241,148 +245,6 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
   integrity verification, explicit activation, and rollback without publishing to the universal
   Plugin Directory.
 - Isolated counterpart failure-contract tests from the user's reviewer availability configuration.
-
-### 0.3.4
-
-- Added a Grok Build counterpart-review driver using verified headless JSON and session-resume CLI contracts.
-- Added Grok host detection and default routing: Claude→Codex, Codex→Grok, and Grok→Codex.
-- Kept Agy available as an explicit optional driver and preserved existing reviewer-config overrides.
-
-### 0.3.3
-
-- Migrated nine skills to one root-task kernel with single-root default execution, live
-  capability gating, bounded packets, explicit authority, and shared closeout.
-- Added a lightweight `build` lane for bounded non-ship T0/T1 changes; it keeps focused proof while
-  skipping gate artifacts that only ship-bound work consumes.
-- Made `deep-research` an explicitly budgeted expensive escalation and kept ordinary source-backed
-  work in `research` by default.
-- Removed the `zoom-out` micro-skill after a fresh-agent ablation found no quality advantage over a
-  direct code-mapping request.
-- Removed fixed host, model, effort, permanent-role, and mandatory-review choreography from shared
-  skills and Codex wrappers.
-- Made research, synthesis, experiments, verification, and counterpart review evidence-triggered;
-  routine work no longer spawns a fleet because a workflow phase exists.
-- Preserved proof tiers, stack minimums, secret safety, session-backed evidence, Memory v2, product
-  acceptance, PR-specific merge approval, and honest blocked outcomes.
-- Made browser identity exact: `Chrome` means the dedicated real Google Chrome profile, Brave is
-  personal unless explicitly requested, and managed test browsers remain hermetic-only fallbacks.
-- Added Browser Kit and Computer Use recovery paths for extension-loading, anti-bot, login, and
-  session-sensitive failures instead of treating an adapter failure as missing source evidence.
-- Reduced the estimated active Build startup context by about half through compact Memory startup,
-  deferred delegation mechanics, and a smaller shared Kernel and Build contract.
-- Added runtime-only plugin packaging so tests, evaluation artifacts, and authoring documentation do
-  not inflate the installed plugin cache.
-- Standardized project secret consumption on environment variables populated from an existing
-  mounted or ignored local environment, with 1Password references kept out of application code.
-- Added fresh-checkout CI as the authority for objective tests, made local test fixtures
-  self-contained, and hardened the local ship gate with commit binding and evidence-file checks.
-
-### 0.3.2
-
-- Added an `agy` counterpart-review driver for Antigravity CLI and made Codex-hosted review default to Agy instead of Claude Code.
-- Made Browser Kit the named managed wrapper around `bb-browser` across workspace, build, debug, verifier, and stack-minimum guidance.
-- Added explicit session-reuse and safety-overlay rules: check existing tabs before navigation, pass a tab to `browser_open`, and use `browser_tab_new` only for intentional fresh tabs.
-- Renamed the verifier escape-hatch stack id to `browser-kit-escape-hatch` while keeping `/ship` compatibility for older `bb-browser-escape-hatch` reports.
-
-### 0.3.1
-
-- Added the global Memory v2 runtime layer: project/global brain routing, source namespaces, source-pack ingestion, scoped recall, conflict surfacing, global maintenance, and no-Obsidian runtime evaluation.
-- Hardened Memory v2 review edges from counterpart feedback: source-aware recall degradation, structured preflight unreadable-state flags, stderr markers for degraded preflight and brief regeneration failures, path-aware JSON argument parse errors, and visible git fallback warnings.
-- Clarified Memory v2 contracts and prompts: evidence records require at least one source pointer, `memory remember` / `memory open-loop` are shorthand for full node commands, and repo-root `FEEDBACK.md` / `CLAUDE.md` references are named correctly.
-
-### 0.3.0
-
-- Added Memory v2 runtime hardening: a unified `scripts/memory.mjs` surface for recall, expand, write, preflight, repo-state, evidence, open-loop, maintenance, and runtime eval workflows.
-- Moved generated Memory v2 state toward agent-first local runtime files with evidence pointers, lifecycle metadata, generated startup briefs, first-class open loops, and explicit maintenance reports.
-- Hardened Memory v2 runtime safety with locked JSONL writes, stale/release-failed lock recovery, atomic brief/repo-state writes, repo drift reconciliation, shared redaction guards, and regression tests for concurrent writes, stale state, and secret-like inputs.
-- Added the Product Acceptance Loop to `/build`: completed features now produce `verification-report/product-acceptance.json`, run an experience reviewer for complex/UI/content-heavy work, move code/diff counterpart review into build evidence, and leave `/ship` as a lightweight evidence and PR hygiene gate.
-- Added visual invariant guardrails: frontend work must name what could visually fail and verify the claim with screenshot or pixel evidence instead of treating DOM tests as visual proof.
-- Added mirrored Claude/Codex `experience-reviewer` agents plus parity and workflow tests so product, UX, learner-fit, and copy-quality review stay available on both hosts.
-- Extended `scripts/ship-gate.mjs` to fail closed on missing, stale, or invalid product acceptance evidence and missing counterpart-review evidence before PR creation.
-
-### 0.2.4
-
-- Continued the self-testing loop after slice 1 with managed failure dossiers: `scripts/failure-dossier-runner.mjs` writes atomic per-run dossiers, Codex and Claude hook adapters surface matching dossiers into the next agent turn, and managed verification prompts now name the runner instead of relying on Bash `tool_response` parsing
-- Hardened `/ship`'s verifier gate for the hook blind spot: structured verifier reports now include `pre_dispatch_tool_failures_reviewed`, and `scripts/ship-gate.mjs` fails closed when expected stack evidence omits it
-- Added Codex-specific compact wrappers under `codex-skills/`, plus `scripts/build-codex-wrappers.mjs`, drift checks, and trigger/invoke budget guards so Codex avoids Claude-only frontmatter without inlining the full shared workflows
-- Added Codex manifest trust links, `docs/privacy.md`, `docs/terms.md`, and a repo `LICENSE` matching the MIT manifest claim
-- Updated Claude/Codex plugin metadata and docs for the current ten-skill surface, including `/retro`, architecture cleanup, and generated Codex wrappers
-- Kept `FEEDBACK.md` for the migration-overlap window; removal is now a later follow-up, not part of this release
-
-### 0.2.3
-
-- Added `/retro` — capture user corrections, agent misfires, and tool/skill issues into a persistent incident log under `${KB_ROOT}/learning/skill-incidents/<YYYY-MM-DD>-<slug>.md`. The skill enforces a four-stage authoring workflow (extract evidence → redact → classify → aggregate) with a flat 7-bucket classification taxonomy (`user-ambiguity | skill-issue | context-rot | tool-failure | model-limitation | verification-skipped | unknown`); `unknown` requires either `candidate_new_category:` or `insufficient_evidence:` to prevent junk-drawer drift. Manual capture only — no auto-hook
-- Added `scripts/retro-aggregator.mjs` — deterministic directory walk that grouped-counts incidents by `(classification × skill)`, `(classification)`, and `(tags)` per-distinct-value; surfaces buckets at ≥ 3 lifetime, annotates whether ≥ 3 entries fall within the last 30 days as a "recent cluster" (using each entry's frontmatter `date`, not the filename, with timezone-aware timestamps; `0 ≤ current_run_at − date ≤ 30 days`, inclusive); excludes the just-written entry from prior-entry links so reports stay retrospective. `related_skills` is informational only and does NOT fan out into bucket counts (regression test enforces this)
-- Added `FEEDBACK.example.md` as the seed template for the migration comparator. The committed repo-root `FEEDBACK.md` is kept in this release for the migration-overlap window; removal is a later follow-up once users have had a chance to migrate
-- Added `scripts/feedback-migrator.mjs` — shared idempotent comparator invoked from both `/retro` (Step 0) and the "process the skill feedback" flow. Rule: any non-empty line whose trimmed content is not present in `FEEDBACK.example.md` = non-template; missing destination is treated as empty; only the not-yet-copied lines are appended; re-runs converge to a no-op
-- Plumbing: `/retro` registered for both hosts via `skills/retro/agents/openai.yaml`; the repo-root `CLAUDE.md` skill table and routing, `README.md` skill list, `scripts/install-smoke-check.mjs` `expectedSkills`, and the metadata + routing parity tests all updated
-- Decision record: [`docs/decisions/2026-05-03-skill-incident-log.md`](https://github.com/0thcanvas/0th-skills/blob/main/docs/decisions/2026-05-03-skill-incident-log.md) (six rounds of cross-model review with Codex/gpt-5.5; both sides converged)
-
-### 0.2.2
-
-- Added the self-testing loop, slice 1: a workspace-shared `references/stack-minimums.md` matrix (electron-desktop, chrome-mv3-extension, web-app, cli, service, browser-kit-escape-hatch) plus the `stack_minimums_exercised` JSON evidence contract written to `${VERIFICATION_REPORT_DIR:-verification-report}/report.json`
-- Inserted a non-skippable Step 0 (Stack Minimum Detection) in both verifier hosts (`agents/verifier.md` and `.codex/agents/0th-verifier.toml`) — detects applicable stacks, selects the hermetic or real-environment proof lane, and refuses to honor brief language attempting to lower the floor
-- Wired `/build` to construct verifier briefs that name matched stack ids (no escape language) and `/ship` to invoke the new `scripts/ship-gate.mjs` before `gh pr create` — fail-closed on missing/malformed/empty/wrong-stack reports or non-PASS outcome. First non-LLM enforcement layer in 0th's flow
-- Added `references/browser-control-policy.md`: Playwright-managed browsers are limited to explicitly hermetic automation; real Google Chrome with profile `agent` is required for extensions, authentication, anti-bot behavior, real sessions, and user-environment proof, with Computer Use as the same-browser fallback
-- Added a teardown contract to verifier and implementer subagents — "whatever you spawn, you stop" — covering dev servers, Browser Kit tabs (`browser_close_all` only closes the current MCP session's tabs), containers/ports, temp dirs, and reconciling test data per the existing hygiene rule
-- gitignored `verification-report/` so verifier artifacts stay out of PR diffs
-- Extended `tests/agent-parity.test.mjs` to require the new Step 0 fragments and the teardown fragments in both hosts; added 16 new unit tests in `tests/ship-gate.test.mjs` covering stack detection and report validation
-
-### 0.2.1
-
-- Fixed Claude-side agent dispatch: every `agents/*.md` had `name: 0th:<agent>` in its frontmatter, but the Claude plugin loader prepends the plugin namespace (`0th:`) automatically, producing `0th:0th:<agent>` and breaking every skill dispatch. Stripped the redundant prefix from all 11 agent files; skill files and README dispatch references already used the correct `0th:<agent>` form. Codex side (`name = "0th_<agent>"`) was unaffected.
-- Added a provider-neutral secret-handling contract: agents see secret names and references only, never resolved values; application code reads from env vars or runtime bindings; secret managers (1Password / Doppler / Vault / cloud / `.env.local`) inject values only into the target process
-- Codified forbidden secret commands across all skills (`op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing `set -x` / `bash -x`, argv secrets, browser/CDP payloads); reviewer treats violations as BLOCKERs, verifier marks BLOCKED rather than printing
-- Added a Step-0 redaction pass to `ask-counterpart-review` so cross-model review prompts cannot leak secret-bearing context
-- Added a positive verification primitive (`[ -n "${VAR:-}" ] && echo set || echo missing`) with an explicit xtrace-off caveat — gives agents a safe alternative to `printenv` instead of just a "don't" list
-- Added secret-handling fragments to `tests/agent-parity.test.mjs` so future drift between Claude `.md` and Codex `.toml` mirrors of reviewer/verifier on secret rules is caught automatically
-
-### 0.2.0
-
-- Added the `improve-architecture` skill — find deepening opportunities using Module/Interface/Depth/Seam vocabulary and the deletion test; first-class core skill with full Codex parity (`agents/openai.yaml`, fixture entry, smoke-check coverage)
-- Added the `zoom-out` micro-skill — user-triggered map of an unfamiliar code area (intentionally `disable-model-invocation: true`, excluded from core-skill test enforcement)
-- Added the per-project `CONTEXT.md` vocabulary convention; wired reads into `/think`, `/build`, `/debug`, `/improve-architecture`, `/zoom-out`, and the implementer/reviewer subagents on both Claude and Codex sides; writes happen only at decision-capture time — `/think` Step 4 (Decide) and `/improve-architecture` Step 5 (Hand off), both alongside the decision record
-- Added Phase 0 (Build a feedback loop) to `/debug` with a 10-way ranked ladder (failing test → curl → CLI → headless browser → trace replay → throwaway harness → fuzz → bisection → differential → HITL) plus iterate-on-the-loop guidance; new Iron Law: no hypotheses without a feedback loop
-- Added a Surgical Changes rail to `/build` and the implementer agents on both hosts — every changed line traces to the slice spec; reviewer flags drive-by edits as scope creep
-- Added a `Durable: yes` durability tag to decision records in `/think` Step 4 (criteria: hard to reverse, surprising without context, real trade-off) so `/improve-architecture` doesn't re-litigate settled choices
-- Added `/think` guidance to dispatch `/research` when evidence for a recommendation is thin, rather than reasoning from pattern-matching
-- Surfaces PRs #4 (companion process-title fix) and #5 (Browser Kit as the managed verifier escape hatch on both hosts)
-
-### 0.1.9
-
-- Added the `deep-research` skill with feasibility, decision, and survey loops backed by `KB_ROOT`
-- Added mirrored Codex manifests for `synthesizer`, `deep-researcher`, and `experimenter`
-- Added deep-research templates, references, routing coverage, and packaging metadata
-
-### 0.1.8
-
-- Replaced the separate Claude and Codex companion scripts with a single `scripts/counterpart-companion.mjs` runtime plus dedicated `claude` and `codex` drivers
-- Added the generic `ask-counterpart-review` agent while keeping `ask-claude-review` and `ask-codex-review` as deprecated compatibility shims
-- Reduced counterpart review support to the shipped Claude/Codex pairing and removed unsupported reviewer paths from the runtime, docs, and tests
-
-### 0.1.7
-
-- Added a repo-local knowledge base protocol in `PROTOCOL.md` so KB-aware skills can follow a markdown-first workflow without assuming Obsidian
-- Documented KB behavior in `CLAUDE.md` and `README.md`
-- Made `KB_ROOT` the canonical KB path contract, with a one-time prompt only when no KB root is configured
-
-### 0.1.6
-
-- Added `references/` support files for `build`, `debug`, and `research` so the skill entrypoints can stay focused while deeper checklists and patterns remain available on demand
-- Moved companion review state defaults to a stable user state location instead of the plugin repo, with `OTH_SKILLS_STATE_DIR` and `--state-dir` overrides
-- Added workflow templates for decision records, KB raw findings, and PR bodies
-- Added skill-routing eval fixtures plus metadata tests for reference links
-- Added `scripts/install-smoke-check.mjs` for repo/install verification during release and reinstall checks
-- Added explicit build/plan guidance plus slice-checklist callouts for missing service or deployment boundaries when heavy local ML/runtime dependencies are introduced
-
-### 0.1.5
-
-- Added explicit Codex native agent config and project-level `.codex/config.toml`
-- Added host-native Codex `explorer` and `researcher` agents
-- Clarified that Claude uses built-in `Explore` and that `ask-claude-review` / `ask-codex-review` are bridge helpers
-- Hardened `claude-companion.mjs` with timeout handling and explicit plugin-dir control
-- Added cross-host skill metadata: Claude `argument-hint` plus Codex `agents/openai.yaml`
-- Added parity and metadata tests so agent and skill configuration drift is caught automatically
 
 ## Counterpart Review
 

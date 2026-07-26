@@ -2,7 +2,9 @@
 
 Product acceptance is required for complex, multi-slice, UI, content-heavy, onboarding, learning, or other user-facing work. Mechanical internal changes may record `required: false` with a concrete rationale.
 
-Write `verification-report/product-acceptance.json`. Judge against the decision record, plan acceptance criteria, explicit user brief, then repo standards. If those sources cannot judge subjective quality, return `BLOCKED_BY_SPEC`.
+Write `verification-report/product-acceptance.json`. Judge against the current contract, committed
+plan acceptance criteria when one exists, explicit user brief, then repo standards. If those sources
+cannot judge subjective quality, return `BLOCKED_BY_SPEC`.
 
 For required acceptance, inspect user-facing evidence such as screenshots, browser notes, terminal
 output, or live-flow results. A diff alone cannot prove product quality. Iterate only while new
@@ -24,12 +26,12 @@ Required report shape:
   "required": true,
   "required_rationale": "<why acceptance is required>",
   "source": {
-    "decision": "docs/decisions/...",
-    "plan": "docs/plans/...",
+    "decision": "<current-contract-or-committed-decision-path>",
+    "plan": "<temporary-or-committed-plan-path-if-one-exists>",
     "user_brief": "<summary>"
   },
   "judgment_hierarchy": [
-    "decision_record",
+    "current_contract",
     "plan_acceptance_criteria",
     "explicit_user_brief",
     "repo_standards"

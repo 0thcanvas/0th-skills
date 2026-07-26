@@ -10,8 +10,8 @@
     ],
     "evidence_paths": [
       "PROTOCOL.md",
-      "docs/decisions/2026-05-03-skill-incident-log.md",
-      "docs/decisions/2026-05-04-self-testing-failure-dossiers.md"
+      "skills/retro/references/incident-contract.md",
+      "scripts/failure-dossier-runner.mjs"
     ],
     "notes": "The existing KB is durable and readable, but recall depends on an agent manually deciding what markdown to inspect. It has weak workflow triggers, no repo freshness gate, and no generated brief."
   },
@@ -86,7 +86,7 @@
       "scripts/session-preflight.mjs",
       "scripts/open-loop.mjs",
       "tests/memory-runtime-hardening.test.mjs",
-      "docs/evals/2026-05-11-memory-public-benchmarks.md"
+      "references/memory-contract.md"
     ],
     "notes": "This is the hardened local runtime direction: one agent-facing command, locked writes, local evidence records, compact recall/expand, out-of-band repo drift reconciliation, maintenance reports, open-loop audit history, and public benchmark mapping."
   },
@@ -101,7 +101,7 @@
     ],
     "evidence_paths": [
       "https://github.com/garrytan/gbrain",
-      "docs/decisions/2026-05-10-0th-memory-v2.md"
+      "references/memory-contract.md"
     ],
     "notes": "This is represented as a research-backed pattern, not a locally executed backend. Its task lifecycle maps well to 0th open loops, but it does not by itself cover repo preflight, stale claim sync, read-set reconciliation, or canonical memory writes."
   },
@@ -117,7 +117,7 @@
     ],
     "evidence_paths": [
       "https://github.com/mempalace/mempalace",
-      "docs/decisions/2026-05-10-0th-memory-v2.md"
+      "references/memory-contract.md"
     ],
     "notes": "This is represented as a research-backed pattern, not a locally executed backend. It may improve high-volume verbatim recall, but does not by itself solve repo preflight, stale claim lifecycle, or read-set reconciliation."
   },
@@ -135,7 +135,7 @@
     ],
     "evidence_paths": [
       "https://github.com/rohitg00/agentmemory",
-      "docs/decisions/2026-05-10-0th-memory-v2.md"
+      "references/memory-contract.md"
     ],
     "notes": "This is represented as a research-backed pattern, not a locally executed backend. Its lifecycle/profile behavior maps well to 0th memory, but adoption still needs proof that it integrates cleanly with git preflight and stale repo-claim handling."
   }

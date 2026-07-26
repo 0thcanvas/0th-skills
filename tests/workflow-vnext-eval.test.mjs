@@ -398,16 +398,13 @@ test("promoted manifest stays bound to current protocol, schemas, adapters, fixt
   const protocol = loadProtocol(protocolPath);
   const manifest = JSON.parse(
     fs.readFileSync(
-      path.join(repoRoot, "docs", "evals", "2026-07-26-workflow-vnext-manifest.json"),
+      path.join(fixtureRoot, "manifest.json"),
       "utf8"
     )
   );
   const hashes = manifest.content_hashes;
   const fileHashes = {
     protocol: canonicalHash(fs.readFileSync(protocolPath)),
-    plan: canonicalHash(
-      fs.readFileSync(path.join(repoRoot, "docs", "plans", "2026-07-26-workflow-vnext-evaluation.md"))
-    ),
     scorer: canonicalHash(fs.readFileSync(path.join(repoRoot, "scripts", "workflow-vnext-eval.mjs"))),
     codex_adapter: canonicalHash(fs.readFileSync(path.join(repoRoot, "scripts", "codex-exec-adapter.mjs"))),
     claude_adapter: canonicalHash(fs.readFileSync(path.join(repoRoot, "scripts", "claude-print-adapter.mjs")))

@@ -36,7 +36,7 @@ test("memory brief summarizes key memory categories with cited evidence", () => 
       type: "decision",
       claim: "Use write-through memory events instead of session-end hooks.",
       lifecycle_state: "active",
-      evidence_path: "docs/decisions/2026-05-10-0th-memory-v2.md"
+      evidence_path: "references/memory-contract.md"
     },
     {
       id: "vocab-1",
@@ -75,7 +75,7 @@ test("memory brief summarizes key memory categories with cited evidence", () => 
   assert.match(brief, /## Recurring Incidents[\s\S]*skip KB writes/);
   assert.match(brief, /## Known Root Causes[\s\S]*Cart banner drift/);
   assert.match(brief, /## Repo State Warnings[\s\S]*needs re-verification/);
-  assert.match(brief, /source: docs\/decisions\/2026-05-10-0th-memory-v2.md/);
+  assert.match(brief, /source: references\/memory-contract.md/);
   assert.match(brief, /source: references\/memory-contract.md/);
 });
 

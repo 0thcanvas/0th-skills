@@ -4,7 +4,6 @@
   "control_revision": "f8627faa40f597c273b40977dc37c5635be121e4",
   "content_hashes": {
     "protocol": "c42f371fa781be9f11d17a3ce6d8e35e9cafb649454001726a06f92e77ae85bd",
-    "plan": "f30ab70f59a77207f304b433caec709fc1fd23cf246317237df590d06c466bb4",
     "scorer": "44d63dbb8538f2c00abee33c84a01a499c8b6bff46de533850db370e2b87becb",
     "codex_adapter": "7b579131a9cc83630abbd50d42555847698c59dc866334f89172b387e73a493c",
     "claude_adapter": "b4e212f881302591cfd279be5ea6eca2cbad4bbe0a52870aea640cd102db72b7",
