@@ -7,10 +7,9 @@ safety, context transfer, and closeout.
 
 Run once per root task: infer 3–8 keywords, then run
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
-Use the compact repo state, relevant claims and open loops, and pointers. Expand only evidence that affects the
-task. Do not generate or read the full briefs by default; use them only for broad-state audits. Cache repo, HEAD, dirty state, packet,
-loops, and `observed_at`. Nested phases reuse the receipt until refresh after mutation, a new task,
-or stale evidence.
+Use compact repo state, claims, open loops, and pointers. Expand only task-relevant evidence; reserve
+full briefs for broad audits. Cache repo, HEAD, dirty state, packet, loops, and `observed_at`. Reuse
+the receipt until mutation, a new task, or stale evidence.
 
 ## TaskSpec and authority
 
@@ -19,16 +18,18 @@ Ask one focused question only when evidence leaves multiple plausible outcome-le
 materially change acceptance, authority, or irreversible effects. Multiple implementation paths for
 one outcome are not ambiguity.
 
+Technical choices are agent-owned unless they change outcomes, cost/risk, lasting constraints, or
+authority. Never ask whether to plan; choose the smallest artifact.
+
 - Inspection, explanation, review, diagnosis, and planning authorize reads, not implementation.
 - Build/fix requests authorize in-scope local edits and non-destructive checks.
 - External writes, destructive actions, publishing, pushing, PR creation, messages, payments, and
   other side effects require explicit user or repo-workflow authority.
 - Merge approval is specific to the current PR; never inherit it from a general “ship” instruction.
 
-Stop with `BLOCKED_BY_SPEC` when the requested outcome cannot be judged. New evidence that breaks an
-accepted premise returns `CONTRACT_INVALIDATED`. Work outside the bounded outcome returns
-`SCOPE_EXPANSION_REQUIRED`. Missing required runtime proof returns `BLOCKED_REAL_ENV`; do not lower
-the proof tier to manufacture completion.
+Use `BLOCKED_BY_SPEC` when the outcome cannot be judged, `CONTRACT_INVALIDATED` when evidence breaks
+a premise, `SCOPE_EXPANSION_REQUIRED` outside scope, and `BLOCKED_REAL_ENV` when runtime proof is
+missing. Never lower proof to manufacture completion.
 
 ## Execution topology
 

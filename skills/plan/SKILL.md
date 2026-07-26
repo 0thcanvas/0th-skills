@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Converts an approved outcome into verifiable vertical slices. Use when work needs multi-session coordination, irreversible or live effects, an external acquisition contract, material cross-slice architecture, or an explicit plan."
+description: "Converts a resolved outcome into verifiable vertical slices. Use when a plan is requested as the deliverable or the agent selects formal coordination."
 argument-hint: "[decision record path or scope]"
 ---
 
@@ -11,25 +11,28 @@ root-task preflight, authority, optional delegation, safety, and closeout.
 
 ## Enter / skip
 
-- Enter when the user requests a plan, work spans sessions, or
+- Enter when a plan is requested as the deliverable or
   `../../references/execution-policy.md` selects formal planning.
-- Enter before implementation whenever the work introduces or changes an external API, paid data
-  source, webhook/stream, third-party authorization flow, destructive migration, or live
-  operational effect. This gate applies even when the code change appears bounded.
+- Do not ask the user whether a plan is needed. The agent owns that internal coordination choice.
+- External/live or irreversible work is a risk signal, not an automatic plan trigger. It still
+  requires the authority and effect contract defined by the execution policy.
 - Skip to `/build` when one bounded implementation loop is sufficient.
 - Ordered multi-file or debugging work alone is not a plan trigger; `/build` may use an adaptive
   checkpoint while evidence evolves.
 - `$ARGUMENTS` is the decision record or requested scope when invoked directly.
 
-This workflow plans only. It does not implement slices.
+This workflow produces the plan artifact; it does not implement slices. If implementation was
+already requested, continue to `/build` without asking the user to approve internal planning
+mechanics.
 
 ## Process
 
-1. Load the approved decision or direct instruction and every declared dependency. If a material
+1. Load the resolved decision or direct instruction and every declared dependency. If a material
    product or architecture question remains unresolved, return `BLOCKED_BY_SPEC` or `/think`.
 2. Capture 3–5 cross-slice decisions: data shape, key interfaces, authority boundary, proof tier,
    deployment/runtime boundary, and any irreversible migration.
-3. When any external data or API is involved, add an **Acquisition Contract** before slicing:
+3. When a formal plan covers an external API, paid data source, webhook/stream, or other external
+   acquisition, add an **Acquisition Contract** before slicing:
    - exact product and endpoint or event name;
    - push, stream, polling, or snapshot semantics;
    - whose data can be accessed and what OAuth/consent is required;
@@ -48,7 +51,7 @@ This workflow plans only. It does not implement slices.
    and required screenshot evidence, screenshot assertion, or pixel assertion.
 7. For specialist work, name the capability boundary, handoff envelope, return receipt, and native
    fallback. Never plan a plugin’s internal workflow.
-8. Save the approved checklist to `docs/plans/YYYY-MM-DD-<topic>.md`.
+8. Save the checklist to `docs/plans/YYYY-MM-DD-<topic>.md`.
 
 Plan shape:
 
@@ -76,8 +79,9 @@ Keep each slice to 2–5 lines. File-by-file edit instructions belong to impleme
 Use `ask-counterpart-review` only when ordering, migration risk, or missing coverage gives a reviewer
 a concrete evidence advantage. Treat findings as hypotheses and accept them only when the request,
 decision evidence, or a reproducible constraint supports them. An unavailable or skipped reviewer
-does not block the plan. The user may approve, reorder, or narrow the slices. Then hand off to
-`/build` with the plan path.
+does not block the plan. The user may reorder or narrow a user-facing plan, but do not insert an
+approval pause for an internal plan when implementation already has authority. Hand off to `/build`
+with the plan path.
 
 ## References
 

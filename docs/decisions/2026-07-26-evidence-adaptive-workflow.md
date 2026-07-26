@@ -3,9 +3,14 @@
 **Status:** release candidate — merge and installed-runtime refresh pending
 
 ## Decision
-Use the least coordination artifact justified by task evidence: direct execution for one bounded
-loop, an adaptive checkpoint for ordered/debug work whose next action changes with evidence, and a
-formal plan for multi-session, irreversible, external/live, or explicitly requested coordination.
+The agent selects the least coordination artifact justified by task evidence: direct execution for
+one bounded loop, an adaptive checkpoint when evidence changes the next action, and a formal plan
+only when prospective slices materially reduce coordination risk. The agent does not ask the user
+whether to plan.
+
+External/live and irreversible effects require authority and a bounded effect contract, but do not
+automatically require a formal plan. A request for a plan means the plan is the deliverable; it does
+not make approval of internal planning mechanics a prerequisite for authorized implementation.
 File count and multiple implementation approaches alone do not trigger planning.
 
 Clarify intent only when multiple plausible outcome-level readings materially change acceptance,

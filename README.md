@@ -220,9 +220,9 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ### Unreleased
 
-- Made planning evidence-adaptive: direct execution for one bounded loop, adaptive checkpoints when
-  evidence changes the next action, and formal plans for multi-session, irreversible, external/live,
-  or explicitly requested coordination.
+- Made planning mechanics agent-owned: direct execution for one bounded loop, adaptive checkpoints
+  when evidence changes the next action, and formal plans only when prospective slices reduce
+  coordination risk. External effects keep separate authority and effect-contract checks.
 - Made review fully optional and advisory. Reviewer findings are hypotheses; no plan, build, or ship
   gate requires review output or a skip explanation.
 - Removed mandatory counterpart-review artifacts from `ship-gate` while retaining executable proof

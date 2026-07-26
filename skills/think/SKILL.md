@@ -23,8 +23,9 @@ vocabulary update. **Do not implement**, scaffold, or make product changes durin
 1. State the decision, uncertainty, constraints, non-goals, and what would make it resolved.
 2. Read the relevant decision records, project evidence, `CONTEXT.md`, and owning code paths. Answer
    discoverable questions from evidence instead of asking the user.
-3. Ask one consequential question at a time only when the answer changes the decision. Give a
-   recommendation with the question.
+3. Resolve technical implementation choices from evidence. Ask one consequential question at a
+   time only for a user-owned outcome, authority boundary, lasting constraint, or material cost/risk
+   tradeoff. Give a recommendation with the question.
 4. Compare 2–3 credible approaches. Lead with the recommendation and its decisive tradeoff. When
    external evidence is missing, route to `/research` instead of filling the gap with plausibility.
 5. For hard independent analysis, use an optional bounded packet only when the capability gate in
@@ -43,10 +44,11 @@ result of a real tradeoff. Otherwise future work may revisit it normally.
 
 `ask-counterpart-review` is risk-triggered, not automatic. Use it only when a fresh context or
 distinct model has a named evidence advantage for a material uncertainty. Review findings are
-hypotheses; accept only those supported by the decision evidence or a new check. The user owns the
-final decision.
+hypotheses; accept only those supported by the decision evidence or a new check. The user owns
+product direction and authority; the agent owns internal workflow mechanics.
 
-Hand off to `/plan` when work needs multiple ordered slices, otherwise `/build`.
+Let `../../references/execution-policy.md` select the internal coordination artifact. Hand off to
+`/plan` only for formal-plan mode; otherwise continue to `/build`.
 
 ## References
 
