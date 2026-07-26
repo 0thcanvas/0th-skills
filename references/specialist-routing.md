@@ -122,23 +122,15 @@ unless the app or preview actually ran and returned real app launch or rendered 
 ### `logged_in_browser_access`
 
 Use this capability when verification or investigation depends on the user's authenticated browser
-state, browser extension context, private dashboard, shared tab, or current browser session. Browser
-Kit is the preferred managed adapter for bb-browser-backed Chrome sessions when available; bb-browser
-or other host browser automation may be used when Browser Kit is unavailable or the task requires
-arbitrary page state inspection. Apply `references/browser-control-policy.md`: browser names are
-exact identities, agent-driven Chrome uses real Google Chrome with profile `agent`, and Brave is
-eligible only when explicitly requested.
+state, browser extension context, private dashboard, shared tab, or current browser session. Resolve
+`logged_in_browser` from the active runtime profile and load its provider guidance. Apply
+`references/browser-control-policy.md`; the required application, profile, account, and session are
+exact proof inputs.
 
-Adapter failures are part of the receipt, not proof about the page. If Browser Kit or bb-browser is
-unavailable because the daemon, MCP registration, provider launch, or session attach failed, attempt
-one documented recovery path when safe before falling back. If recovery still fails, record
-`adapter_unavailable`, the exact command or error, and the next available session-backed path tried.
-For a required real-Chrome UI action, Computer Use targets Google Chrome as the same-browser fallback;
-Chrome for Testing, managed Chromium, Brave, and the in-app browser are not silent substitutes.
-If the blocker is a local port collision with OpenCLI Browser Bridge or another tool on
-`localhost:19825`, prefer moving Browser Kit with `--cdp-port <port> --daemon-port <port>` or
-`BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`; do not kill the other session unless the user
-asked for that specific cleanup.
+Adapter failures are part of the receipt, not proof about the page. Attempt one safe recovery from
+the resolved provider guidance. If it still fails, record `adapter_unavailable`, the exact command
+or error, and the next available session-backed capability tried. Resolve `browser_ui_fallback`
+only for a required UI action, and never substitute an identity that does not satisfy the TaskSpec.
 
 Expected receipt evidence:
 - Session source, adapter, and whether an existing current browser session was reused
@@ -154,13 +146,9 @@ a substitute; record `adapter_unavailable`, partial evidence, or `BLOCKED_REAL_E
 ### `session_backed_reading`
 
 Use this capability when research needs user-visible content from login-gated or adapter-backed
-surfaces. OpenCLI is the preferred read path when an adapter command exists. Browser Kit, bb-browser,
-or browser automation are fallback/debug paths when the adapter is missing, pagination or metadata is
-ambiguous, or arbitrary page state must be inspected.
-
-OpenCLI and Browser Kit can coexist if Browser Kit is moved off OpenCLI Browser Bridge's fixed
-`localhost:19825`; use Browser Kit's CDP/daemon port flags or env vars and include the chosen ports
-in the session-backed read receipt when they matter to reproduction.
+surfaces. Resolve `session_backed_reading` first; use `logged_in_browser` when arbitrary page state,
+challenge diagnosis, or current-tab inspection is required. Load the selected provider guidance and
+include any coexistence or isolation settings in the receipt when they matter to reproduction.
 
 Generic fetch/search blockers are access signals. A challenge page, CAPTCHA, verification page,
 403/429, login wall, or bot-block page should be recorded as `challenge_or_session_blocked` and

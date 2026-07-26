@@ -1,7 +1,6 @@
 ---
 name: improve-architecture
 description: "Finds high-leverage module deepening opportunities without changing code. Use when a codebase feels tangled, shallow, duplicated, or hard to test through stable interfaces."
-argument-hint: "[area to focus on, optional]"
 ---
 
 # Improve Architecture

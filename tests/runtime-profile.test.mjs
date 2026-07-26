@@ -17,10 +17,27 @@ test("runtime profile schema and portable templates exist", () => {
   for (const relativePath of [
     "protocol/schemas/runtime-profile.schema.json",
     "adapters/templates/runtime-profiles/minimal.json",
+    "adapters/templates/runtime-profiles/mcp-workers.json",
     "adapters/templates/runtime-profiles/personal.json",
     "adapters/templates/runtime-profiles/pi.json"
   ]) {
     assert.equal(fs.existsSync(path.join(repoRoot, relativePath)), true, `${relativePath} should exist`);
+  }
+});
+
+test("bundled runtime-profile guidance resolves inside the package", () => {
+  const templatesRoot = path.join(repoRoot, "adapters/templates/runtime-profiles");
+  for (const file of fs.readdirSync(templatesRoot).filter((name) => name.endsWith(".json"))) {
+    const profile = loadRuntimeProfile({ profilePath: path.join(templatesRoot, file) });
+    for (const [capability, binding] of Object.entries(profile.capabilities)) {
+      for (const guidance of binding.guidance) {
+        assert.equal(
+          fs.existsSync(path.join(repoRoot, guidance)),
+          true,
+          `${file}:${capability} guidance should resolve: ${guidance}`
+        );
+      }
+    }
   }
 });
 
@@ -61,8 +78,38 @@ test("personal providers are selectable configuration but never execution author
   assert.equal(resolved.configured, true);
   assert.equal(resolved.binding.provider, "onepassword");
   assert.equal(resolved.binding.invocation, "local");
+  assert.deepEqual(resolved.binding.guidance, ["adapters/providers/onepassword.md"]);
   assert.equal(resolved.authorizes_execution, false);
   assert.equal(resolved.reason, "configuration_requires_live_capability_evidence");
+});
+
+test("MCP worker topology exposes an optional versioned knowledge provider", () => {
+  const profile = loadRuntimeProfile({
+    profilePath: path.join(repoRoot, "adapters/templates/runtime-profiles/mcp-workers.json")
+  });
+  const resolved = resolveRuntimeCapability({ profile, capability: "knowledge_provider" });
+
+  assert.equal(profile.topology.mode, "coordinator-workers");
+  assert.equal(resolved.configured, true);
+  assert.equal(resolved.binding.invocation, "delegated");
+  assert.equal(resolved.binding.worker, "project-knowledge");
+  assert.equal(resolved.binding.required, false);
+  assert.deepEqual(resolved.binding.guidance, ["references/knowledge-provider.md"]);
+  assert.equal(resolved.authorizes_execution, false);
+});
+
+test("MCP worker topology separates project discovery from cached code navigation", () => {
+  const profile = loadRuntimeProfile({
+    profilePath: path.join(repoRoot, "adapters/templates/runtime-profiles/mcp-workers.json")
+  });
+  const registry = resolveRuntimeCapability({ profile, capability: "project_registry" });
+  const knowledge = resolveRuntimeCapability({ profile, capability: "knowledge_provider" });
+
+  assert.equal(registry.configured, true);
+  assert.equal(registry.binding.result_contract, "versioned-project-registry-receipt");
+  assert.deepEqual(registry.binding.guidance, ["references/project-registry.md"]);
+  assert.equal(knowledge.binding.result_contract, "versioned-knowledge-receipt");
+  assert.notEqual(registry.binding.result_contract, knowledge.binding.result_contract);
 });
 
 test("runtime profiles reject unknown fields and unsafe implied authority", () => {
@@ -98,6 +145,7 @@ test("runtime profiles reject unknown fields and unsafe implied authority", () =
           effects: ["secret-use"],
           workspace: "host-managed",
           result_contract: "sanitized-receipt",
+          guidance: [],
           required: false,
           authorizes_execution: true
         }

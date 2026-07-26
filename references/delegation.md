@@ -18,13 +18,16 @@ Evaluate the packet through:
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" capabilities \
   --harness <runtime-harness> \
   --runtime-json <observed-capabilities.json> \
-  --packet-json <capability-packet.json>
+  --packet-json <capability-packet.json> \
+  --profile-json <runtime-profile.json>
 ```
 
-Delegate only when it returns `allowed: true`. Documentation, requested profile names, or assumed
-model/effort settings are not runtime evidence. Ordered work, stale observations, missing isolation,
-unsupported overrides, or disproportionate inherited effort stay single-root. Do not create a
-reviewer, verifier, researcher, or fleet merely because a workflow phase has that name.
+Delegate only when it returns `allowed: true`. The runtime profile constrains topology, worker
+budget, isolation, side effects, and optional named capabilities; it never expands authority.
+Documentation, requested profile names, or assumed selectors are not runtime evidence. Ordered work,
+stale observations, missing isolation, unsupported overrides, or disproportionate inherited effort
+stay single-root. Do not create a reviewer, verifier, researcher, or fleet merely because a
+workflow phase has that name.
 
 Portable packets use `compute_class: auto|economy|balanced|frontier|inherit`; they never contain a
 model name. Discovery, extraction, test execution, and log condensation default to economy; bounded
@@ -37,13 +40,14 @@ overrides local configuration, which overrides the bundled fallback.
 
 Use `scripts/0th.mjs routing init --harness <name>` to create a local template without overwriting an
 existing file. Use `routing doctor` with live runtime evidence before relying on a concrete route.
-On Codex, `routing doctor --harness codex --live-probe` creates version-, configuration-, and
-freshness-bound evidence; it consumes provider tokens and is never implicit. Model and effort
-overrides plus the exact observed pair must all pass.
+When a registered adapter supports it, `routing doctor --harness <name> --live-probe` creates
+version-, configuration-, and freshness-bound evidence; it consumes provider tokens and is never
+implicit. Selector overrides plus the exact observed pair must all pass.
 
-An allowed decision includes a launch plan and `launch_id`. For a concrete Codex plan, use
-`scripts/0th.mjs dispatch` with prompt and output-schema files; prompts go through stdin. An
-`inherit` plan uses the native harness path. Verify the emitted receipt through:
+An allowed decision includes a launch plan and `launch_id`. For a concrete plan, use
+`scripts/0th.mjs dispatch` with prompt and output-schema files; the adapter registry selects the
+runtime implementation from the plan. An `inherit` plan uses the native harness path unless the
+adapter explicitly supports it. Verify the emitted receipt through:
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/0th.mjs" attest \
@@ -51,7 +55,7 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --receipt-json <execution-receipt.json>
 ```
 
-No receipt, an unverifiable runtime, or a model/effort mismatch invalidates cost routing. Stop or
+No receipt, an unverifiable runtime, or a selector mismatch invalidates cost routing. Stop or
 escalate once to the packet's stronger class; do not repeat same-tier retries.
 
 Workers return a bounded `ResultPacket` from `execution-policy.md`, not a transcript. Synthesis

@@ -1,7 +1,6 @@
 ---
 name: build
 description: "Implements requested changes with proof-gated TDD. Use when building or fixing a known solution."
-argument-hint: "[instruction or plan path]"
 ---
 
 # Build

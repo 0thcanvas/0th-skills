@@ -19,24 +19,24 @@ class and may happen once after failed output-schema or verification evidence.
 
 Active selectors live at `~/.0th/skills/config/model-routing/<harness>.json`, or under the directory
 named by `OTH_SKILLS_ROUTING_DIR`. Resolution order is explicit `--routing-json`, local configuration,
-then bundled fallback. `adapters/templates/` provides structure; `adapters/<harness>.models.json`
-disables economy/balanced and inherits frontier so missing local configuration cannot silently spend
+then bundled fallback. `adapters/templates/` provides structure. A bundled mapping may disable
+concrete classes and inherit the frontier class so missing local configuration cannot silently spend
 the root model as a cheap worker.
 
-Run `scripts/0th.mjs routing init --harness <name>` to create the local template. It refuses to
+Run `scripts/0th.mjs routing init --harness <name>` to create a local template. It refuses to
 overwrite an existing file unless `--force` is explicit and refuses symlink targets. A supplied
-`--runtime-json` remains the portable evidence path. Codex can instead run an opt-in live probe:
+`--runtime-json` is the portable evidence path.
+
+A registered adapter may offer an opt-in live probe:
 
 ```bash
-node scripts/0th.mjs routing doctor --harness codex --live-probe
+node scripts/0th.mjs routing doctor --harness <name> --live-probe
 ```
 
-The probe starts one read-only, ephemeral `codex exec` request for each concrete profile, so it can
-consume provider tokens. It ignores user config, rules, plugins, and memories so unrelated MCP auth
-or loaded skills cannot corrupt the capability result. Its cache is local user state under
-`~/.0th/skills/cache/model-routing/codex.json`, expires after 24 hours, and is invalidated when the
-Codex CLI version or routing-file fingerprint changes. A cached result authorizes only exact
-model/effort pairs that completed their probe. Configuration is intent, not proof.
+Live probes can consume provider tokens and are never implicit. Their result must be bound to the
+runtime version, routing-file fingerprint, and freshness window. A cached result authorizes only
+the exact selector pairs that completed their probe. Configuration is intent, not proof. Adapter
+guides under `adapters/harnesses/` document runtime-specific evidence and cache behavior.
 
 If a harness can only inherit the parent runtime, economy and balanced routing are unavailable.
 Remain single-root unless the packet explicitly requests `inherit` and delegation still has an
@@ -44,8 +44,8 @@ evidence, isolation, or measured latency advantage.
 
 ## Receipt boundary
 
-Every allowed route has a deterministic `launch_id`. For Codex concrete routes, execute the plan
-through the controlled adapter:
+Every allowed route has a deterministic `launch_id`. For a concrete route, execute the plan through
+the registered adapter:
 
 ```bash
 node scripts/0th.mjs dispatch \
@@ -57,13 +57,11 @@ node scripts/0th.mjs dispatch \
   --receipt-out <receipt.json>
 ```
 
-The adapter sends the prompt over stdin, pins model and effort per invocation, requires Codex JSONL
-completion evidence, and writes the result, event log, and receipt. It supports only `read-only` and
-`workspace-write`; an `inherit` plan must use the harness-native spawn path. The Codex CLI currently
-does not emit independent model metadata in its JSONL stream, so a successful receipt records
-`attestation_basis: explicit-launch-completed`: the server accepted and completed the explicit
-model/effort launch. When a harness exposes runtime model metadata, prefer
-`attestation_basis: runtime-metadata`.
+The registry chooses the adapter from the launch plan's harness. An adapter must preserve the
+prompt boundary, pin the resolved selector, require completion evidence, and emit a receipt.
+An `inherit` plan uses the harness-native spawn path unless its adapter explicitly supports it.
+When runtime metadata is available, prefer `attestation_basis: runtime-metadata`; otherwise an
+adapter may use a documented explicit-launch completion attestation.
 
 Run `scripts/0th.mjs attest` against every receipt. A missing or mismatched receipt means the
 requested cost/capability boundary was not proven and must not be reported as successful routing.

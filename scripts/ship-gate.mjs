@@ -32,7 +32,8 @@ const ACCEPTANCE_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const PROOF_RESULT_FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
 const PROOF_RESULT_FUTURE_SKEW_MS = 5 * 60 * 1000;
 export const STACK_ALIASES = new Map([
-  ["bb-browser-escape-hatch", "browser-kit-escape-hatch"]
+  ["bb-browser-escape-hatch", "session-backed-browser"],
+  ["browser-kit-escape-hatch", "session-backed-browser"]
 ]);
 
 const WEB_FRAMEWORK_CONFIGS = [
@@ -41,7 +42,7 @@ const WEB_FRAMEWORK_CONFIGS = [
   "astro.config.js", "astro.config.mjs", "astro.config.ts"
 ];
 
-const REAL_SESSION_PATTERN = /real[- ]session|logged[- ]in|shared[- ]tab|user'?s chrome/i;
+const REAL_SESSION_PATTERN = /real[- ]session|logged[- ]in|shared[- ]tab|user'?s browser|user'?s chrome/i;
 
 // Lookbehind `(?<![A-Za-z0-9])` rejects URL-embedded matches like
 // `https://example.com/Users/alice/...` while still accepting boundary-led
@@ -94,7 +95,7 @@ export function resolveRepoRoot(cwd) {
 }
 
 export function loadBrief(repoRoot, reportDir) {
-  // The brief drives browser-kit-escape-hatch detection. /build writes
+  // The brief drives session-backed-browser detection. /build writes
   // verification-report/brief.txt when dispatching the verifier so the
   // gate can re-read it independently. Env var SHIP_GATE_BRIEF overrides
   // the file (for ad-hoc runs).
@@ -146,7 +147,7 @@ export function detectStacks(repoPath, brief = "") {
   if (hasService && !hasUIDeps) stacks.add("service");
 
   if (REAL_SESSION_PATTERN.test(brief)) {
-    stacks.add("browser-kit-escape-hatch");
+    stacks.add("session-backed-browser");
   }
 
   return [...stacks];

@@ -14,8 +14,8 @@ After a release commit is merged, make sure both plugin manifests carry the same
 commit, and publish the immutable package:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+git tag v0.5.0
+git push origin v0.5.0
 node scripts/local-plugin-release.mjs publish --install \
   --replace-selector 0th-skills@mini-local
 ```

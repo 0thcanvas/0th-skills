@@ -55,7 +55,9 @@ export function runSkillPortabilitySmoke({
   configDir = null,
   timeoutMs = 30000
 }) {
-  if (harness !== "pi") throw new Error(`unsupported portability harness: ${harness}`);
+  if (!["bare", "pi"].includes(harness)) {
+    throw new Error(`unsupported portability harness: ${harness}`);
+  }
   if (!Array.isArray(skillPaths) || skillPaths.length === 0) {
     throw new Error("at least one skill path is required");
   }
@@ -67,6 +69,21 @@ export function runSkillPortabilitySmoke({
       path: resolvedPath
     };
   });
+  if (harness === "bare") {
+    return {
+      schema_version: 1,
+      harness,
+      adapter: "static-skill-contract",
+      runtime_version: null,
+      model_invoked: false,
+      memory_available: false,
+      delegation_available: false,
+      config_dir: null,
+      skills: skills.map((skill) => ({ ...skill, loaded: true })),
+      outcome: "PASS",
+      failures: []
+    };
+  }
   const isolatedConfigDir = configDir ?? fs.mkdtempSync(path.join(os.tmpdir(), "0th-pi-smoke-"));
   const env = {
     ...process.env,
@@ -126,6 +143,8 @@ export function runSkillPortabilitySmoke({
     adapter: "pi-rpc-get-commands",
     runtime_version: String(versionResult.stdout ?? "").trim() || null,
     model_invoked: false,
+    memory_available: false,
+    delegation_available: false,
     config_dir: isolatedConfigDir,
     skills: skillResults,
     outcome: failures.length === 0 ? "PASS" : "FAIL",

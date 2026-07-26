@@ -23,7 +23,7 @@ test("/retro skill ships at skills/retro/SKILL.md with frontmatter metadata", ()
 
   assert.match(source, /^name:\s*retro/m, "frontmatter should declare name: retro");
   assert.match(source, /^description:/m, "frontmatter should declare a description");
-  assert.match(source, /argument-hint:\s*"\[[^"]+\]"/, "should declare an argument-hint");
+  assert.doesNotMatch(source, /^argument-hint:/m, "shared frontmatter should stay host-neutral");
   assert.match(source, /\$ARGUMENTS/, "should explain how direct invocation arguments are used");
 });
 

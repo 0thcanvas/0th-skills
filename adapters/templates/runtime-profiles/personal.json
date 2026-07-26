@@ -24,6 +24,9 @@
       ],
       "workspace": "host-managed",
       "result_contract": "sanitized-receipt",
+      "guidance": [
+        "adapters/providers/onepassword.md"
+      ],
       "required": false
     },
     "logged_in_browser": {
@@ -39,6 +42,45 @@
       ],
       "workspace": "host-managed",
       "result_contract": "session-backed-receipt",
+      "guidance": [
+        "adapters/providers/browser-kit.md"
+      ],
+      "required": false
+    },
+    "browser_ui_fallback": {
+      "provider": "computer-use",
+      "invocation": "host-native",
+      "worker": null,
+      "bindings": [
+        "tool:computer-use"
+      ],
+      "effects": [
+        "read",
+        "session-use"
+      ],
+      "workspace": "host-managed",
+      "result_contract": "confirmed-ui-action-receipt",
+      "guidance": [
+        "adapters/providers/computer-use.md"
+      ],
+      "required": false
+    },
+    "session_backed_reading": {
+      "provider": "opencli",
+      "invocation": "local",
+      "worker": null,
+      "bindings": [
+        "cli:opencli"
+      ],
+      "effects": [
+        "read",
+        "session-use"
+      ],
+      "workspace": "host-managed",
+      "result_contract": "session-backed-read-receipt",
+      "guidance": [
+        "adapters/providers/opencli.md"
+      ],
       "required": false
     }
   }

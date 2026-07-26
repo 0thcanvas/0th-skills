@@ -1,0 +1,18 @@
+{
+  "capability": "knowledge_provider",
+  "objective": "Retrieve versioned navigation evidence for one bounded source question",
+  "independent": true,
+  "ordered": false,
+  "mutation_scope": "read-only",
+  "shared_mutable_state": false,
+  "evidence_advantage": "versioned project navigation with source pointers",
+  "work_kind": "source_discovery",
+  "compute_class": "auto",
+  "escalation_class": "balanced",
+  "task_risk": "low",
+  "budget": {
+    "max_workers": 1,
+    "max_rounds": 1
+  },
+  "output_schema": "versioned-knowledge-receipt"
+}

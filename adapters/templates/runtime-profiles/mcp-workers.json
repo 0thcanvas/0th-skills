@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "profile_id": "mcp-workers",
+  "harness": "generic",
+  "topology": {
+    "mode": "coordinator-workers",
+    "max_workers": null,
+    "workspace_isolation": "host-managed"
+  },
+  "state": {
+    "workflow_store": "host-native",
+    "ambient_memory": "host-native"
+  },
+  "capabilities": {
+    "project_registry": {
+      "provider": "project-defined",
+      "invocation": "delegated",
+      "worker": "project-knowledge",
+      "bindings": [
+        "mcp:project-registry"
+      ],
+      "effects": [
+        "read"
+      ],
+      "workspace": "none",
+      "result_contract": "versioned-project-registry-receipt",
+      "guidance": [
+        "references/project-registry.md"
+      ],
+      "required": false
+    },
+    "knowledge_provider": {
+      "provider": "project-defined",
+      "invocation": "delegated",
+      "worker": "project-knowledge",
+      "bindings": [
+        "mcp:project-knowledge"
+      ],
+      "effects": [
+        "read"
+      ],
+      "workspace": "none",
+      "result_contract": "versioned-knowledge-receipt",
+      "guidance": [
+        "references/knowledge-provider.md"
+      ],
+      "required": false
+    }
+  }
+}

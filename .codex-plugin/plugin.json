@@ -1,7 +1,7 @@
 {
   "name": "0th-skills",
-  "version": "0.4.0",
-  "description": "0th workflow skills for solo builders.",
+  "version": "0.5.0",
+  "description": "Provider-neutral workflow skills for engineering and research agents.",
   "author": {
     "name": "0th Canvas",
     "url": "https://github.com/0thcanvas"
@@ -14,15 +14,16 @@
     "workflow",
     "tdd",
     "debugging",
-    "solo-dev",
+    "agent-workflow",
+    "portability",
     "research",
     "codex"
   ],
   "skills": "./codex-skills/",
   "interface": {
     "displayName": "0th",
-    "shortDescription": "A lightweight build and research workflow for solo builders",
-    "longDescription": "Use 0th to turn ideas into decisions, break work into slices, build with TDD, debug from root cause, run source-aware research, and drive deeper feasibility loops before shipping. Includes host-native Codex subagents, cross-model review bridges, and metadata tuned for both Codex and Claude Code.",
+    "shortDescription": "Portable build, debug, research, and ship workflows",
+    "longDescription": "Use 0th to turn ideas into decisions, select the smallest coordination artifact, build with TDD, debug from root cause, run source-aware research, and ship with explicit evidence. Runtime profiles bind host tools, state, and topology without placing provider choices in shared skills. Includes Codex integration and Claude Code compatibility.",
     "developerName": "0th Canvas",
     "category": "Coding",
     "capabilities": [

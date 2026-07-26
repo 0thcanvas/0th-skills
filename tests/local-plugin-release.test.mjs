@@ -15,6 +15,9 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const releaseCliPath = path.join(repoRoot, "scripts", "local-plugin-release.mjs");
+const currentVersion = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, ".codex-plugin", "plugin.json"), "utf8")
+).version;
 
 function temporaryReleaseState() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "0th-local-release-"));
@@ -80,11 +83,11 @@ test("publishes an immutable SemVer release into a private local marketplace", (
     now: new Date("2026-07-26T15:00:00.000Z")
   });
 
-  assert.equal(result.version, "0.4.0");
+  assert.equal(result.version, currentVersion);
   assert.equal(result.marketplace, "0th-local");
   assert.equal(
     result.artifact_root,
-    path.join(registryRoot, "plugins", "0th-skills", "releases", "0.4.0", "111111111111")
+    path.join(registryRoot, "plugins", "0th-skills", "releases", currentVersion, "111111111111")
   );
   assert.equal(fs.existsSync(path.join(result.artifact_root, "scripts", "0th.mjs")), true);
 
@@ -93,11 +96,11 @@ test("publishes an immutable SemVer release into a private local marketplace", (
   assert.equal(marketplace.plugins[0].name, "0th-skills");
   assert.equal(
     marketplace.plugins[0].source.path,
-    "./plugins/0th-skills/releases/0.4.0/111111111111"
+    `./plugins/0th-skills/releases/${currentVersion}/111111111111`
   );
 
   const status = readLocalReleaseStatus({ registryRoot, homeDir, env: {} });
-  assert.equal(status.active_version, "0.4.0");
+  assert.equal(status.active_version, currentVersion);
   assert.equal(status.active_commit, "1111111111111111111111111111111111111111");
   assert.equal(fs.realpathSync(status.runtime_link), fs.realpathSync(result.artifact_root));
   assert.match(status.integrity_sha256, /^[a-f0-9]{64}$/);
@@ -117,7 +120,7 @@ test("refuses to publish different content under an existing version", () => {
       ...shared,
       commit: "2222222222222222222222222222222222222222"
     }),
-    /0\.4\.0 is already published from commit 111111111111/i
+    new RegExp(`${currentVersion.replaceAll(".", "\\.")} is already published from commit 111111111111`, "i")
   );
 });
 
@@ -191,7 +194,7 @@ test("installs the active release from the private marketplace and replaces a le
               installed: [
                 {
                   pluginId: "0th-skills@0th-local",
-                  version: "0.4.0",
+                  version: currentVersion,
                   enabled: true,
                   source: { path: release.artifact_root }
                 }
@@ -210,7 +213,7 @@ test("installs the active release from the private marketplace and replaces a le
   });
 
   assert.equal(installed.selector, "0th-skills@0th-local");
-  assert.equal(installed.version, "0.4.0");
+  assert.equal(installed.version, currentVersion);
   assert.deepEqual(calls, [
     ["plugin", "marketplace", "list", "--json"],
     ["plugin", "marketplace", "add", registryRoot, "--json"],

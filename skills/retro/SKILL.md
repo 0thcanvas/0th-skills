@@ -1,7 +1,6 @@
 ---
 name: retro
 description: "Turns a concrete workflow miss into a redacted incident record and pattern signal. Use when the session contains a user correction, agent misfire, skipped verification, or tool failure worth preserving."
-argument-hint: "[correction or incident focus]"
 ---
 
 # Retro

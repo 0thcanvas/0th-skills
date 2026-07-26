@@ -115,3 +115,30 @@ test("Pi portability smoke resolves relative skills from the requested working d
   assert.equal(result.outcome, "PASS");
   assert.equal(result.skills[0].path, path.join(skillRoot, "SKILL.md"));
 });
+
+test("bare portability smoke validates skills without memory, tools, models, or delegation", () => {
+  const result = runSkillPortabilitySmoke({
+    harness: "bare",
+    skillPaths: [
+      path.join(repoRoot, "skills/build/SKILL.md"),
+      path.join(repoRoot, "skills/research/SKILL.md")
+    ],
+    cwd: repoRoot
+  });
+
+  assert.equal(result.outcome, "PASS");
+  assert.equal(result.harness, "bare");
+  assert.equal(result.adapter, "static-skill-contract");
+  assert.equal(result.model_invoked, false);
+  assert.equal(result.memory_available, false);
+  assert.equal(result.delegation_available, false);
+  assert.ok(result.skills.every((skill) => skill.loaded));
+});
+
+test("the shared Kernel makes workflow state optional for bare hosts", () => {
+  const kernel = fs.readFileSync(path.join(repoRoot, "references/skills-kernel.md"), "utf8");
+
+  assert.match(kernel, /workflow_store/);
+  assert.match(kernel, /`none`/);
+  assert.match(kernel, /continue without Memory/i);
+});

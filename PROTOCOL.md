@@ -1,8 +1,9 @@
 # Knowledge Base Protocol
 
-This document defines a markdown KB as an optional evidence provider for agents. It is
+This document defines a markdown KB as one optional `knowledge_provider` for agents. It is
 editor-agnostic and is not a required recall system, session log, or second owner for facts already
-captured in code, current repo docs, or the workflow state index.
+captured in code, current repo docs, or the workflow state index. The same provider boundary may be
+implemented by a local directory, a host tool, or an MCP-bound worker.
 
 ## Assumptions
 
@@ -23,6 +24,12 @@ retrieval or writing. Then use this order:
 
 If neither `KB_ROOT` nor project instructions define a KB root, skip the KB for ordinary work.
 Do not interrupt implementation merely to configure an optional evidence provider.
+
+When a runtime profile configures `project_registry`, use it to identify the relevant project or
+bounded context through [`references/project-registry.md`](references/project-registry.md). Then
+resolve `knowledge_provider` when configured. Follow its guidance and require the versioned receipt in
+[`references/knowledge-provider.md`](references/knowledge-provider.md). Missing, stale, or
+unavailable provider state falls back to direct source analysis.
 
 Recommended persistence targets:
 
@@ -58,6 +65,10 @@ Do not read the KB at every session start. When the task points to a KB topic:
 3. Read pending `raw/` notes only when current material does not answer the question
 
 Never read from `raw/archived/` during normal work.
+
+Cached or generated analysis is a navigation aid. Before implementation, debugging, review
+findings, or high-risk claims, open the relevant current source. Re-analyze only the affected slice
+when the provider receipt shows that its source fingerprint is partially stale.
 
 ## Writing
 

@@ -1,7 +1,6 @@
 ---
 name: think
 description: "Turns an uncertain idea into a short, explicit decision. Use when requirements, architecture, or tradeoffs are materially unresolved."
-argument-hint: "[idea or design question]"
 ---
 
 # Think

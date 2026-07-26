@@ -54,6 +54,32 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+test("memory claims can declare an explicit review horizon", () => {
+  const claim = normalizeMemoryClaim({
+    type: "external_research",
+    claim: "Provider behavior should be rechecked after its review horizon.",
+    scope: "repo",
+    evidence_path: "research/provider.md",
+    confidence: "high",
+    stale_after_days: 30
+  }, {
+    now: new Date("2026-07-26T00:00:00.000Z")
+  });
+
+  assert.equal(claim.stale_after_days, 30);
+  assert.throws(
+    () => normalizeMemoryClaim({
+      type: "external_research",
+      claim: "Invalid horizon.",
+      scope: "repo",
+      evidence_path: "research/provider.md",
+      confidence: "high",
+      stale_after_days: 0
+    }),
+    /stale_after_days/
+  );
+});
+
 test("normalizeMemoryClaim validates required memory contract fields", () => {
   assert.throws(
     () => normalizeMemoryClaim({ type: "decision", claim: "x", confidence: "high" }),

@@ -1,24 +1,24 @@
 # Skills Kernel
 
-Skill files own domain behavior; this Kernel owns startup, authority, execution topology,
-safety, context transfer, and closeout.
+Skills own domain behavior; this Kernel owns startup, authority, topology, safety, handoff, and closeout.
 
 ## Root-task preflight
 
 Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
 
-Run once per root task: infer 3–8 keywords, then run
+Resolve the optional runtime profile once per root task. With `workflow_store: 0th-state` (the
+default without a profile), infer 3–8 keywords and run:
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
-Use compact repo state, claims, open loops, and pointers. Expand only task-relevant evidence; reserve
-full briefs for broad audits. Cache repo, HEAD, dirty state, packet, loops, and `observed_at`. Reuse
-the receipt until mutation, a new task, or stale evidence.
+Use its compact claims, open loops, and repo state. With `host-native`, use the host's current-state
+packet. With `none`, run live repo preflight and continue without Memory. Cache the receipt until
+mutation, a new task, or staleness. Reuse the receipt. Expand history/source packs on demand; full
+briefs only for broad audits.
 
 ## TaskSpec and authority
 
-Write or infer a bounded TaskSpec: outcome, acceptance, non-goals, proof need, risk, and authority.
-Ask one focused question only when evidence leaves multiple plausible outcome-level intentions that
-materially change acceptance, authority, or irreversible effects. Multiple implementation paths for
-one outcome are not ambiguity.
+Infer a bounded TaskSpec: outcome, acceptance, non-goals, proof, risk, and authority. Ask one focused
+question only when evidence leaves multiple plausible outcome-level intentions that materially change
+acceptance, authority, or irreversible effects. Multiple implementation paths are not ambiguity.
 
 Technical choices are agent-owned unless they change outcomes, cost/risk, lasting constraints, or
 authority. Never ask whether to plan; choose the smallest artifact.
@@ -29,49 +29,41 @@ authority. Never ask whether to plan; choose the smallest artifact.
   other side effects require explicit user or repo-workflow authority.
 - Merge approval is specific to the current PR; never inherit it from a general “ship” instruction.
 
-Use `BLOCKED_BY_SPEC` when the outcome cannot be judged, `CONTRACT_INVALIDATED` when evidence breaks
-a premise, `SCOPE_EXPANSION_REQUIRED` outside scope, and `BLOCKED_REAL_ENV` when runtime proof is
-missing. Never lower proof to manufacture completion.
+Use `BLOCKED_BY_SPEC` for an unjudgeable outcome, `CONTRACT_INVALIDATED` for a broken premise,
+`SCOPE_EXPANSION_REQUIRED` outside scope, and `BLOCKED_REAL_ENV` for missing runtime proof.
 
 ## Execution topology
 
-**Default: one root agent.** Consider delegation only when the user requests it or independent work
-has a named evidence advantage. Before delegating, read `references/delegation.md` and require its
-capability gate to return `allowed: true`; otherwise remain single-root.
+**Default: one root agent.** Delegate only on request or for a named evidence advantage. First read
+`references/delegation.md` and require `allowed: true`; otherwise remain single-root.
 
 ## Safety and evidence
 
-Apply `secret-control-policy.md`. Use an existing valid local environment before contacting its
-secret manager, run the consuming application instead of reading secret files, and verify presence
-without printing values. Never place resolved secret values in prompts, chat, argv, logs, diffs,
-commits, or evidence. Never dump environments, cookies, authorization headers, session storage, HAR
-bodies, or private browser payloads. If exposure may have occurred, identify the category without
-repeating the value and recommend rotation.
+Apply `secret-control-policy.md`. Prefer an existing project environment; run the consumer and never
+read secret files; resolved secret values never enter prompts, chat, argv, logs, diffs, commits, or
+evidence. Never dump environments, cookies, auth headers, storage, HARs, or private browser payloads.
 
-Claims follow the strongest available evidence. Tests prove test seams; visual claims need visual
-evidence; session-backed claims need session-backed evidence; live or destructive proof needs explicit
-approval. Specialist output is input to 0th verification, not proof by itself. Preserve exact blocked
-states and source limitations.
+Claims follow the strongest evidence. Tests prove test seams; visual and session-backed claims need
+matching evidence; live/destructive proof needs approval. Specialist output is input, not proof.
 
 ## Context handoff
 
-When a task spans phases or large evidence, use `context_handoff` from `workflow-verification.md`
-and the `ResultPacket` in `execution-policy.md`. Keep raw evidence in its owning files instead of
-accumulating it in the root context.
+For large evidence or phase changes, use `context_handoff` and the `ResultPacket` from
+`workflow-verification.md` and `execution-policy.md`. Keep raw evidence in owning files.
 
 ## Closeout
 
-Return exit status, evidence paths, concerns, and next action. Apply `retro_open_loop_closeout` so
-skipped verification, blocked real environments, repeated failures, and unfinished work stay visible.
+Return status, evidence, concerns, and next action. Apply `retro_open_loop_closeout`.
 
-Use the executable Memory Write Gate:
+With `0th-state`, use the executable Memory Write Gate:
 `node "${OTH_SKILLS_ROOT}/scripts/memory.mjs" write-gate <event flags>`. Read `memory-contract.md` only
 when the gate cannot classify. Durable claims use `memory remember`, never hand-edited `claims.jsonl`.
 Otherwise “nothing durable.” Unfinished work uses `memory open-loop`.
+With `host-native`, return bounded facts to the host. With `none`, keep unfinished work in the
+ResultPacket and final response.
 
-Keep gate evidence uncommitted under `${VERIFICATION_REPORT_DIR:-verification-report}`. Promote only
-compact conclusions. After merge, close, abandonment, or worktree removal, delete raw evidence;
-summarize and delete sensitive browser/session material as soon as it is unnecessary.
+Keep gate evidence uncommitted under `${VERIFICATION_REPORT_DIR:-verification-report}`. After merge,
+close, abandonment, or worktree removal, delete it; summarize/delete sensitive session material early.
 
 ## Shared references
 

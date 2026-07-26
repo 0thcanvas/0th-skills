@@ -63,8 +63,8 @@ name each attempted safe runner and its sanitized error; otherwise `BLOCKED` or 
 is premature.
 
 For recurring credential-dependent work, the generated gitignored owner-only env file is the
-steady-state runner. Normal commands read it directly and do not contact 1Password. Only explicit
-setup or rotation syncs may contact 1Password.
+steady-state runner. Normal commands read it directly and do not contact the configured provider.
+Only explicit setup or rotation may resolve `secret_runtime` and invoke its guidance.
 
 ### `retro_open_loop_closeout`
 

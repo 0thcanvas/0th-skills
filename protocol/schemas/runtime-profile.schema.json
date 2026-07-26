@@ -121,6 +121,7 @@
         "effects",
         "workspace",
         "result_contract",
+        "guidance",
         "required"
       ],
       "properties": {
@@ -173,6 +174,14 @@
         "result_contract": {
           "type": "string",
           "minLength": 1
+        },
+        "guidance": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         },
         "required": {
           "type": "boolean"

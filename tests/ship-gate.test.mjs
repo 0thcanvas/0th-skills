@@ -139,10 +139,10 @@ test("detectStacks: Dockerfile without UI yields service", () => {
   assert.deepEqual(detectStacks(repo), ["service"]);
 });
 
-test("detectStacks: brief mentioning logged-in yields browser-kit-escape-hatch", () => {
+test("detectStacks: brief mentioning logged-in yields session-backed-browser", () => {
   const repo = makeTempRepo();
   const stacks = detectStacks(repo, "verify the logged-in dashboard flow");
-  assert.ok(stacks.includes("browser-kit-escape-hatch"));
+  assert.ok(stacks.includes("session-backed-browser"));
 });
 
 test("findLocalPathLeaksInText: flags machine-specific home paths", () => {
@@ -272,7 +272,7 @@ test("loadBrief: SHIP_GATE_BRIEF env var overrides the file", () => {
   }
 });
 
-test("detectStacks: brief.txt with logged-in trigger drives browser-kit-escape-hatch (end-to-end via loadBrief)", () => {
+test("detectStacks: brief.txt with logged-in trigger drives session-backed-browser (end-to-end via loadBrief)", () => {
   const repo = makeTempRepo();
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
   fs.writeFileSync(
@@ -283,8 +283,8 @@ test("detectStacks: brief.txt with logged-in trigger drives browser-kit-escape-h
   const brief = loadBrief(repo, "verification-report");
   const stacks = detectStacks(repo, brief);
   assert.ok(
-    stacks.includes("browser-kit-escape-hatch"),
-    `expected browser-kit-escape-hatch in detected stacks, got ${JSON.stringify(stacks)}`
+    stacks.includes("session-backed-browser"),
+    `expected session-backed-browser in detected stacks, got ${JSON.stringify(stacks)}`
   );
 });
 
@@ -468,7 +468,7 @@ test("validateReport: all expected stacks exercised plus PASS yields ok", () => 
   assert.equal(result.ok, true, result.reasons.join(", "));
 });
 
-test("validateReport: legacy bb-browser-escape-hatch report satisfies browser-kit-escape-hatch", () => {
+test("validateReport: legacy bb-browser-escape-hatch report satisfies session-backed-browser", () => {
   const result = validateReport(
     {
       outcome: "PASS",
@@ -483,13 +483,13 @@ test("validateReport: legacy bb-browser-escape-hatch report satisfies browser-ki
         }
       ]
     },
-    ["browser-kit-escape-hatch"]
+    ["session-backed-browser"]
   );
 
   assert.equal(result.ok, true, result.reasons.join(", "));
 });
 
-test("validateReport: legacy expected bb-browser-escape-hatch canonicalizes to browser-kit-escape-hatch", () => {
+test("validateReport: legacy expected bb-browser-escape-hatch canonicalizes to session-backed-browser", () => {
   const result = validateReport(
     {
       outcome: "PASS",

@@ -25,6 +25,7 @@ const BINDING_KEYS = [
   "effects",
   "workspace",
   "result_contract",
+  "guidance",
   "required"
 ];
 const TOPOLOGY_MODES = ["single-agent", "coordinator-workers", "host-native"];
@@ -91,6 +92,7 @@ function validateCapabilityBinding(value, label) {
   assertUniqueStringArray(value.effects, `${label}.effects`, EFFECTS);
   assertEnum(value.workspace, WORKSPACE_MODES, `${label}.workspace`);
   assertNonEmptyString(value.result_contract, `${label}.result_contract`);
+  assertUniqueStringArray(value.guidance, `${label}.guidance`);
   if (typeof value.required !== "boolean") throw new Error(`${label}.required must be boolean`);
   if (value.invocation === "delegated" && value.worker === null) {
     throw new Error(`${label}.worker is required for delegated invocation`);
