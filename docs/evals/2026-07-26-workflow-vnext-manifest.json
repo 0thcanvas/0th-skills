@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "generated_after_runs": true,
+  "control_revision": "f8627faa40f597c273b40977dc37c5635be121e4",
+  "content_hashes": {
+    "protocol": "c42f371fa781be9f11d17a3ce6d8e35e9cafb649454001726a06f92e77ae85bd",
+    "plan": "fb937ad2be929b6b4ab24e45e476913d55b59088451280fd5f48486a0e171314",
+    "scorer": "44d63dbb8538f2c00abee33c84a01a499c8b6bff46de533850db370e2b87becb",
+    "codex_adapter": "0544fb0175e3df918f867be88434cbd9c8cbfe08471e07d193c0a7e305f1ac17",
+    "claude_adapter": "b4e212f881302591cfd279be5ea6eca2cbad4bbe0a52870aea640cd102db72b7",
+    "schemas": {
+      "coding": "6bfecd32e0137310a7fab3361572508bfff42db371805eae18b4b38147957696",
+      "recovery": "a946ad11ce6d82710d27038d628ba069ae6042927c234b232e91b5541276ba15",
+      "orchestration_worker": "aca483fd2c635fc09265c44ca29a9b96e26f0275dc47e02ca7e642a9bca66654",
+      "orchestration_synthesis": "a997d11fe5250fd36c5153da04a78e36fadd10a2ecdc4a07c5f31e6da4f73540",
+      "portability": "f50833a130970614be3519963539b473b8e16d04b606122d87aff811dd0e3810",
+      "codex_probe": "41e0459da727f543e7b938d1a5dfc3c346b4ab267599798d1fe2e25c7fcd0a55"
+    },
+    "fixtures": {
+      "one-file-feature": "bf0572a8b3674695e602f2df7a679364b0415921a984db6d82679d5462111f57",
+      "ordered-multi-file": "d2be983520cbd45ddf73fb8f47094157d91bfe69cb87b73f2ed71f3ecb7c3507",
+      "root-cause-debug": "9572a0729143e7d9ac17759554810b64b70f14862f8fcd63f9a48973814badaf"
+    },
+    "coding_prompts": {
+      "one-file-feature": {
+        "formal-plan": "468450ffc3358cd756056676f6ae800ccdd1c3c4cc3f9c8d1700858af624a091",
+        "adaptive-state": "f45ba04f1651f2239d6647805c9124a49ed968008d2ae6ab603449bf4ceb5365",
+        "direct": "f3a2f75f7f737579ae8af443d6ccc319a51de2666f9bb8324fac4ce0cbf95a4b"
+      },
+      "ordered-multi-file": {
+        "formal-plan": "d51da5e3f10d6a690104fbd69464d088aea2941ad7efe18d090bf4d1e7462fa3",
+        "adaptive-state": "5aa7e2b9c1dd5ed0721da103b29350ad300b76de19fa8a080f3855ce8bf93a86",
+        "direct": "352092362cde30b0bfce5d00cd84ebf467a3242afa297c5852a8cfbd2415151b"
+      },
+      "root-cause-debug": {
+        "formal-plan": "da9ab006d6e67a7ac284b563c899ea3a9e59ef2e20b41a2c174df9b81b05630a",
+        "adaptive-state": "648400a801a9b031f517aec1567b45cd2bead60426c4cb9dacb07db922102ec9",
+        "direct": "f81006d8283fae1070b2f8c43026dee209b36f6404b0d7d5d288331501ef2c16"
+      }
+    },
+    "recovery_prompts": {
+      "checkpoint": "6fd860b498879be2f69f87fe2d1d542e7ccd6e096b3c049a8d36de2de70d1054",
+      "summary": "69c9a9d77a214c6de420a9d2d9ce33a4f5345366b102f963ad0ce23b1050a3c8"
+    },
+    "orchestration_worker_prompts": {
+      "worker-release": "c63e80b6890f3384f272276723ba33b9b522bd0aa43356bee95459edaac403b6",
+      "worker-guide": "922c346a841906b3ff94b48d9eda22b59d1010857b1c93771ad23ea10a0b1f43",
+      "worker-runtime": "c8af918ecd78d97c9534ca8588dd6dd427ca3b1afa69a03f0e2b40ebe2bdb269"
+    },
+    "orchestration_synthesis_prompt": "fbdcbc32dbfc781303f8555dbdf3a96b5c04cb284627e7684c2b5e23307f9661",
+    "portability_packet": "4a4630f7f4ad6a8058621f4bc4d454a4b9873b14990c9047d43739c9c26f69b1",
+    "portability_prompt": "6f7ab2385dd9ee747c5d18e87e9d25f1b4c741fe559733dc81f8cefda6118c0e"
+  },
+  "run_audit": {
+    "coding_records": 18,
+    "recovery_records": 4,
+    "orchestration_receipts": 4,
+    "prompt_hash_mismatches": []
+  }
+}

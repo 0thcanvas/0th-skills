@@ -1,0 +1,9 @@
+{
+  "name": "workflow-vnext-root-cause-debug",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "invariant": "node tests/invariant.mjs"
+  }
+}

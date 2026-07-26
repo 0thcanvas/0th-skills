@@ -1,0 +1,22 @@
+{
+  "claim_ids": [
+    "claim-current",
+    "claim-superseded"
+  ],
+  "source_ids": [
+    "source-authoritative",
+    "source-old"
+  ],
+  "caveat_ids": [
+    "caveat-scope"
+  ],
+  "contradiction_ids": [
+    "conflict-version"
+  ],
+  "unresolved_gap_ids": [
+    "gap-runtime"
+  ],
+  "next_read_ids": [
+    "read-release-record"
+  ]
+}

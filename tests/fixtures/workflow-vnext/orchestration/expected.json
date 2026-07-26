@@ -1,0 +1,17 @@
+{
+  "parent_id": "orchestration-1",
+  "receipt_run_ids": [
+    "worker-release",
+    "worker-guide",
+    "worker-runtime",
+    "synth"
+  ],
+  "source_ids": [
+    "source-release",
+    "source-guide",
+    "source-runtime"
+  ],
+  "contradiction_ids": [
+    "conflict-support"
+  ]
+}

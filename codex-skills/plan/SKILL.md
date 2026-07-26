@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Creates vertical slices. Use when work needs ordering."
+description: "Creates vertical slices. Use when work needs multi-session or high-risk coordination."
 ---
 
 # Plan

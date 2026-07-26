@@ -5,6 +5,9 @@
   "additionalProperties": false,
   "required": ["status"],
   "properties": {
-    "status": { "const": "ready" }
+    "status": {
+      "type": "string",
+      "const": "ready"
+    }
   }
 }

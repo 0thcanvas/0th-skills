@@ -15,7 +15,7 @@ const codexDescriptions = {
   debug: "Finds root causes. Use when behavior is broken.",
   "deep-research": "Builds budgeted world models. Use when research needs contradiction analysis or experiments.",
   "improve-architecture": "Finds deep modules. Use when code feels tangled.",
-  plan: "Creates vertical slices. Use when work needs ordering.",
+  plan: "Creates vertical slices. Use when work needs multi-session or high-risk coordination.",
   research: "Finds external evidence. Use when current sources matter.",
   retro: "Records misses. Use when a correction matters.",
   ship: "Opens a verified PR. Use when a branch is ready.",

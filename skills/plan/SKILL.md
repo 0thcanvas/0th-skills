@@ -1,6 +1,6 @@
 ---
 name: plan
-description: "Converts an approved outcome into verifiable vertical slices. Use when implementation has ordering, dependency, risk, multi-session complexity, external APIs, paid data, webhooks, third-party authorization, or live operational effects."
+description: "Converts an approved outcome into verifiable vertical slices. Use when work needs multi-session coordination, irreversible or live effects, an external acquisition contract, material cross-slice architecture, or an explicit plan."
 argument-hint: "[decision record path or scope]"
 ---
 
@@ -11,11 +11,14 @@ root-task preflight, authority, optional delegation, safety, and closeout.
 
 ## Enter / skip
 
-- Enter when the work spans multiple meaningful slices or sessions.
+- Enter when the user requests a plan, work spans sessions, or
+  `../../references/execution-policy.md` selects formal planning.
 - Enter before implementation whenever the work introduces or changes an external API, paid data
   source, webhook/stream, third-party authorization flow, destructive migration, or live
   operational effect. This gate applies even when the code change appears bounded.
 - Skip to `/build` when one bounded implementation loop is sufficient.
+- Ordered multi-file or debugging work alone is not a plan trigger; `/build` may use an adaptive
+  checkpoint while evidence evolves.
 - `$ARGUMENTS` is the decision record or requested scope when invoked directly.
 
 This workflow plans only. It does not implement slices.
@@ -77,6 +80,7 @@ to `/build` with the plan path.
 ## References
 
 - `../../references/skills-kernel.md`
+- `../../references/execution-policy.md`
 - `../../references/specialist-routing.md`
 - `../../references/workflow-verification.md`
 - `../../references/working-artifacts.md`

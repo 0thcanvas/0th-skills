@@ -23,6 +23,9 @@ Apply `../../references/skills-kernel.md` once. This file owns only build-specif
 Infer a compact TaskSpec from the Kernel. New evidence that breaks it is `CONTRACT_INVALIDATED`;
 work outside it is `SCOPE_EXPANSION_REQUIRED`.
 
+When coordination is nontrivial, use the least coordination artifact in
+`../../references/execution-policy.md`; only formal-plan mode routes to `/plan`.
+
 Select the proof tier from `../../references/proof-tiers.md`. Under `proof_contract_required`,
 ship-bound implementation work requires `verification-report/proof-contract.json` with
 `minimum_proof_tier`; docs-only or metadata-only changes still use a `T0` contract when ship-bound.

@@ -53,3 +53,8 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
 
 No receipt, an unverifiable runtime, or a model/effort mismatch invalidates cost routing. Stop or
 escalate once to the packet's stronger class; do not repeat same-tier retries.
+
+Workers return a bounded `ResultPacket` from `execution-policy.md`, not a transcript. Synthesis
+receives those packets and must preserve source pointers, caveats, and unresolved contradictions.
+Every packet stays bound to its launch receipt; missing or unverifiable receipts invalidate the
+delegated claim.

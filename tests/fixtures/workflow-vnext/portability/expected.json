@@ -1,0 +1,10 @@
+{
+  "record_ids": [
+    "record-decision",
+    "record-evidence"
+  ],
+  "open_loop_ids": [
+    "gap-performance"
+  ],
+  "decision": "retain-neutral-contract"
+}
