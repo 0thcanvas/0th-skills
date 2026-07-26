@@ -1,6 +1,9 @@
 # Knowledge Base Protocol
 
-This document tells agents how to interact with a project knowledge base. It is editor-agnostic: the KB is a markdown directory layout, not an Obsidian-specific feature.
+This document defines a markdown KB as one optional `knowledge_provider` for agents. It is
+editor-agnostic and is not a required recall system, session log, or second owner for facts already
+captured in code, current repo docs, or the workflow state index. The same provider boundary may be
+implemented by a local directory, a host tool, or an MCP-bound worker.
 
 ## Assumptions
 
@@ -12,13 +15,21 @@ If a human happens to read the KB in Obsidian, that is fine, but nothing in this
 
 ## Resolving The KB Root
 
-Use this order:
+Resolve a KB root only when project instructions, the task, or a source pointer requires KB
+retrieval or writing. Then use this order:
 
 1. `KB_ROOT` environment variable
 2. Project instructions or repo docs that explicitly define the KB root
-3. Ask the human once where the KB should live
+3. Ask the human only when the requested outcome requires a KB write
 
-If neither `KB_ROOT` nor project instructions define a KB root, ask once and then recommend persisting the answer so future sessions do not need to ask again.
+If neither `KB_ROOT` nor project instructions define a KB root, skip the KB for ordinary work.
+Do not interrupt implementation merely to configure an optional evidence provider.
+
+When a runtime profile configures `project_registry`, use it to identify the relevant project or
+bounded context through [`references/project-registry.md`](references/project-registry.md). Then
+resolve `knowledge_provider` when configured. Follow its guidance and require the versioned receipt in
+[`references/knowledge-provider.md`](references/knowledge-provider.md). Missing, stale, or
+unavailable provider state falls back to direct source analysis.
 
 Recommended persistence targets:
 
@@ -47,24 +58,30 @@ Two root-level files support navigation:
 
 ## Reading
 
-At the start of a session:
+Do not read the KB at every session start. When the task points to a KB topic:
 
-1. Read the KB root `index.md`
-2. Read recent entries in `log.md`
-3. If the task touches an existing domain, read that domain's `index.md`
-4. Read specific `wiki/` pages as needed
-5. Read pending `raw/` notes only when the wiki does not already cover the topic
+1. Read the relevant domain `index.md`, or search directly when no useful index exists
+2. Read only the specific `wiki/` or source pages needed for the task
+3. Read pending `raw/` notes only when current material does not answer the question
 
 Never read from `raw/archived/` during normal work.
 
+Cached or generated analysis is a navigation aid. Before implementation, debugging, review
+findings, or high-risk claims, open the relevant current source. Re-analyze only the affected slice
+when the provider receipt shows that its source fingerprint is partially stale.
+
 ## Writing
 
-When durable knowledge is produced:
+Write only when the project has configured the KB and the KB is the canonical owner for that
+knowledge:
 
 - Put staged findings in `raw/` when you do not yet have enough context to integrate them cleanly
 - Prefer writing directly to `wiki/` when the knowledge is already understood well enough to integrate
 - Update the domain `index.md`
 - Append a short entry to `log.md`
+
+If code, a current repo contract, a research artifact, or an external system already owns the fact,
+leave a compact pointer instead of restating it. One fact should have one canonical owner.
 
 ## Operations
 
@@ -116,8 +133,8 @@ When answering from KB knowledge:
 1. Read the relevant `index.md`
 2. Read the relevant `wiki/` pages
 3. Synthesize an answer
-4. If the synthesis is durable, write it back into the KB
-5. Append to `log.md`
+4. Write back only when the KB owns the synthesis and it is not already captured elsewhere
+5. Append to `log.md` only when the KB changed
 
 ### Lint
 
@@ -180,7 +197,8 @@ Suggested verbs:
 - Do not hardcode an Obsidian vault path
 - Do not ignore `KB_ROOT` when it is set
 - Do not assume Obsidian-specific rendering behavior
-- Do not let durable synthesis disappear into chat history
+- Do not duplicate facts already owned by code, a current repo contract, workflow state, or another
+  evidence system
 - Do not write empty pages
 - Do not read `raw/archived/` during normal work
 - Do not lint unless asked

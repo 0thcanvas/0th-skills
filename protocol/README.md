@@ -2,6 +2,12 @@
 
 The portable layer defines outcomes, authority, evidence, output, and stop rules. It does not name a host, model, effort setting, agent role, or orchestration command.
 
+An optional runtime profile conforming to `schemas/runtime-profile.schema.json` describes the local
+harness, topology, state surfaces, and provider bindings. It is a configuration and discovery
+plane, never execution authority or live capability proof. Skills may name portable capabilities;
+the profile selects a candidate provider, while observed host state, effect authority, and a
+validated receipt decide whether execution may proceed.
+
 Runtime delegation requires two validated inputs:
 
 1. an observed host capability record conforming to `schemas/host-capabilities.schema.json`;

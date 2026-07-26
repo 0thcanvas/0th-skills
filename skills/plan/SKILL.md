@@ -1,7 +1,6 @@
 ---
 name: plan
 description: "Converts a resolved outcome into verifiable vertical slices. Use when a plan is requested as the deliverable or the agent selects formal coordination."
-argument-hint: "[resolved decision or scope]"
 ---
 
 # Plan

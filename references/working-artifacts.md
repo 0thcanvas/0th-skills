@@ -9,13 +9,17 @@ useful result is compacted, promoted, or discarded.
 
 ## Lanes
 
-- **Memory v2** is the compact agent record. Durable lessons, decisions, tombstones,
-  supersession links, and evidence pointers belong there.
+- **Memory v2** is the compact agent continuity index. Active reusable claims, open work,
+  supersession links, and evidence pointers belong there; full source material does not.
 - **repo docs** are promoted current evidence. They should describe live behavior, an active
   constraint, or a legally/user-required record.
 - **working artifacts** are temporary scaffolding. Drafts, exploratory reports, human-facing
   comparisons, and similar scratch outputs are not agent truth by default; each skill names the
   specific artifact types it produces.
+
+One fact has one canonical owner. When code, a current contract, a KB/source pack, or an external
+system already owns it, Memory stores only the minimum retrieval pointer or distinct reusable
+conclusion. A KB or repo doc should not restate Memory merely to create another artifact.
 
 ## Paths
 

@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "0th Runtime Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "harness",
+    "topology",
+    "state",
+    "capabilities"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "harness": {
+      "type": "string",
+      "minLength": 1
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "max_workers",
+        "workspace_isolation"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "single-agent",
+            "coordinator-workers",
+            "host-native"
+          ]
+        },
+        "max_workers": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "workspace_isolation": {
+          "enum": [
+            "none",
+            "shared",
+            "isolated",
+            "host-managed"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "single-agent"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "max_workers": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow_store",
+        "ambient_memory"
+      ],
+      "properties": {
+        "workflow_store": {
+          "enum": [
+            "0th-state",
+            "host-native",
+            "none"
+          ]
+        },
+        "ambient_memory": {
+          "enum": [
+            "0th-state",
+            "host-native",
+            "none"
+          ]
+        }
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/capabilityBinding"
+      }
+    }
+  },
+  "$defs": {
+    "capabilityBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "invocation",
+        "worker",
+        "bindings",
+        "effects",
+        "workspace",
+        "result_contract",
+        "guidance",
+        "required"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "invocation": {
+          "enum": [
+            "local",
+            "delegated",
+            "host-native"
+          ]
+        },
+        "worker": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "read",
+              "workspace-write",
+              "external-write",
+              "secret-use",
+              "session-use"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "workspace": {
+          "enum": [
+            "none",
+            "shared",
+            "isolated",
+            "host-managed"
+          ]
+        },
+        "result_contract": {
+          "type": "string",
+          "minLength": 1
+        },
+        "guidance": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "required": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "invocation": {
+                "const": "delegated"
+              }
+            },
+            "required": [
+              "invocation"
+            ]
+          },
+          "then": {
+            "properties": {
+              "worker": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

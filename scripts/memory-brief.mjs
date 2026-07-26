@@ -12,14 +12,13 @@ const SECTIONS = [
   ["Vocabulary", (claim) => claim.type === "vocabulary" && activeForBrief(claim)],
   ["Recurring Incidents", (claim) => claim.type === "incident" && activeForBrief(claim)],
   ["Known Root Causes", (claim) => claim.type === "root_cause" && activeForBrief(claim)],
-  ["Repo State Warnings", (claim) => claim.type === "repo_state" && claim.lifecycle_state === "needs_review"],
   ["External Research", (claim) => claim.type === "external_research" && activeForBrief(claim)],
   ["Observations", (claim) => claim.type === "observation" && activeForBrief(claim)]
 ];
 const DEFAULT_MAX_SECTION_ITEMS = 8;
 
 function activeForBrief(claim) {
-  return !["archived", "superseded"].includes(claim.lifecycle_state);
+  return claim.lifecycle_state === "active";
 }
 
 function evidenceFor(claim) {
@@ -46,7 +45,7 @@ export function generateBrief(claims, {
   const lines = [
     `# ${title}`,
     "",
-    "Generated from structured memory claims. Treat `needs_review` items as caveated until re-verified."
+    "Generated from active structured claims. Use explicit recall or maintenance for non-current history."
   ];
 
   for (const [title, predicate] of SECTIONS) {
@@ -82,9 +81,8 @@ export function runBriefGeneration({
     title: scope === "global" ? "Global Memory Brief" : "Project Memory Brief",
     maxSectionItems
   });
-  // PR #21 review NEW4: tmp+rename so a crash or concurrent reader cannot
-  // observe a truncated brief. The brief is derived state, but agents
-  // depend on it at session start.
+  // tmp+rename so a crash or concurrent reader cannot observe a truncated
+  // brief. It is an explicit audit surface; normal startup uses bounded recall.
   writeTextAtomic(resolvedOutputFile, brief);
   return {
     memory_file: resolvedMemoryFile,

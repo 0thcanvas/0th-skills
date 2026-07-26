@@ -96,6 +96,9 @@ export function normalizeMemoryClaim(input, {
   const ownerProjectKey = input.owner_project_key ? String(input.owner_project_key).trim() : "";
   const ownerProjectRoot = input.owner_project_root ? String(input.owner_project_root).trim() : "";
   const ownerProjectIdentity = input.owner_project_identity ? String(input.owner_project_identity).trim() : "";
+  const staleAfterDays = input.stale_after_days == null
+    ? null
+    : Number(input.stale_after_days);
 
   if (!type) throw new Error("type is required");
   assertAllowed("type", type, MEMORY_TYPES);
@@ -114,6 +117,12 @@ export function normalizeMemoryClaim(input, {
   }
   if (!confidence && !reviewCaveat) {
     throw new Error("confidence or review_caveat is required");
+  }
+  if (
+    staleAfterDays !== null
+    && (!Number.isInteger(staleAfterDays) || staleAfterDays < 1)
+  ) {
+    throw new Error("stale_after_days must be an integer >= 1");
   }
 
   // PR #21 review: every JSONL writer must enforce the same secret-shape
@@ -174,6 +183,7 @@ export function normalizeMemoryClaim(input, {
   if (ownerProjectKey) claim.owner_project_key = ownerProjectKey;
   if (ownerProjectRoot) claim.owner_project_root = ownerProjectRoot;
   if (ownerProjectIdentity) claim.owner_project_identity = ownerProjectIdentity;
+  if (staleAfterDays !== null) claim.stale_after_days = staleAfterDays;
 
   return claim;
 }
@@ -341,6 +351,10 @@ function parseArgs(argv) {
     }
     if (token === "--last-confirmed-at") {
       options.input.last_confirmed_at = argv[++index];
+      continue;
+    }
+    if (token === "--stale-after-days") {
+      options.input.stale_after_days = Number(argv[++index]);
       continue;
     }
     if (token === "--confidence") {

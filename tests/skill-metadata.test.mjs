@@ -23,16 +23,12 @@ function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
 }
 
-test("each skill declares Claude direct-invocation metadata", () => {
+test("each shared skill uses portable frontmatter and preserves direct arguments", () => {
   for (const skillName of skillNames) {
     const skillPath = path.join(skillsRoot, skillName, "SKILL.md");
     const source = read(skillPath);
 
-    assert.match(
-      source,
-      /argument-hint:\s*"\[[^"]+\]"/,
-      `${skillName} should declare an argument-hint`
-    );
+    assert.doesNotMatch(source, /^argument-hint:/m, `${skillName} should omit host-only argument-hint`);
     assert.match(
       source,
       /\$ARGUMENTS/,
@@ -368,7 +364,7 @@ test("the Skills Kernel centralizes startup, memory, and open-loop lifecycle", (
   assert.match(source, /once per root task/);
   assert.match(source, /memory\.mjs" startup --query/);
   assert.match(source, /claims, open loops/);
-  assert.match(source, /full briefs.*broad audits/i);
+  assert.match(source, /full\s+briefs.*broad audits/i);
   assert.match(source, /Reuse\s+the receipt/);
   assert.match(source, /Memory Write Gate/);
   assert.match(source, /memory remember/);

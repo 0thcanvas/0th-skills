@@ -1,6 +1,8 @@
 # 0th Skills
 
-Lightweight development workflow for solo builders using Codex, Antigravity, and Claude Code where still needed.
+Provider-neutral development workflow for coding agents. Skills define outcomes, evidence, and
+stop conditions; host adapters own model names, orchestration commands, authentication, and tool
+bindings.
 
 ## Skills
 
@@ -33,43 +35,87 @@ write only when the discussion resolves domain vocabulary.
 
 ## Knowledge Base
 
-Memory v2 runtime is the canonical agent recall path. Root tasks use one compact, task-keyed startup
-packet; full briefs, source packs, and evidence expand only on demand.
-Projects may still maintain a markdown knowledge base as source material, import/export storage, or
-human-rendered evidence. The skills repo includes an editor-agnostic KB protocol in
-[PROTOCOL.md](PROTOCOL.md) for those compatibility paths.
+The `memory` runtime is a compact continuity index, not a second documentation system. Root tasks
+retrieve active claims and open work through one task-keyed startup packet; historical states,
+source packs, and full evidence expand only on demand.
+
+A project may expose a markdown knowledge base as an optional evidence provider. Agents retrieve it
+only when the task, project instructions, or a memory pointer names it. They do not read or maintain
+a wiki merely because it exists. [PROTOCOL.md](PROTOCOL.md) defines this compatibility path.
 
 The markdown KB protocol assumes:
 
 - `KB_ROOT` is the canonical KB path contract
-- agents resolve the KB root from `KB_ROOT`, then project instructions, then a one-time user prompt
+- agents resolve the KB root from `KB_ROOT`, then project instructions; ask only when a requested
+  KB write has no configured root
 - the KB is plain markdown on disk
 - agents should not hardcode an Obsidian vault path or depend on Obsidian-only behavior
 
-## Secret Handling
+## Runtime Profiles
 
-0th skills use a provider-neutral secret contract: agents handle secret names and references, not resolved values. Application code should read secrets from environment variables or runtime bindings, and secret managers should inject values only into the target process.
-
-Recommended local shape:
-
-```env
-SERVICE_API_KEY=op://vault-name/item-name/field-name
-```
+Skills do not embed personal providers or assume a coordinator/worker topology. An optional runtime
+profile maps portable capability names to local providers and describes the host's topology and
+state surfaces. It is configuration only: profile resolution never authorizes an effect and never
+proves that a provider, worker, session, or credential is currently available. Live capability
+evidence and normal authority rules still apply.
 
 ```bash
-op run --env-file .env.1password -- <command>
+node scripts/0th.mjs profile validate --profile-json adapters/templates/runtime-profiles/minimal.json
+node scripts/0th.mjs profile init --template pi --profile-id pi --config-dir ~/.config/0th-skills/profiles
+node scripts/0th.mjs profile resolve --profile-json ~/.config/0th-skills/profiles/pi.json --capability logged_in_browser
+node scripts/0th.mjs capabilities --harness <name> --runtime-json <observed.json> \
+  --packet-json <packet.json> --profile-json <runtime-profile.json>
 ```
 
-1Password is only the default example. Equivalent non-printing runners are fine, including Doppler `doppler run -- <command>`, Vault Agent, cloud secret-manager runtime bindings, deployment-platform secrets, or a human-created ignored `.env.local` loaded by the app.
+The bundled templates cover four environments:
 
-Hard rule: no agent should run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`) around secrets, or any fallback that puts secrets into chat, logs, argv, browser automation payloads, HARs, screenshots, or counterpart-review prompts.
+- `minimal`: a bare single-agent host with no workflow store or configured providers;
+- `pi`: a minimalist single-agent host using the portable workflow store;
+- `personal`: local providers selected through capability bindings and separate provider guides;
+- `mcp-workers`: a coordinator whose optional project registry and code-navigation provider are
+  bound through MCP.
 
-To verify a secret is present without revealing its value, use `[ -n "${SERVICE_API_KEY:-}" ] && echo "SERVICE_API_KEY: set" || echo "SERVICE_API_KEY: missing"`. Run only with shell tracing off — `set -x` / `bash -x` would expand the test and leak the value. Never `echo "$SERVICE_API_KEY"` or `printenv SERVICE_API_KEY`.
+Each capability binding names effects, workspace isolation, result contract, optional operating
+guides, and whether it is required. A resolved binding is still only configuration. Delegation also
+passes through the live capability gate, where the profile can reduce worker count, isolation,
+effects, or named capabilities but cannot increase authority.
 
-Recurring project development secrets use the shared CLI, configured by a tracked
-`.0th-secrets.json` manifest. `0th secrets sync` is the only normal command that contacts
-1Password; `paths`, `check`, and `clean` are metadata-only lifecycle operations. Applications read
-the generated ignored mode-600 files directly. Seed phrases and derived private keys are rejected.
+A portability smoke verifies exact skill discovery without invoking a model:
+
+```bash
+node scripts/skill-portability-smoke.mjs --harness bare \
+  --skill skills/think/SKILL.md --skill skills/build/SKILL.md
+node scripts/skill-portability-smoke.mjs --harness pi \
+  --skill skills/think/SKILL.md --skill skills/build/SKILL.md
+```
+
+## Secret Handling
+
+Shared workflows handle secret names, references, and sanitized receipts, never resolved values.
+Application code reads its normal environment or runtime binding; a selected `secret_runtime`
+provider injects values only into the consumer. The portable policy is
+[`references/secret-control-policy.md`](references/secret-control-policy.md). Provider-specific
+setup, refresh, and rotation commands live only in the guide returned by the active runtime profile;
+the bundled personal example uses
+[`adapters/providers/onepassword.md`](adapters/providers/onepassword.md).
+
+Regardless of provider, resolved values must not enter chat, prompts, argv, logs, screenshots,
+browser payloads, diffs, commits, or verification artifacts. A plaintext development fallback is
+allowed only when project-scoped, gitignored, owner-only mode `600`, and loaded by the application;
+it is not a production or personal-credential path.
+
+## Cross-project knowledge
+
+Complex organizations can bind two separate optional capabilities:
+
+- `project_registry` answers which projects, repositories, bounded contexts, and relationships
+  exist; see [`references/project-registry.md`](references/project-registry.md).
+- `knowledge_provider` returns versioned source-navigation evidence for a bounded question; see
+  [`references/knowledge-provider.md`](references/knowledge-provider.md).
+
+A generated code atlas may implement the second capability, but the workflow does not depend on
+that product or assume its cache is current. Registry and cached analysis choose the next read;
+current source proves behavior. Personal projects can leave both capabilities absent.
 
 ### Direct invocation
 
@@ -121,9 +167,11 @@ what a child actually received.
 - Initialize with `node scripts/0th.mjs routing init --harness <name>` and diagnose live controls
   with `routing doctor`; pass `--runtime-json <path>`, or use Codex's token-consuming opt-in
   `--live-probe` to populate a version- and routing-bound local cache
-- `scripts/0th.mjs capabilities` emits the selected launch plan only when a live exact model/effort
-  pair can honor it; concrete Codex plans run through `scripts/0th.mjs dispatch`, and
+- `scripts/0th.mjs capabilities` emits a launch plan only when live evidence and the optional
+  runtime profile can honor it; `scripts/0th.mjs dispatch` selects a registered harness adapter, and
   `scripts/0th.mjs attest` verifies the resulting receipt
+- Harness-specific probe and dispatch details live under `adapters/harnesses/`; shared workflow
+  references contain no host names
 - `.codex/config.toml` currently caps Codex subagent orchestration at `max_threads = 4` and `max_depth = 1`
 - `references/codex-dispatch-profiles.md` is a legacy compatibility note; shared skills must not use
   it as automatic routing policy
@@ -223,6 +271,20 @@ On failure, the runner writes `${VERIFICATION_REPORT_DIR:-verification-report}/r
 Hook installation is user-scope because repo-local Codex hooks are not the validated path yet. The repo ships hook scripts and tests, but it does not auto-install or mutate `~/.codex/config.toml`, `~/.claude/settings.json`, or any user config.
 
 ## Release notes
+
+### 0.5.0
+
+- Made all nine shared skill entrypoints pass the portable skill schema by removing host-only
+  frontmatter while preserving direct-argument semantics in the workflow body.
+- Moved personal secret, browser, and session tools behind runtime-profile capability bindings and
+  provider guides; shared policies contain no personal provider or harness names.
+- Added a harness adapter registry, generic dispatch boundary, and runtime-profile constraints to
+  the live delegation gate.
+- Added bare, minimalist single-agent, personal-provider, and MCP coordinator/worker profiles.
+- Narrowed workflow state to current claims, open loops, source pointers, and explicit review
+  horizons instead of duplicating plans, decisions, or repo documentation.
+- Added optional project-registry and versioned knowledge-provider contracts. Cached analysis
+  navigates; current source remains authoritative.
 
 ### 0.4.0
 

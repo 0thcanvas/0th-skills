@@ -1,7 +1,6 @@
 ---
 name: ship
 description: "Verifies and opens a reviewable pull request from completed work. Use when a branch is ready to push and present for landing."
-argument-hint: "[branch or PR-ready change]"
 ---
 
 # Ship

@@ -19,6 +19,7 @@
     "output_schema"
   ],
   "properties": {
+    "capability": { "type": "string", "minLength": 1 },
     "objective": { "type": "string", "minLength": 1 },
     "independent": { "type": "boolean" },
     "ordered": { "type": "boolean" },

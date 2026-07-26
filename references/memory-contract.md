@@ -1,10 +1,11 @@
 # Memory Contract
 
-This contract defines how 0th skills decide whether new knowledge should become memory.
+This contract defines how 0th skills maintain a continuity index across bounded agent tasks.
 
-Memory is workflow-integrated: capture happens at meaningful events, not only at session end.
-Markdown artifacts remain the human-review evidence layer; generated briefs, local evidence
-records, compact recall, and expand-by-id are the machine-facing recall layer.
+Memory is not a transcript, project wiki, or duplicate source of truth. It holds compact active
+claims, open work, and pointers to canonical evidence. Do not duplicate a fact already owned by
+code, a current repo contract, a KB/source pack, or an external system; record only a distinct
+reusable conclusion or the minimum pointer needed to retrieve the owner.
 
 ## Runtime State
 
@@ -38,7 +39,8 @@ inspect the resolved project paths, global paths, routing rules, and plugin/cach
 - `root_cause` — a verified explanation for a bug, failure, or confusing behavior.
 - `vocabulary` — a canonical project term, rejected alias, relationship, or ambiguity.
 - `incident` — a user correction, agent misfire, tool failure, or workflow issue.
-- `repo_state` — branch, upstream, changed-source, or review-state information that affects work.
+- `repo_state` — compatibility type for state that cannot be cheaply recomputed. Prefer live
+  preflight for branch, upstream, dirty-tree, and review state.
 - `external_research` — source-backed outside knowledge that should be reusable.
 
 ## Lifecycle States
@@ -59,6 +61,10 @@ loops through `scripts/memory.mjs startup --query "<task keywords>"`; generate `
 an explicit broad open-loop audit. Use `repo` scope for one checkout, `project` scope for work
 spanning repos in one product, and `global` scope only for cross-project operating concerns.
 `memory.mjs` is the unified entrypoint; named scripts remain usable for tests and migration work.
+
+Normal startup and recall return active claims and open or blocked loops only. Closed, dropped,
+`needs_review`, superseded, and archived records are history: request them with an explicit
+lifecycle filter or `--include-non-current`.
 
 Normal agents should use the unified entrypoint:
 
@@ -135,9 +141,10 @@ loading all global source material at startup.
 
 ## Memory Write Gate
 
-Run this gate at meaningful workflow boundaries: after a decision, verified root cause, user
-correction, stale assumption, repo update, slice completion, external research finding, or before
-context compaction.
+Run this gate at meaningful workflow boundaries only when the result may outlive its current owner:
+after a decision, verified root cause, user correction, reusable external finding, or before
+context compaction. A completed slice, test run, or repo update does not automatically justify a
+claim.
 
 Choose exactly one primary outcome:
 
@@ -161,6 +168,8 @@ For every durable outcome, record:
 - supersedes / superseded_by when replacing older memory
 
 If the outcome is `nothing durable`, write nothing and say so only when the user needs to know.
+If another current artifact owns the result, prefer `nothing durable` or a pointer/open loop over a
+second prose copy.
 
 When the scope is not obvious, use the executable gate:
 
@@ -255,11 +264,12 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --limit 5
 ```
 
-Default recall is `store_scope: combined`: it searches current-project memory/tasks/evidence first,
-then appends a bounded global-memory result set. This keeps repo work anchored in local state while
-still making cross-project knowledge available. Use `--project-only`, `--global-only`,
+Default recall is current-only and `store_scope: combined`: it searches active project claims and
+open or blocked project tasks first, then appends a bounded active global result set. This keeps
+repo work anchored in usable state without reintroducing closed or stale history. Use
+`--include-non-current`, an explicit lifecycle filter, `--project-only`, `--global-only`,
 `--source-id <source_id>`, `--project-limit N`, `--global-limit N`, or `--all-project-tasks` when
-the workflow needs narrower routing.
+the workflow needs different routing.
 
 Recall returns ranked compact records with `id`, kind/type, `store_scope`, brain/source/subject
 routing fields, lifecycle state, confidence or caveat, timestamps, snippets, and source pointers.

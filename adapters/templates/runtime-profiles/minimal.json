@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "profile_id": "minimal",
+  "harness": "generic",
+  "topology": {
+    "mode": "single-agent",
+    "max_workers": 1,
+    "workspace_isolation": "none"
+  },
+  "state": {
+    "workflow_store": "none",
+    "ambient_memory": "none"
+  },
+  "capabilities": {}
+}

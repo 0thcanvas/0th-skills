@@ -50,3 +50,23 @@ test("retro reads a current incident contract instead of a dated decision", () =
   assert.equal(fs.existsSync(path.join(repoRoot, incidentContract)), true);
   assert.doesNotMatch(retro, /docs\/decisions/);
 });
+
+test("machine continuity points to canonical evidence instead of duplicating it", () => {
+  const memory = read("references/memory-contract.md");
+  const artifacts = read("references/working-artifacts.md");
+
+  assert.match(memory, /continuity index/i);
+  assert.match(memory, /do not duplicate/i);
+  assert.match(memory, /active claims and open or blocked loops/i);
+  assert.match(artifacts, /one canonical owner/i);
+});
+
+test("the markdown KB is optional and retrieved only when a task points to it", () => {
+  const protocol = read("PROTOCOL.md");
+  const research = read("skills/research/SKILL.md");
+
+  assert.match(protocol, /optional evidence provider/i);
+  assert.match(protocol, /do not read the KB at every session start/i);
+  assert.doesNotMatch(protocol, /At the start of a session:/);
+  assert.doesNotMatch(research, /For durable findings, write the appropriate KB `raw\/` note/);
+});

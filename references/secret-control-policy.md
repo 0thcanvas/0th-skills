@@ -1,62 +1,41 @@
-# Secret Control Policy
+# Secret Runtime Policy
 
-1Password is the centralized source of truth for credentials. Agents use secrets through the
-narrowest project runtime boundary that works; they never receive resolved values or vault-wide access.
+Skills handle secret names and references, never resolved credential values. The runtime profile or
+project instructions select the `secret_runtime` provider.
 
-## Local development contract
+## Local development
 
-1. Each project declares its environments in `.0th-secrets.json`, with a reference-only template
-   and stable generated env path for each project-scoped development configuration.
-2. The shared `0th secrets` CLI owns path resolution, validation, synchronization, metadata checks,
-   and cleanup. Projects configure it; they do not reimplement secret-file mechanics.
-3. `0th secrets sync` is the only normal operation that contacts 1Password. It must
-   verify the target is ignored with `git check-ignore -q -- <path>`, resolve references directly to
-   a temporary owner-only file with `op inject --in-file ... --out-file ... --file-mode 0600`, and
-   atomically replace the stable generated file. Resolved output must never pass through stdout.
-4. Normal starts, tests, probes, and agent commands use the generated file through the consuming
-   application's env-file or dotenv loader. They do not contact 1Password and continue to work when
-   1Password is locked. Sync only during initial setup, after an intentional rotation/change, or
-   when the generated file is missing.
-5. The generated env file is a plaintext local development cache. It must be a regular file owned
-   by the current user, have mode `600`, remain gitignored, and be removable with a documented clean
-   command. Do not copy it between projects, machines, worktrees, or deployment targets.
-6. Production deployment reconstructs configuration through the deployment platform, a 1Password
-   service identity, or another approved runtime secret manager. It never uploads the developer's
-   generated local file.
-
-Do not cache production secrets, seed phrases, derived wallet private keys, personal credentials,
-shared human passwords, or broad vault access in a project env file. Wallet material is user data,
-not project configuration; custody and signing use a separate approved device/runtime boundary.
+1. Prefer an existing valid project-scoped environment consumed through the application's normal
+   env-file, dotenv, keychain, workload-identity, or deployment loader.
+2. Provider setup and rotation follow the guidance returned by `secret_runtime`; the portable
+   workflow does not invent provider commands.
+3. A plaintext development fallback is allowed only when the project documents it, the file is
+   regular, owner-only, mode `600`, and gitignored. Never use this fallback for production secrets,
+   personal credentials, seed phrases, derived private keys, or broad account access.
+4. Production reconstructs configuration through its owning runtime or deployment secret boundary;
+   it never uploads a developer's local cache.
 
 ## Credential-dependent preflight
 
-A missing variable in the current process is not proof that the credential is unavailable. Before
-returning `BLOCKED` or `BLOCKED_REAL_ENV` for a missing credential:
+A missing variable in the current process is not proof that a credential is unavailable. Before
+returning `BLOCKED` or `BLOCKED_REAL_ENV`:
 
-1. Try the consuming command with the generated local environment or normal application loader.
-2. Check only the generated file's existence, regular-file type, ownership, mode, and ignored state.
-   Do not inspect env-file contents or borrow another project's environment.
-3. When the generated file is missing or explicitly stale after rotation, run `0th secrets sync`
-   once through the project's documented wrapper. Do not invoke 1Password independently for every later command. A reference template
-   contains only `op://` references; resolved values may not be read.
-4. Run the actual consuming command through the generated file's normal loader. A presence-only
-   child check may precede the command, but it does not replace the real probe.
-5. Retry the credential-dependent proof inside that runner. Only block when no project-scoped safe
-   runner exists or every applicable runner was attempted and returned a concrete sanitized error.
+1. Run the consuming application through its configured project loader.
+2. Check only the loader or cache path's existence, type, ownership, permissions, and ignored state.
+   Never inspect its contents or borrow another project's environment.
+3. When setup or intentional rotation is required, resolve `secret_runtime`, load its guidance, and
+   attempt one provider sync or refresh through the documented project wrapper.
+4. Retry the actual consuming command. A presence-only check does not replace the real probe.
 
-The blocked report must name each attempted safe runner and its exact non-secret error. A locked
-1Password session, denied authorization, invalid reference, or provider rejection can block an
-intentional sync; it does not invalidate an existing generated local environment. An uninjected
-parent process cannot establish a blocker.
+The blocked receipt names each attempted safe runner and its sanitized error. Provider login,
+authorization, or refresh failure does not invalidate an existing project environment.
 
-## Agent boundary
+## Output boundary
 
-- Run the consuming application or its normal dotenv loader. Do not `cat`, `head`, `grep`, search,
-  summarize, or otherwise inspect secret-file contents.
-- Resolved values never enter prompts, chat, argv, logs, screenshots, browser payloads, diffs,
-  commits, test evidence, or review artifacts.
-- Verify secret presence through exit status, variable names, or a safe application health check,
-  never by displaying the value. Do not dump environments or enable shell tracing around secrets.
-- Website credentials stay in the selected browser profile or an approved autofill path. Do not
-  export personal browser passwords into project environment files.
-- If exposure may have occurred, identify only the affected category, stop reuse, and rotate.
+- Never read, print, search, summarize, snapshot, or trace secret-file contents.
+- Never dump environments, cookies, authorization headers, browser storage, or reveal-capable
+  provider output.
+- Resolved values never enter chat, prompts, command arguments, logs, screenshots, browser payloads,
+  diffs, commits, test evidence, memory, or review artifacts.
+- If exposure may have occurred, identify only the affected category, stop reuse, and rotate through
+  the owning provider.

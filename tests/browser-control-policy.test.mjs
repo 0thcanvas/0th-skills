@@ -11,38 +11,38 @@ function read(relativePath) {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
 }
 
-test("browser policy treats browser names as exact app identities", () => {
+test("portable browser policy treats configured identities as exact", () => {
   const policy = read("references/browser-control-policy.md");
 
   for (const fragment of [
-    "/Applications/Google Chrome.app",
-    "/Applications/Brave Browser.app",
-    "explicitly requests Brave",
-    "--provider chrome --profile agent",
-    "never silently substitute"
+    "exact application, profile, account, extension build, and session",
+    "runtime profile",
+    "not an equivalent session",
+    "Never substitute another browser identity"
   ]) {
     assert.ok(policy.includes(fragment), `browser policy should include "${fragment}"`);
   }
+  assert.doesNotMatch(policy, /Browser Kit|Google Chrome|Computer Use/);
 });
 
-test("browser policy separates hermetic automation from real-environment proof", () => {
+test("browser policy separates hermetic automation from session-backed proof", () => {
   const policy = read("references/browser-control-policy.md");
 
   assert.match(policy, /Hermetic automation/);
-  assert.match(policy, /Real-environment proof/);
-  assert.match(policy, /Chrome for Testing.*must not satisfy.*real-environment proof/is);
+  assert.match(policy, /Session-backed proof/);
+  assert.match(policy, /test runtimes never silently satisfy.*real-user/is);
+  assert.match(policy, /logged_in_browser/);
   assert.match(policy, /anti-bot/i);
 });
 
-test("real Chrome extension recovery reaches Computer Use before giving up", () => {
+test("browser recovery resolves separate provider capabilities before giving up", () => {
   const policy = read("references/browser-control-policy.md");
 
-  assert.match(policy, /Computer Use/);
-  assert.match(policy, /Google Chrome/);
-  assert.match(policy, /chrome:\/\/extensions/);
-  assert.match(policy, /Load unpacked/);
-  assert.match(policy, /confirmation/i);
-  assert.match(policy, /exact blocker/i);
+  assert.match(policy, /logged_in_browser/);
+  assert.match(policy, /provider guide/);
+  assert.match(policy, /browser_ui_fallback/);
+  assert.match(policy, /confirmation boundary/i);
+  assert.match(policy, /BLOCKED_REAL_ENV/);
 });
 
 test("build, debug, and verifier surfaces route through the browser policy", () => {
@@ -61,6 +61,16 @@ test("build, debug, and verifier surfaces route through the browser policy", () 
     );
   }
 
-  assert.doesNotMatch(read("references/stack-minimums.md"), /Chrome-for-Testing by default/);
-  assert.match(read("references/stack-minimums.md"), /--provider chrome --profile agent/);
+  assert.match(read("references/stack-minimums.md"), /session-backed-browser/);
+  assert.match(read("references/stack-minimums.md"), /logged_in_browser/);
+});
+
+test("personal profile owns the concrete local browser bindings", () => {
+  const profile = read("adapters/templates/runtime-profiles/personal.json");
+  const guide = read("adapters/providers/browser-kit.md");
+
+  assert.match(profile, /"provider": "browser-kit"/);
+  assert.match(profile, /"provider": "computer-use"/);
+  assert.match(guide, /\/Applications\/Google Chrome\.app/);
+  assert.match(guide, /browser-kit session open --provider chrome --profile agent/);
 });

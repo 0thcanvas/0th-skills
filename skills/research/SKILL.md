@@ -1,7 +1,6 @@
 ---
 name: research
 description: "Produces a current, source-aware answer for an external question. Use when repo evidence is insufficient and claims require docs, papers, code, standards, or practitioner sources."
-argument-hint: "[question]"
 ---
 
 # Research
@@ -60,11 +59,10 @@ A fetch-only failure, challenge page, CAPTCHA, 403/429, or login wall is
 path, then route to another available session path or report the exact blocker. `adapter_unavailable`
 must include the failed command or boundary.
 
-If Browser Kit conflicts with another CDP owner, move it with `--cdp-port`, `--daemon-port`,
-`BROWSER_KIT_CDP_PORT`, or `BROWSER_KIT_DAEMON_PORT`; do not kill the other browser session by
-default. Apply `../../references/browser-control-policy.md`: real-Chrome work uses profile `agent`,
-Computer Use targets Google Chrome as the UI fallback, and no other browser identity is substituted
-silently. OpenCLI and browser tools remain read-only unless the user explicitly authorizes a write.
+Resolve `session_backed_reading` or `logged_in_browser` from the active runtime profile and load its
+provider guidance. Preserve coexistence settings instead of killing another provider session by
+default. Apply `../../references/browser-control-policy.md`; no other browser identity substitutes
+silently. Session-backed adapters remain read-only unless the user explicitly authorizes a write.
 
 ## Output
 
@@ -76,9 +74,10 @@ Use `templates/output-shape.md`:
 - recommendation or next experiment;
 - citations adjacent to the claims they support.
 
-For durable findings, write the appropriate KB `raw/` note using
-`templates/raw-findings-note.md`, update its index, and use the Memory Write Gate. Exploratory
-reports remain working artifacts.
+For durable findings, use the canonical owner already configured by the project. Write a KB
+`raw/` note with `templates/raw-findings-note.md` only when the KB owns that research; otherwise
+update the current research/contract artifact or keep a compact Memory pointer. Do not duplicate the
+same finding across all three. Exploratory reports remain working artifacts.
 
 ## References
 

@@ -25,7 +25,7 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 Before any feature-specific verification, detect applicable stacks for this repo using `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md` (the Detection signals column in the Matrix table). Detection is multi-match: distinct root signals (Electron + manifest, etc.) get every applicable row exercised. Nested-workspace cases (a CLI bundle living inside a parent UI repo) are not yet detected by `/ship`'s gate; treat them as a known v1 limitation and exercise the relevant row manually.
 
-For each matched stack, select the proof lane in `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/browser-control-policy.md`. Playwright is limited to explicitly hermetic automation. Real-environment browser proof uses Browser Kit with real Google Chrome and profile `agent`; computer-use is the same-browser fallback only when granted.
+For each matched stack, select the proof lane in `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/browser-control-policy.md`. Hermetic automation cannot claim real-user fidelity. Real-environment browser proof resolves `logged_in_browser`; a required UI recovery resolves `browser_ui_fallback` separately.
 
 **This floor cannot be lowered.** Brief language like "skip live UI exercise if not feasible," "if X is hard to run, mark blocked," or "skip the smoke check" does not apply to stack-minimum exercises. If a brief contains such language for a stack-minimum row, run the exercise anyway and note the brief discrepancy in the report.
 
@@ -49,7 +49,7 @@ For terminal-based verification commands whose failures should produce a managed
 
 Exercise every Step 0 matched stack-minimum row first. Then exercise the feature-specific verification methods named in the brief:
 
-- **UI:** Use Playwright only for explicitly hermetic UI checks that do not claim real-user browser fidelity. Extensions, authentication, anti-bot behavior, logged-in/real-session/shared-tab cases, and real-environment proof use Browser Kit, the managed wrapper around `bb-browser`, with `browser-kit session open --provider chrome --profile agent`. Before relying on `browser_*` tools, run `browser-kit mcp status`; if the MCP is not registered for the current host, run `browser-kit mcp install --host <host>` and check status again. If OpenCLI Browser Bridge or another tool already owns `localhost:19825`, move Browser Kit with `--cdp-port <port> --daemon-port <port>` or `BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`. Once connected, call `browser_tab_list` before opening or navigating, reuse a matching Chrome tab, pass a tab to `browser_open`, and use `browser_tab_new` only when intentionally creating a fresh tab. If a required real-Chrome action still fails after one recovery attempt, use computer-use against the Google Chrome app when granted and follow its confirmation policy; never silently substitute Brave, Chrome for Testing, managed Chromium, or the in-app browser. Take screenshots, fill forms, click through flows, check responsive behavior, and verify accessibility basics. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
+- **UI:** Use a hermetic browser only when the check does not claim real-user fidelity. Extensions, authentication, anti-bot behavior, logged-in/real-session/shared-tab cases, and real-environment proof resolve `logged_in_browser`, verify its live availability, and load its provider guidance. Inspect existing sessions before opening a new one and preserve the exact required browser identity. After one provider-guided recovery attempt, resolve `browser_ui_fallback` for a required UI action; never silently substitute another identity. Take screenshots, fill forms, click through flows, check responsive behavior, and verify accessibility basics. Name the visual invariant before claiming visual correctness. If the claim is visual, the evidence must be visual: use a DOM/e2e test for behavior/routing, screenshot inspection for layout/fit/overlap, and pixel assertion or screenshot assertion for overlays, canvas, SVG, animations, and coordinate-system alignment.
 - **CLI:** Run commands with typical args, check exit codes and output, test error paths and edge cases
 - **API:** Hit endpoints with curl/fetch, verify response shapes and status codes, test write operations and validation
 - **Component:** Render in browser, check documented variants plus representative prop combinations, verify accessibility
@@ -115,18 +115,18 @@ Never surface secrets, tokens, or PII in any output:
 - Summarize API responses by structure, not raw content
 - Screenshots: note what was visible but do not reproduce identifying details
 - A missing variable in the current process is not proof that the credential is unavailable. Before a credential-related `BLOCKED` or `BLOCKED_REAL_ENV`, complete the credential-dependent preflight in `${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/secret-control-policy.md`.
-- For recurring verification, use the project's generated gitignored owner-only env file through the consuming application's loader. Normal commands do not contact 1Password. If the file is missing or intentionally stale after rotation, run the documented project sync once, then retry the consuming command.
+- For recurring verification, use the project's configured owner-only environment through the consuming application's loader. Normal commands do not contact the secret provider. If setup or intentional rotation is required, resolve `secret_runtime`, load its guidance, run one project sync, then retry the consuming command.
 - Check only project-scoped paths and metadata; do not inspect secret-file contents or borrow another project's environment. Seed phrases and derived private keys never belong in project env files.
 - Run the actual credential-dependent probe inside the safe runner. A presence-only check does not satisfy proof. Before blocking, record each attempted safe runner and its exact sanitized error.
 - When a `.env.local` is present, run the app's loader rather than reading the file directly. Do not `cat`, `head`, `grep`, or otherwise print its contents.
-- Do not run `op read`, `op item get --reveal`, `op inject` to stdout, `op run --no-masking`, `printenv`, `env`, `set`, shell tracing (`set -x`, `bash -x`), or commands that place secrets in argv.
+- Do not run reveal-capable provider commands, environment dumps, shell tracing, or commands that place secrets in argv.
 - Only after the preflight finds no safe runner or every applicable runner returns a concrete error may the check be marked BLOCKED. Never ask for or print the secret.
 
 ### 8. Teardown
 
 Whatever you spawn, you stop. Before returning an outcome:
 - Kill any dev server, worker, watcher, or background process you started for this verification (track PIDs of anything you launch — do not rely on the parent to clean up).
-- Close browser tabs/sessions you opened through Browser Kit. `browser_close_all` only closes tabs opened during the current MCP session, so it is safe to call.
+- Close only browser tabs or sessions created through the resolved capability during this run.
 - Stop containers, databases, queues, or ports started for verification; remove temp directories and fixture files you created.
 - Reconcile created test data with the Test Data Hygiene rule above — delete artifacts you can clean up, leave tagged ones for later sweeps.
 
@@ -148,7 +148,7 @@ Always write `${VERIFICATION_REPORT_DIR:-verification-report}/report.json` and `
     {
       "stack": "<stack id from stack-minimums.md>",
       "criterion": "<what was actually exercised>",
-      "tool": "playwright|playwright-electron|browser-kit|computer-use|null",
+      "tool": "hermetic-browser|<resolved-provider>|null",
       "evidence_path": "<path to dossier, screenshot, or test output>",
       "exercised_at": "<ISO 8601 timestamp>"
     }

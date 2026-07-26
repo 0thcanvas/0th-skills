@@ -3,11 +3,8 @@ import path from "node:path";
 import crypto from "node:crypto";
 import os from "node:os";
 import { fileURLToPath } from "node:url";
-import {
-  defaultCodexProbeCachePath,
-  loadCodexProbeCapabilities,
-  probeCodexRouting
-} from "./codex-exec-adapter.mjs";
+import { getHarnessAdapter } from "./harness-adapters.mjs";
+import { loadRuntimeProfile, validateRuntimeProfile } from "./runtime-profile.mjs";
 
 const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -81,6 +78,7 @@ const REQUIRED_PACKET_KEYS = [
   "budget",
   "output_schema"
 ];
+const PACKET_KEYS = [...REQUIRED_PACKET_KEYS, "capability"];
 const ROUTING_KEYS = ["schema_version", "harness", "profiles"];
 const ROUTING_PROFILE_KEYS = ["model", "reasoning_effort", "selection_mode"];
 const RECEIPT_KEYS = [
@@ -250,12 +248,18 @@ export function validateHostCapabilities(value) {
 export function validateCapabilityPacket(value) {
   assertObject(value, "capability packet");
   assertRequiredKeys(value, REQUIRED_PACKET_KEYS, "capability packet");
-  assertAllowedKeys(value, REQUIRED_PACKET_KEYS, "capability packet");
+  assertAllowedKeys(value, PACKET_KEYS, "capability packet");
 
   for (const key of ["objective", "evidence_advantage", "output_schema"]) {
     if (typeof value[key] !== "string" || value[key].trim() === "") {
       throw new Error(`capability packet: ${key} must be a non-empty string`);
     }
+  }
+  if (
+    value.capability !== undefined
+    && (typeof value.capability !== "string" || value.capability.trim() === "")
+  ) {
+    throw new Error("capability packet: capability must be a non-empty string");
   }
   for (const key of ["independent", "ordered", "shared_mutable_state"]) {
     assertBoolean(value[key], `capability packet: ${key}`);
@@ -436,11 +440,55 @@ function launchIdFor(plan) {
   return crypto.createHash("sha256").update(JSON.stringify(plan)).digest("hex");
 }
 
-export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
+export function resolveLaunchPlan({ capabilities, packet, routing, runtimeProfile = null } = {}) {
   validateHostCapabilities(capabilities);
   validateCapabilityPacket(packet);
   validateModelRouting(routing);
   const reasons = [];
+  let capabilityBinding = null;
+
+  if (runtimeProfile) {
+    validateRuntimeProfile(runtimeProfile);
+    if (
+      runtimeProfile.harness !== "generic"
+      && runtimeProfile.harness !== capabilities.harness
+    ) {
+      reasons.push("runtime_profile_harness_mismatch");
+    }
+    if (runtimeProfile.topology.mode === "single-agent") {
+      reasons.push("runtime_profile_single_agent");
+    }
+    if (
+      runtimeProfile.topology.max_workers !== null
+      && packet.budget.max_workers > runtimeProfile.topology.max_workers
+    ) {
+      reasons.push("runtime_profile_worker_budget_exceeded");
+    }
+    if (packet.capability) {
+      capabilityBinding = runtimeProfile.capabilities[packet.capability] ?? null;
+      if (!capabilityBinding) {
+        reasons.push("runtime_profile_capability_not_configured");
+      } else {
+        if (capabilityBinding.invocation !== "delegated") {
+          reasons.push("runtime_profile_capability_not_delegated");
+        }
+        if (
+          packet.mutation_scope === "mutable"
+          && !capabilityBinding.effects.some((effect) => (
+            effect === "workspace-write" || effect === "external-write"
+          ))
+        ) {
+          reasons.push("runtime_profile_write_effect_unavailable");
+        }
+        if (
+          packet.shared_mutable_state
+          && !["isolated", "host-managed"].includes(capabilityBinding.workspace)
+        ) {
+          reasons.push("runtime_profile_workspace_isolation_required");
+        }
+      }
+    }
+  }
 
   if (routing.harness !== capabilities.harness) reasons.push("routing_harness_mismatch");
 
@@ -455,53 +503,53 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
     reasons.push("workspace_isolation_required");
   }
   const selection = selectComputeClass(packet);
-  const profile = selection.selected === "inherit"
+  const computeProfile = selection.selected === "inherit"
     ? { model: "inherit", reasoning_effort: "inherit", selection_mode: "inherit" }
     : routing.profiles[selection.selected];
-  const profileDisabled = profile.selection_mode === "disabled";
-  const resolvedModel = profile.model === "inherit" ? capabilities.model : profile.model;
-  const resolvedEffort = profile.reasoning_effort === "inherit"
+  const profileDisabled = computeProfile.selection_mode === "disabled";
+  const resolvedModel = computeProfile.model === "inherit" ? capabilities.model : computeProfile.model;
+  const resolvedEffort = computeProfile.reasoning_effort === "inherit"
     ? capabilities.reasoning_effort
-    : profile.reasoning_effort;
+    : computeProfile.reasoning_effort;
   if (profileDisabled) reasons.push("compute_class_unavailable");
-  if (!profileDisabled && selection.selected !== "inherit" && selection.selected !== "frontier" && profile.selection_mode === "inherit") {
+  if (!profileDisabled && selection.selected !== "inherit" && selection.selected !== "frontier" && computeProfile.selection_mode === "inherit") {
     reasons.push("compute_class_unavailable");
   }
   if (!profileDisabled && resolvedModel === null) reasons.push("runtime_model_unknown");
   if (!profileDisabled && resolvedEffort === null) reasons.push("runtime_effort_unknown");
-  if (!profileDisabled && profile.model !== "inherit" && profile.model !== capabilities.model && !capabilities.model_override) {
+  if (!profileDisabled && computeProfile.model !== "inherit" && computeProfile.model !== capabilities.model && !capabilities.model_override) {
     reasons.push("model_override_unavailable");
   }
-  if (!profileDisabled && profile.model !== "inherit" && profile.model !== capabilities.model) {
+  if (!profileDisabled && computeProfile.model !== "inherit" && computeProfile.model !== capabilities.model) {
     if (capabilities.available_models === null) reasons.push("model_catalog_unobserved");
-    else if (!capabilities.available_models.includes(profile.model)) reasons.push("model_unavailable");
+    else if (!capabilities.available_models.includes(computeProfile.model)) reasons.push("model_unavailable");
   }
   if (
     !profileDisabled
     &&
-    profile.reasoning_effort !== "inherit"
-    && profile.reasoning_effort !== capabilities.reasoning_effort
+    computeProfile.reasoning_effort !== "inherit"
+    && computeProfile.reasoning_effort !== capabilities.reasoning_effort
     && !capabilities.effort_override
   ) reasons.push("effort_override_unavailable");
   if (
     !profileDisabled
-    && profile.reasoning_effort !== "inherit"
-    && profile.reasoning_effort !== capabilities.reasoning_effort
+    && computeProfile.reasoning_effort !== "inherit"
+    && computeProfile.reasoning_effort !== capabilities.reasoning_effort
   ) {
     if (capabilities.available_reasoning_efforts === null) reasons.push("effort_catalog_unobserved");
-    else if (!capabilities.available_reasoning_efforts.includes(profile.reasoning_effort)) {
+    else if (!capabilities.available_reasoning_efforts.includes(computeProfile.reasoning_effort)) {
       reasons.push("reasoning_effort_unavailable");
     }
   }
   if (
     !profileDisabled
-    && profile.model !== "inherit"
-    && profile.reasoning_effort !== "inherit"
+    && computeProfile.model !== "inherit"
+    && computeProfile.reasoning_effort !== "inherit"
   ) {
     if (capabilities.available_model_effort_pairs === null) {
       reasons.push("model_effort_pair_catalog_unobserved");
     } else if (!capabilities.available_model_effort_pairs.some(
-      (pair) => pair.model === profile.model && pair.reasoning_effort === profile.reasoning_effort
+      (pair) => pair.model === computeProfile.model && pair.reasoning_effort === computeProfile.reasoning_effort
     )) {
       reasons.push("model_effort_pair_unavailable");
     }
@@ -510,13 +558,19 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
     packet.task_risk === "low"
     && selection.selected === "economy"
     && ["xhigh", "max"].includes(capabilities.reasoning_effort)
-    && (profile.reasoning_effort === "inherit" || !capabilities.effort_override)
+    && (computeProfile.reasoning_effort === "inherit" || !capabilities.effort_override)
   ) {
     reasons.push("disproportionate_inherited_effort");
   }
 
   if (reasons.length > 0) {
-    return { allowed: false, topology: "single-root", reasons: [...new Set(reasons)], launch_plan: null };
+    return {
+      allowed: false,
+      topology: "single-root",
+      reasons: [...new Set(reasons)],
+      capability_binding: capabilityBinding,
+      launch_plan: null
+    };
   }
   const unsignedPlan = {
     schema_version: 1,
@@ -524,7 +578,7 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
     compute_class: selection.selected,
     model: resolvedModel,
     reasoning_effort: resolvedEffort,
-    selection_mode: profile.selection_mode,
+    selection_mode: computeProfile.selection_mode,
     escalation_class: packet.escalation_class,
     selection_rationale: selection.rationale,
     attestation_required: true
@@ -533,6 +587,7 @@ export function resolveLaunchPlan({ capabilities, packet, routing } = {}) {
     allowed: true,
     topology: "bounded-worker",
     reasons: [],
+    capability_binding: capabilityBinding,
     launch_plan: { ...unsignedPlan, launch_id: launchIdFor(unsignedPlan) }
   };
 }
@@ -617,12 +672,14 @@ function parseCliOptions(argv) {
     else if (token === "--runtime-json") options.runtimeJson = argv[++index];
     else if (token === "--packet-json") options.packetJson = argv[++index];
     else if (token === "--routing-json") options.routingJson = argv[++index];
+    else if (token === "--profile-json") options.profileJson = argv[++index];
     else if (token === "--config-dir") options.configDir = argv[++index];
     else if (token === "--now") options.now = argv[++index];
     else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
     else if (token === "--probe-max-age-ms") options.probeMaxAgeMs = Number(argv[++index]);
     else if (token === "--probe-cache") options.probeCache = argv[++index];
     else if (token === "--probe-output-schema") options.probeOutputSchema = argv[++index];
+    else if (token === "--runtime-bin") options.runtimeBin = argv[++index];
     else if (token === "--codex-bin") options.codexBin = argv[++index];
     else if (token === "--live-probe") options.liveProbe = true;
     else throw new Error(`unknown capabilities option: ${token}`);
@@ -630,14 +687,14 @@ function parseCliOptions(argv) {
   return options;
 }
 
-function codexProbePaths(options, cwd) {
+function harnessProbePaths(options, cwd, adapter) {
   return {
     cachePath: options.probeCache
       ? path.resolve(cwd, options.probeCache)
-      : defaultCodexProbeCachePath(),
+      : adapter.defaultProbeCachePath(),
     outputSchemaPath: options.probeOutputSchema
       ? path.resolve(cwd, options.probeOutputSchema)
-      : path.join(PLUGIN_ROOT, "protocol", "schemas", "codex-probe-output.schema.json")
+      : adapter.probeOutputSchemaPath
   };
 }
 
@@ -655,29 +712,33 @@ function loadCapabilitiesForRouting({ options, cwd, routing }) {
       warning: null
     };
   }
-  if (options.harness !== "codex") {
+  const adapter = getHarnessAdapter(options.harness);
+  if (!adapter?.probeRouting || !adapter?.loadProbeCapabilities) {
+    if (options.liveProbe) {
+      throw new Error(`no live capability probe is registered for harness ${options.harness}`);
+    }
     return { capabilities: loadHostCapabilities({ adapterPath }), probe_cache: null, warning: null };
   }
 
-  const { cachePath, outputSchemaPath } = codexProbePaths(options, cwd);
+  const { cachePath, outputSchemaPath } = harnessProbePaths(options, cwd, adapter);
   let probeCache = null;
   if (options.liveProbe) {
-    probeCache = probeCodexRouting({
+    probeCache = adapter.probeRouting({
       routing,
       cwd,
       outputSchemaPath,
       cachePath,
-      codexBin: options.codexBin || "codex",
+      runtimeBin: options.runtimeBin || options.codexBin,
       now: options.now ? new Date(options.now) : new Date()
     });
   }
   if (fs.existsSync(cachePath)) {
     try {
       return {
-        capabilities: loadCodexProbeCapabilities({
+        capabilities: adapter.loadProbeCapabilities({
           cachePath,
           routing,
-          codexBin: options.codexBin || "codex",
+          runtimeBin: options.runtimeBin || options.codexBin,
           now: options.now ? new Date(options.now) : new Date(),
           maxAgeMs: options.probeMaxAgeMs ?? DEFAULT_MAX_OBSERVATION_AGE_MS
         }),
@@ -695,7 +756,7 @@ function loadCapabilitiesForRouting({ options, cwd, routing }) {
   return {
     capabilities: loadHostCapabilities({ adapterPath }),
     probe_cache: probeCache,
-    warning: "no fresh Codex probe cache; pass --live-probe to perform token-consuming checks"
+    warning: `no fresh ${options.harness} probe cache; pass --live-probe to perform token-consuming checks`
   };
 }
 
@@ -717,6 +778,17 @@ export function runCapabilitiesCommand(argv, { cwd = process.cwd() } = {}) {
     capabilities: capabilityResult.capabilities,
     routing: { source: resolvedRouting.source, path: resolvedRouting.path }
   };
+  const runtimeProfile = options.profileJson
+    ? loadRuntimeProfile({ profilePath: path.resolve(cwd, options.profileJson) })
+    : null;
+  if (runtimeProfile) {
+    output.runtime_profile = {
+      profile_id: runtimeProfile.profile_id,
+      harness: runtimeProfile.harness,
+      topology: runtimeProfile.topology,
+      state: runtimeProfile.state
+    };
+  }
   if (capabilityResult.warning) output.capability_warning = capabilityResult.warning;
   if (capabilityResult.probe_cache) output.probe_cache = capabilityResult.probe_cache;
 
@@ -725,7 +797,8 @@ export function runCapabilitiesCommand(argv, { cwd = process.cwd() } = {}) {
     output.delegation = decideDelegation({
       capabilities: capabilityResult.capabilities,
       packet,
-      routing: resolvedRouting.routing
+      routing: resolvedRouting.routing,
+      runtimeProfile
     });
   }
   return output;
@@ -753,12 +826,14 @@ function parseRoutingOptions(argv) {
     if (token === "--harness") options.harness = argv[++index];
     else if (token === "--config-dir") options.configDir = argv[++index];
     else if (token === "--routing-json") options.routingJson = argv[++index];
+    else if (token === "--profile-json") options.profileJson = argv[++index];
     else if (token === "--runtime-json") options.runtimeJson = argv[++index];
     else if (token === "--now") options.now = argv[++index];
     else if (token === "--max-age-ms") options.maxAgeMs = Number(argv[++index]);
     else if (token === "--probe-max-age-ms") options.probeMaxAgeMs = Number(argv[++index]);
     else if (token === "--probe-cache") options.probeCache = argv[++index];
     else if (token === "--probe-output-schema") options.probeOutputSchema = argv[++index];
+    else if (token === "--runtime-bin") options.runtimeBin = argv[++index];
     else if (token === "--codex-bin") options.codexBin = argv[++index];
     else if (token === "--live-probe") options.liveProbe = true;
     else if (token === "--force") options.force = true;
@@ -831,12 +906,16 @@ export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
       routing: resolved.routing
     });
     const capabilities = capabilityResult.capabilities;
+    const runtimeProfile = options.profileJson
+      ? loadRuntimeProfile({ profilePath: path.resolve(cwd, options.profileJson) })
+      : null;
     const profiles = {};
     for (const computeClass of ROUTABLE_COMPUTE_CLASSES) {
       const decision = resolveLaunchPlan({
         capabilities,
         packet: doctorPacket(computeClass),
-        routing: resolved.routing
+        routing: resolved.routing,
+        runtimeProfile
       });
       profiles[computeClass] = {
         allowed: decision.allowed,
@@ -851,6 +930,14 @@ export function runRoutingCommand(argv, { cwd = process.cwd() } = {}) {
       routing_source: resolved.source,
       routing_path: resolved.path,
       capabilities_source: capabilities.source,
+      runtime_profile: runtimeProfile
+        ? {
+            profile_id: runtimeProfile.profile_id,
+            harness: runtimeProfile.harness,
+            topology: runtimeProfile.topology,
+            state: runtimeProfile.state
+          }
+        : null,
       profiles
     };
     if (capabilityResult.warning) output.capability_warning = capabilityResult.warning;

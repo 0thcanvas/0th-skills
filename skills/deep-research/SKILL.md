@@ -1,7 +1,6 @@
 ---
 name: deep-research
 description: "Builds a budgeted file-backed world model for an expensive external investigation. Use when feasibility, decision, or survey work requires multiple source passes, contradiction analysis, a reusable landscape, or an experiment; ordinary source-backed questions stay in research."
-argument-hint: "[feasibility|decision|survey] [question]"
 ---
 
 # Deep Research

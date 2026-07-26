@@ -22,7 +22,7 @@ You do NOT have the parent's conversation history. Everything you need is in the
 
 Use `WebSearch` to find candidate pages, then `WebFetch` to read the most promising ones. You may
 use `Read` and `Grep` to check local files first if the parent mentioned a repo path for context.
-Do not open a browser or use computer-use. If a page needs session-backed reading, return the
+Do not open a browser or use a UI fallback. If a page needs session-backed reading, return the
 blocker to the parent instead of trying to bypass it here.
 
 ## Process
@@ -41,8 +41,8 @@ blocker to the parent instead of trying to bypass it here.
 5. **Flag gaps.** If the answer is partial, stale, or contradicted across sources, say so.
 6. **Hand back access blockers.** If WebFetch hits a challenge page, CAPTCHA, verification page,
    403/429, login wall, or bot-block page, write `challenge_or_session_blocked` in `GAPS` and tell
-   the parent to use OpenCLI, Browser Kit/BB Browser, or another session-backed route. Do not treat
-   the blocked page as evidence that the content is absent.
+   the parent to resolve `session_backed_reading` or `logged_in_browser`. Do not treat the blocked
+   page as evidence that the content is absent.
 
 ## What to Return
 

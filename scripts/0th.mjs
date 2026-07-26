@@ -7,18 +7,22 @@ import {
   runRoutingCommand,
   validateLaunchPlan
 } from "./host-capabilities.mjs";
-import { runCodexDispatchCommand } from "./codex-exec-adapter.mjs";
+import { runHarnessDispatchCommand } from "./harness-adapters.mjs";
 import { runSecretsCommand } from "./secrets.mjs";
+import { runRuntimeProfileCommand } from "./runtime-profile.mjs";
 
 function usage() {
   return [
     "Usage: node scripts/0th.mjs <command> [options]",
     "",
     "Commands:",
-    "  capabilities --harness <name> [--runtime-json <path>] [--packet-json <path>] [--routing-json <path>]",
+    "  capabilities --harness <name> [--runtime-json <path>] [--packet-json <path>] [--routing-json <path>] [--profile-json <path>]",
     "  attest --launch-plan-json <path> --receipt-json <path>",
     "  routing init --harness <name> [--config-dir <path>] [--force]",
     "  routing doctor --harness <name> [--config-dir <path>] [--runtime-json <path>] [--live-probe]",
+    "  profile validate --profile-json <path>",
+    "  profile resolve --profile-json <path> --capability <name>",
+    "  profile init --template <minimal|mcp-workers|personal|pi> --profile-id <name> --config-dir <path>",
     "  dispatch --launch-plan-json <path> --prompt-file <path> --output-schema <path> --result-out <path> --events-out <path> --receipt-out <path> [--sandbox read-only|workspace-write]",
     "  secrets <paths|output|check|sync|clean> [environment|all] [--manifest path]",
     ""
@@ -35,7 +39,8 @@ function main(argv) {
   if (command === "capabilities") output = runCapabilitiesCommand(args);
   else if (command === "attest") output = runAttestCommand(args);
   else if (command === "routing") output = runRoutingCommand(args);
-  else if (command === "dispatch") output = runCodexDispatchCommand(args, { validateLaunchPlan });
+  else if (command === "profile") output = runRuntimeProfileCommand(args);
+  else if (command === "dispatch") output = runHarnessDispatchCommand(args, { validateLaunchPlan });
   else if (command === "secrets") {
     process.exitCode = runSecretsCommand(args);
     return;

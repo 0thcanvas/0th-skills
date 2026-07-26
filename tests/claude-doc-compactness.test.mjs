@@ -18,7 +18,7 @@ test("CLAUDE.md does not duplicate repo process or skill documentation", () => {
   assert.doesNotMatch(source, /references\/(skills-kernel|specialist-routing|workflow-verification|memory-contract)\.md/);
 });
 
-test("CLAUDE.md contains only the exceptional browser and safety boundaries", () => {
+test("CLAUDE.md contains only provider-neutral browser and safety boundaries", () => {
   assert.deepEqual(
     [...source.matchAll(/^## (.+)$/gm)].map(match => match[1]),
     ["Browser", "Safety"]
@@ -26,7 +26,8 @@ test("CLAUDE.md contains only the exceptional browser and safety boundaries", ()
   assert.match(source, /references\/browser-control-policy\.md/);
   assert.match(source, /references\/secret-control-policy\.md/);
   assert.match(source, /resolved secret values/i);
-  assert.match(source, /`0th secrets`/i);
+  assert.match(source, /secret_runtime/i);
+  assert.doesNotMatch(source, /1Password|Browser Kit|Google Chrome|Computer Use|`0th secrets`/i);
 });
 
 test("CLAUDE.md remains a small repository instruction file", () => {

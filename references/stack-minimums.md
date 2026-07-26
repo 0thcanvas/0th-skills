@@ -19,11 +19,11 @@ lane before choosing a compatible tool:
 
 Select the proof lane through `references/browser-control-policy.md` before choosing a tool:
 
-1. **Playwright** — for explicitly hermetic automation that does not claim real-user browser fidelity.
-2. **Browser Kit** — primary path for real Google Chrome proof, including extensions, authentication,
-   anti-bot behavior, logged-in state, and shared-tab cases.
-3. **Computer-use** — real-Chrome fallback when Browser Kit cannot perform a required UI action;
-   target the Google Chrome app explicitly and follow Computer Use confirmation requirements.
+1. **Hermetic browser runtime** — for isolated automation that does not claim real-user fidelity.
+2. **`logged_in_browser`** — resolved from the runtime profile for extensions, authentication,
+   anti-bot behavior, private state, and shared-tab cases.
+3. **`browser_ui_fallback`** — resolved separately when the session-backed provider cannot perform a
+   required UI action; it keeps the same required browser identity and authority boundary.
 
 If no chain tool is usable for the matched stack on the running agent, the verifier returns BLOCKED — never PASS.
 
@@ -32,11 +32,11 @@ If no chain tool is usable for the matched stack on the running agent, the verif
 | Stack id | Detection signals (any match) | Minimum behavior |
 |---|---|---|
 | `electron-desktop` | `package.json` has `electron` in `dependencies`/`devDependencies`, or `electron/main.*` file present | Launch the built binary; renderer invokes ≥1 method through the `contextBridge → preload → ipcRenderer → ipcMain` chain; assert the resolved value (not just no exception). Crossing the IPC bridge is the point — paper-level symmetry checks do not satisfy this row. |
-| `chrome-mv3-extension` | `manifest.json` with `"manifest_version": 3` | Background service worker responds to a message dispatched from a content script or extension popup; assert response shape. Real-environment proof uses Browser Kit with `browser-kit session open --provider chrome --profile agent --ext <path>`. An explicitly hermetic Playwright-managed run may supplement this proof but cannot replace it. If programmatic loading fails, follow the Computer Use recovery in `references/browser-control-policy.md`. |
+| `chrome-mv3-extension` | `manifest.json` with `"manifest_version": 3` | Background service worker responds to a message dispatched from a content script or extension popup; assert response shape. Real-environment proof resolves `logged_in_browser` and uses the exact configured application, profile, and extension build. Hermetic automation may supplement but cannot replace it. If programmatic loading fails, follow the capability recovery in `references/browser-control-policy.md`. |
 | `web-app` | `next.config.*`, `vite.config.*`, `astro.config.*`, or `app/` / `pages/` directory present, AND no `electron` dep | Loaded route fetches ≥1 backend response and renders without console errors. Exit criteria: backend hit count ≥ 1, console error count = 0. |
 | `cli` | `package.json` has `bin` field and no UI/electron deps | Spawn binary with fixture input; diff stdout against a known-good snapshot; assert exit code. |
 | `service` | `Dockerfile`, `fly.toml`, or a declared health endpoint, with no UI surface | Hit ≥1 endpoint of the running service (deployed or local docker); verify response shape and status; assert auth boundary if present. |
-| `browser-kit-escape-hatch` | Brief explicitly names "real-session", "logged-in", "shared-tab", "user's Chrome", extension, anti-bot, or real-environment proof | Same evidence shape as `web-app`, but sourced through Browser Kit's managed `browser_*` MCP tools against real Google Chrome with the `agent` profile. Before relying on those tools, run `browser-kit mcp status`; start or attach with `browser-kit session open --provider chrome --profile agent`; if OpenCLI Browser Bridge or another tool owns `localhost:19825`, move Browser Kit with `--cdp-port <port> --daemon-port <port>` or `BROWSER_KIT_CDP_PORT` / `BROWSER_KIT_DAEMON_PORT`; call `browser_tab_list` before opening or navigating; pass a tab to `browser_open`; use `browser_tab_new` only for intentional fresh tabs. If a required action fails, follow `references/browser-control-policy.md`; do not silently switch browser identities. |
+| `session-backed-browser` | Brief explicitly names real-session, logged-in, shared-tab, user's browser, extension, anti-bot, or real-environment proof | Same evidence shape as `web-app`, sourced through the resolved `logged_in_browser` capability and exact configured identity. Check provider availability and existing sessions, load its guidance, reuse a matching session, and resolve `browser_ui_fallback` only when a required UI action remains unavailable. |
 
 ## Evidence contract — `stack_minimums_exercised`
 
@@ -59,7 +59,7 @@ The verifier's structured report at `${VERIFICATION_REPORT_DIR:-verification-rep
 
 `/ship`'s gate script reads this file, runs detection logic to compute the expected stack set for the repo, and refuses PR creation if any expected stack is absent from `stack_minimums_exercised` or if `outcome` ≠ `PASS`. `/ship` also requires `${VERIFICATION_REPORT_DIR:-verification-report}/proof-contract.json` and `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json` to show that the chosen proof tier was actually satisfied; a green test run is not enough when the contract requires a real runtime, logged-in browser, external sandbox, or live surface. The result tier may be higher than the contract, but not lower.
 
-The gate also reads `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` (written by `/build` when dispatching the verifier) so it can independently detect browser-kit-escape-hatch matches without trusting the verifier's claim. The env var `SHIP_GATE_BRIEF` overrides the file for ad-hoc runs.
+The gate also reads `${VERIFICATION_REPORT_DIR:-verification-report}/brief.txt` (written by `/build` when dispatching the verifier) so it can independently detect `session-backed-browser` matches without trusting the verifier's claim. The env var `SHIP_GATE_BRIEF` overrides the file for ad-hoc runs.
 
 Stack detection runs from the git toplevel (resolved via `git rev-parse --show-toplevel`) so `/ship` works from any subdirectory of the project. If the script is invoked outside a git repo, it falls back to the current working directory.
 
@@ -76,6 +76,4 @@ Used by `/ship`'s gate script to reconcile expected vs exercised stacks. Keep th
 - `web-app`
 - `cli`
 - `service`
-- `browser-kit-escape-hatch`
-
-Compatibility alias: `/ship` still accepts `bb-browser-escape-hatch` in older verifier reports, but new reports should use `browser-kit-escape-hatch`.
+- `session-backed-browser`

@@ -110,11 +110,10 @@ test("memory sync is a no-op when the memory file does not exist", () => {
   assert.equal(result.memory_file_exists, false);
 });
 
-test("memory sync regenerates the brief after flipping lifecycle_state to needs_review", () => {
-  // PR #19 review fix: mutators that flip lifecycle_state must refresh the
-  // brief so it doesn't keep saying "active" for claims memory-sync just
-  // demoted to "needs_review". Previously brief.md stayed stale until the
-  // next memory-write.
+test("memory sync removes needs_review claims from the current-only brief", () => {
+  // Mutators that flip lifecycle_state must refresh derived state. The
+  // default brief now contains only active claims; explicit recall owns
+  // needs_review and other historical states.
   const repo = tempRepo();
   const from = sh(repo, ["git", "rev-parse", "HEAD"]);
   fs.writeFileSync(path.join(repo, "src", "cart.js"), "export const cart = 2;\n");
@@ -149,11 +148,13 @@ test("memory sync regenerates the brief after flipping lifecycle_state to needs_
 
   const brief = fs.readFileSync(briefFile, "utf8");
   assert.ok(!brief.includes("STALE BRIEF"), "old brief content must be replaced");
-  assert.match(
-    brief,
-    /needs[ _-]?review|Repo State Warnings|cart-claim/i,
-    `brief should reflect the needs_review claim, got: ${brief.slice(0, 200)}`
-  );
+  assert.doesNotMatch(brief, /needs[ _-]?review|Repo State Warnings|cart-claim/i);
+  const [claim] = fs
+    .readFileSync(memoryFile, "utf8")
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => JSON.parse(line));
+  assert.equal(claim.lifecycle_state, "needs_review");
 });
 
 test("memory sync emits a stderr marker when brief regeneration fails after mutation", () => {
