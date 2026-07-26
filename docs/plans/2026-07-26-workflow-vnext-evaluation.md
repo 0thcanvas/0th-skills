@@ -1,15 +1,16 @@
 # Workflow vNext Evaluation Plan
 **Decision:** direct user instruction on 2026-07-26 to run the proposed experiments and proceed from evidence
 **Slices:** 5
-**Review status:** passed; execution complete with one explicit portability blocker
+**Review status:** optional; execution complete with one explicit portability blocker
 
-## Plan Review
-- Reviewer: configured external counterpart, then user-authorized same-model fallback
-- External result: unavailable — workspace export approval was denied before the plan left the machine.
-- Fallback result: `PASS WITH SUGGESTIONS`; all protocol-lock suggestions are incorporated below.
+## Review note
+- The earlier workspace-export denial did not establish a system rule against sending internal
+  plans to a counterpart. The user clarified that internal plans are allowed; only secrets,
+  personal data, and explicitly excluded content remain outside the disclosure boundary.
+- The same-model review was advisory input, not approval authority. The later review study replaced
+  the mandatory gate with `docs/decisions/2026-07-26-evidence-seeking-review.md`.
 - Resolved prerequisite: the separate Codex probe-schema fix passed 35 focused tests and a live
   three-profile probe returned `status: ready`.
-- Fallback re-review result: no blockers.
 
 ## Architecture
 - Keep the current workflow as the control; vNext is an experimental contract until behavioral gates pass.
@@ -104,7 +105,7 @@
 ### 5. Decide and hand off
 - [x] Publish the paired results, threats to validity, and go/no-go thresholds.
 - [x] Write a short vNext decision and implement the smallest authorized slice.
-- [x] Proof: 480/480 repository tests and plugin smoke pass; Claude portability remains an explicit
+- [x] Proof: 472/472 repository tests and plugin smoke pass; Claude portability remains an explicit
   `BLOCKED_REAL_ENV` claim boundary.
 
 ## Claim Boundary

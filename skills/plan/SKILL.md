@@ -74,8 +74,10 @@ Keep each slice to 2–5 lines. File-by-file edit instructions belong to impleme
 ## Review and handoff
 
 Use `ask-counterpart-review` only when ordering, migration risk, or missing coverage gives a reviewer
-a concrete evidence advantage. The user may approve, reorder, or narrow the slices. Then hand off
-to `/build` with the plan path.
+a concrete evidence advantage. Treat findings as hypotheses and accept them only when the request,
+decision evidence, or a reproducible constraint supports them. An unavailable or skipped reviewer
+does not block the plan. The user may approve, reorder, or narrow the slices. Then hand off to
+`/build` with the plan path.
 
 ## References
 

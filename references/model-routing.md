@@ -32,7 +32,8 @@ node scripts/0th.mjs routing doctor --harness codex --live-probe
 ```
 
 The probe starts one read-only, ephemeral `codex exec` request for each concrete profile, so it can
-consume provider tokens. Its cache is local user state under
+consume provider tokens. It ignores user config, rules, plugins, and memories so unrelated MCP auth
+or loaded skills cannot corrupt the capability result. Its cache is local user state under
 `~/.0th/skills/cache/model-routing/codex.json`, expires after 24 hours, and is invalidated when the
 Codex CLI version or routing-file fingerprint changes. A cached result authorizes only exact
 model/effort pairs that completed their probe. Configuration is intent, not proof.

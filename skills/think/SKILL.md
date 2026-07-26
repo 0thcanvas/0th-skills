@@ -42,8 +42,9 @@ result of a real tradeoff. Otherwise future work may revisit it normally.
 ## Review and handoff
 
 `ask-counterpart-review` is risk-triggered, not automatic. Use it only when a fresh context or
-distinct model is likely to catch a named architectural risk; record unique blockers and added
-review cost. The user owns the final decision.
+distinct model has a named evidence advantage for a material uncertainty. Review findings are
+hypotheses; accept only those supported by the decision evidence or a new check. The user owns the
+final decision.
 
 Hand off to `/plan` when work needs multiple ordered slices, otherwise `/build`.
 

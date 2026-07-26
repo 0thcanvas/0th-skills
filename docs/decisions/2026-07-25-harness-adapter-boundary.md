@@ -27,5 +27,12 @@ The controller may consume the adapter contract but should not import or branch 
 - Migration cost is bounded to one adapter, manifests, packaging, and contract tests.
 - The current Codex branch in `scripts/host-capabilities.mjs` remains explicit migration debt.
 
+## Current state
+- The Codex Structured Outputs schema and user-config isolation are fixed; a live three-profile
+  probe returned `status: ready` on 2026-07-26.
+- Shared skills, execution policy, packets, and receipts are host-neutral.
+- `scripts/host-capabilities.mjs` still imports the Codex live-probe adapter directly. Extracting
+  capability discovery into an adapter registry remains non-blocking migration work.
+
 ## Depends On
 - `docs/decisions/2026-07-09-portable-model-routing.md`

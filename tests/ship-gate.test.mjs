@@ -11,7 +11,6 @@ import {
   loadBrief,
   resolveRepoRoot,
   scanTrackedFilesForLocalPathLeaks,
-  validateCounterpartReviewEvidence,
   validateEvidencePaths,
   validateProofHead,
   validateProofContract,
@@ -48,11 +47,6 @@ function writeProductAcceptance(dir, payload = {}) {
       ...payload
     })
   );
-}
-
-function writeCounterpartReviewSkipped(dir, reason = "Test fixture: counterpart unavailable for the mock environment.") {
-  fs.mkdirSync(path.join(dir, "verification-report"), { recursive: true });
-  fs.writeFileSync(path.join(dir, "verification-report", "counterpart-review.skipped"), reason);
 }
 
 function writeProofContract(dir, payload = {}) {
@@ -301,7 +295,6 @@ test("detectStacks (subdir invocation via CLI): script run from a deep subdir of
   fs.mkdirSync(sub, { recursive: true });
   fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
   writeProductAcceptance(repo);
-  writeCounterpartReviewSkipped(repo);
   writeProofContract(repo);
   writeProofResult(repo);
   fs.writeFileSync(
@@ -644,79 +637,6 @@ test("validateProductAcceptanceReport: freshWindowMs option overrides default 24
   assert.equal(result.ok, true, result.reasons.join(", "));
 });
 
-test("validateCounterpartReviewEvidence: fails when neither review nor skipped file exists", () => {
-  const repo = makeTempRepo();
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, false);
-  assert.match(result.reasons.join("\n"), /missing counterpart review evidence/);
-});
-
-test("validateCounterpartReviewEvidence: passes when counterpart-review.md exists", () => {
-  const repo = makeTempRepo();
-  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
-  fs.writeFileSync(
-    path.join(repo, "verification-report", "counterpart-review.md"),
-    "COUNTERPART REVIEW: code\n\nBlockers: none\nOverall: clean."
-  );
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, true, result.reasons.join(", "));
-});
-
-test("validateCounterpartReviewEvidence: fails when counterpart-review.md is empty", () => {
-  const repo = makeTempRepo();
-  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
-  fs.writeFileSync(path.join(repo, "verification-report", "counterpart-review.md"), " \n ");
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, false);
-  assert.match(result.reasons.join("\n"), /counterpart-review\.md is empty/);
-});
-
-test("validateCounterpartReviewEvidence: review output wins over a stale skipped marker", () => {
-  const repo = makeTempRepo();
-  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
-  fs.writeFileSync(
-    path.join(repo, "verification-report", "counterpart-review.md"),
-    "COUNTERPART REVIEW: code\n\nBlockers: none\nOverall: clean."
-  );
-  fs.writeFileSync(path.join(repo, "verification-report", "counterpart-review.skipped"), "   \n  ");
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, true, result.reasons.join(", "));
-});
-
-test("validateCounterpartReviewEvidence: passes when counterpart-review.skipped has a reason", () => {
-  const repo = makeTempRepo();
-  writeCounterpartReviewSkipped(repo, "quota exhausted on 2026-05-10");
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, true, result.reasons.join(", "));
-});
-
-test("validateCounterpartReviewEvidence: accepts a risk decision with no evidence advantage", () => {
-  const repo = makeTempRepo();
-  writeCounterpartReviewSkipped(
-    repo,
-    "NOT_REQUIRED: routine internal change has no independent review evidence advantage."
-  );
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, true, result.reasons.join(", "));
-});
-
-test("validateCounterpartReviewEvidence: rejects an unclassified skip reason", () => {
-  const repo = makeTempRepo();
-  writeCounterpartReviewSkipped(repo, "Skipped because the change looked fine.");
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, false);
-  assert.match(result.reasons.join("\n"), /availability blocker or a risk decision/);
-});
-
-test("validateCounterpartReviewEvidence: fails when counterpart-review.skipped is empty", () => {
-  const repo = makeTempRepo();
-  fs.mkdirSync(path.join(repo, "verification-report"), { recursive: true });
-  fs.writeFileSync(path.join(repo, "verification-report", "counterpart-review.skipped"), "   \n  ");
-  const result = validateCounterpartReviewEvidence(repo, "verification-report");
-  assert.equal(result.ok, false);
-  assert.match(result.reasons.join("\n"), /must contain an availability blocker or a risk decision/);
-});
-
 test("validateProofContract: valid contract satisfies the gate", () => {
   const result = validateProofContract({
     schema_version: 1,
@@ -907,7 +827,6 @@ test("ship-gate end-to-end: required:true PASS happy path exits 0", () => {
     path.join(repo, "verification-report", "screenshots", "onboarding-step-1.png"),
     "fixture screenshot evidence\n"
   );
-  writeCounterpartReviewSkipped(repo);
   writeProofContract(repo, {
     minimum_proof_tier: "T2",
     selected_rationale: "Electron desktop feature requires real app launch proof.",
@@ -970,7 +889,6 @@ test("ship-gate end-to-end: required:true with empty evidence_paths exits 1", ()
       reviewed_at: new Date().toISOString()
     })
   );
-  writeCounterpartReviewSkipped(repo);
   writeProofContract(repo);
   writeProofResult(repo);
   const scriptPath = path.resolve("scripts/ship-gate.mjs");
@@ -990,48 +908,10 @@ test("ship-gate end-to-end: required:true with empty evidence_paths exits 1", ()
   assert.match(out, /evidence_paths must be non-empty/);
 });
 
-test("ship-gate end-to-end: fails with missing counterpart review evidence", () => {
-  const repo = makeTempGitRepo();
-  writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
-  writeProductAcceptance(repo);
-  fs.writeFileSync(
-    path.join(repo, "verification-report", "report.json"),
-    JSON.stringify({
-      outcome: "PASS",
-      pre_dispatch_tool_failures_reviewed: true,
-      stack_minimums_exercised: [
-        {
-          stack: "electron-desktop",
-          criterion: "renderer invoked window.api.x via contextBridge",
-          tool: "playwright-electron",
-          evidence_path: "verification-report/dossier.json",
-          exercised_at: "2026-05-03T12:00:00Z"
-        }
-      ]
-    })
-  );
-  const scriptPath = path.resolve("scripts/ship-gate.mjs");
-  let out;
-  let exitCode = 0;
-  try {
-    out = execFileSync("node", [scriptPath], {
-      cwd: repo,
-      encoding: "utf8",
-      env: { ...process.env, SHIP_GATE_BRIEF: "" }
-    });
-  } catch (e) {
-    exitCode = e.status;
-    out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
-  }
-  assert.equal(exitCode, 1, `expected exit 1 for missing counterpart evidence, got ${exitCode}: ${out}`);
-  assert.match(out, /counterpart review evidence gate FAILED/);
-});
-
 test("ship-gate end-to-end: fails with missing proof result", () => {
   const repo = makeTempGitRepo();
   writePkg(repo, { name: "x", dependencies: { electron: "^31" } });
   writeProductAcceptance(repo);
-  writeCounterpartReviewSkipped(repo);
   writeProofContract(repo);
   fs.writeFileSync(
     path.join(repo, "verification-report", "report.json"),
@@ -1070,7 +950,6 @@ test("ship-gate end-to-end: fails with missing proof result", () => {
 test("ship-gate end-to-end: fails when proof result downgrades the contracted tier", () => {
   const repo = makeTempGitRepo();
   writeProductAcceptance(repo);
-  writeCounterpartReviewSkipped(repo);
   writeProofContract(repo, {
     minimum_proof_tier: "T2",
     selected_rationale: "Browser extension changes require browser runtime proof.",

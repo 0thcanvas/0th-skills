@@ -263,7 +263,10 @@ export function probeCodexRouting({
         eventsPath: path.join(tempDir, "events.jsonl"),
         sandbox: "read-only",
         codexBin,
-        env
+        env,
+        ignoreUserConfig: true,
+        ignoreRules: true,
+        isolateSkills: true
       });
       profiles[computeClass] = {
         model: profile.model,

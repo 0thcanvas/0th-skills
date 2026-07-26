@@ -90,8 +90,8 @@ and a pixel assertion or screenshot assertion for coordinate-sensitive rendering
 
 For full-lane user-facing work, read `references/product-acceptance.md` and produce
 `verification-report/product-acceptance.json`. Mechanical/internal work records `NOT_REQUIRED` with
-a concrete rationale. Review is risk-triggered, not automatic.
-Use `ask-counterpart-review` only when another context has a named evidence advantage.
+a rationale. Review is optional. Use `ask-counterpart-review` only with evidence
+advantage. Findings are hypotheses; no review artifact is required.
 
 ## Closeout
 

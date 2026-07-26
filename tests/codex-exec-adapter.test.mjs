@@ -225,18 +225,23 @@ test("Codex exec worker rejects launch plans owned by another harness", () => {
 test("live probe cache is bound to routing fingerprint, Codex version, and freshness", () => {
   const { directory, schemaPath, codexBin } = setup();
   const cachePath = path.join(directory, "probe-cache.json");
+  const argsPath = path.join(directory, "probe-args.json");
   const cache = probeCodexRouting({
     routing,
     cwd: directory,
     outputSchemaPath: schemaPath,
     cachePath,
     codexBin,
-    env: process.env,
+    env: { ...process.env, FAKE_CODEX_ARGS_OUT: argsPath },
     now: new Date("2026-07-09T23:02:00Z")
   });
 
   assert.equal(cache.routing_fingerprint, routingFingerprint(routing));
   assert.equal(cache.profiles.economy.status, "ready");
+  const probeArgs = JSON.parse(fs.readFileSync(argsPath, "utf8"));
+  assert.ok(probeArgs.includes("--ignore-user-config"));
+  assert.ok(probeArgs.includes("--ignore-rules"));
+  assert.ok(probeArgs.includes("--skip-git-repo-check"));
   const loaded = loadCodexProbeCapabilities({
     cachePath,
     routing,

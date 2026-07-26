@@ -1,6 +1,6 @@
 # Evidence-Adaptive Workflow
 **Date:** 2026-07-26
-**Status:** pilot — smallest slice active; production default not authorized
+**Status:** release candidate — merge and installed-runtime refresh pending
 
 ## Decision
 Use the least coordination artifact justified by task evidence: direct execution for one bounded
@@ -17,5 +17,5 @@ The 2026-07-26 pilot produced 18/18 coding PASS results; direct was cheapest in 
 precommitted conservative rule selected adaptive checkpoints for ordered/debug work. Structured
 handoff passed 2/2 while prose summary lost all required identifiers 2/2. Four-receipt orchestration
 passed. Codex portability passed; Claude Code was blocked by `oauth_org_not_allowed`, so
-cross-harness transport remains unproved. Expand the task corpus before changing the production
-default.
+cross-harness transport remains unproved. The user authorized the smallest production change on
+2026-07-26 with these limits explicit; expand the task corpus before claiming universal superiority.

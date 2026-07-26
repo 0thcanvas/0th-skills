@@ -178,7 +178,7 @@ test("counterpart-review skills use the generic ask-counterpart-review agent", (
 
   const build = read(path.join(skillsRoot, "build", "SKILL.md"));
   assert.match(build, /ask-counterpart-review/);
-  assert.match(build, /risk-triggered/);
+  assert.match(build, /Review is optional/);
 
   assert.doesNotMatch(
     read(path.join(skillsRoot, "ship", "SKILL.md")),

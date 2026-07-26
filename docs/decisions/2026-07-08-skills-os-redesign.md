@@ -1,7 +1,8 @@
 # 0th Skills Kernel Redesign
 **Date:** 2026-07-08
-**Status:** proposed — pending representative GPT-5.6 evaluation
-**Durable:** no — activate only after the evaluation gate passes
+**Status:** superseded by `2026-07-26-evidence-adaptive-workflow.md` and
+`2026-07-26-evidence-seeking-review.md`
+**Durable:** yes — retained as the four-layer architecture rationale
 
 ## Decision
 Redesign 0th skills as four layers: an Agent Skills-compatible portable contract, a machine-readable host capability adapter, a deterministic workflow controller, and an evaluation-driven routing policy. Frontier models choose ordinary execution paths; executable controls own authority, evidence, state, retries, and completion.
