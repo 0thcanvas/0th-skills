@@ -194,8 +194,7 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --type decision \
   --claim "Use write-through memory events instead of session-end hooks." \
   --scope repo \
-  --evidence-path "docs/decisions/2026-05-10-0th-memory-v2.md" \
-  --source-path "references/memory-contract.md" \
+  --evidence-path "references/memory-contract.md" \
   --confidence high
 ```
 

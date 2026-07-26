@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Converts a resolved outcome into verifiable vertical slices. Use when a plan is requested as the deliverable or the agent selects formal coordination."
-argument-hint: "[decision record path or scope]"
+argument-hint: "[resolved decision or scope]"
 ---
 
 # Plan
@@ -19,7 +19,7 @@ root-task preflight, authority, optional delegation, safety, and closeout.
 - Skip to `/build` when one bounded implementation loop is sufficient.
 - Ordered multi-file or debugging work alone is not a plan trigger; `/build` may use an adaptive
   checkpoint while evidence evolves.
-- `$ARGUMENTS` is the decision record or requested scope when invoked directly.
+- `$ARGUMENTS` is the resolved decision or requested scope when invoked directly.
 
 This workflow produces the plan artifact; it does not implement slices. If implementation was
 already requested, continue to `/build` without asking the user to approve internal planning
@@ -51,7 +51,11 @@ mechanics.
    and required screenshot evidence, screenshot assertion, or pixel assertion.
 7. For specialist work, name the capability boundary, handoff envelope, return receipt, and native
    fallback. Never plan a plugin’s internal workflow.
-8. Save the checklist to `docs/plans/YYYY-MM-DD-<topic>.md`.
+8. Save an internal plan under the 0th state root described by
+   `../../references/working-artifacts.md`, then hand off that path. A committed plan under
+   `docs/plans/` is exceptional: use it only when the user requests the plan as a repository
+   deliverable or the checklist has lasting shared value beyond the active task. Delete temporary
+   plans after merge, abandonment, or replacement.
 
 Plan shape:
 

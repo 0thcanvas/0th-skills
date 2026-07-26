@@ -122,7 +122,7 @@ test("workflow templates exist for think, research, and ship", () => {
 
 test("verification-report/ is gitignored so verifier artifacts don't leak into PRs", () => {
   // The verifier writes ${VERIFICATION_REPORT_DIR:-verification-report}/report.json per
-  // the self-testing-loop architecture (docs/decisions/2026-05-03-…). The default path
+  // the self-testing-loop architecture. The default path
   // must be gitignored so the artifact doesn't pollute every PR diff.
   const gitignorePath = path.join(repoRoot, ".gitignore");
   const source = read(gitignorePath);
@@ -292,9 +292,10 @@ test("shared working-artifacts contract defines lanes and lifecycle choices", ()
     );
   }
 
-  // Draft lane and the aligned `/think` exception are explicit.
+  // Draft lane and the conditional durable-record rule are explicit.
   assert.match(source, /not agent truth/);
-  assert.match(source, /Aligned `\/think` decision records/);
+  assert.match(source, /smallest durable record/);
+  assert.match(source, /committed plan is exceptional/);
 });
 
 test("artifact-producing skills reference the working-artifacts contract", () => {

@@ -13,8 +13,8 @@ function readJson(filePath) {
 
 function parseArgs(argv) {
   const args = {
-    questions: path.join(repoRoot, "docs/evals/2026-05-10-memory-recall-questions.json"),
-    baselines: path.join(repoRoot, "docs/evals/2026-05-10-memory-backend-baselines.json"),
+    questions: path.join(repoRoot, "fixtures/memory-eval/recall-questions.json"),
+    baselines: path.join(repoRoot, "fixtures/memory-eval/backend-baselines.json"),
     output: null,
   };
 

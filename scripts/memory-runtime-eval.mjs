@@ -179,7 +179,7 @@ export function runMemoryRuntimeEval() {
         title: "Resume runtime eval",
         scope: "project",
         next_action: "Continue after benchmark mapping.",
-        evidence_path: "docs/evals/2026-05-11-memory-public-benchmarks.md"
+        evidence_path: "references/memory-contract.md"
       }
     });
     updateOpenLoopStatus({
@@ -213,7 +213,7 @@ export function runMemoryRuntimeEval() {
         type: "incident",
         claim: "User correction: benchmark scores must not compare retrieval recall to QA accuracy.",
         scope: "repo",
-        evidence_path: "docs/evals/2026-05-11-memory-public-benchmarks.md",
+        evidence_path: "references/memory-contract.md",
         confidence: "high"
       }
     });

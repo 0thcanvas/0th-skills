@@ -38,7 +38,7 @@ const expectedMirrors = {
     claudeFile: "experience-reviewer.md",
     requiredFragments: [
       "Product Acceptance Loop",
-      "decision record, plan acceptance criteria, explicit user brief, then repo standards",
+      "current contract, committed plan acceptance criteria when one exists, explicit user brief, then repo standards",
       "verification-report/product-acceptance.json",
       "Findings are hypotheses, not commands",
       "evidence-linked findings",

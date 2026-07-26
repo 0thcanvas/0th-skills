@@ -11,8 +11,8 @@ useful result is compacted, promoted, or discarded.
 
 - **Memory v2** is the compact agent record. Durable lessons, decisions, tombstones,
   supersession links, and evidence pointers belong there.
-- **repo docs** are promoted durable evidence. They should describe current reality or
-  intentionally preserved history.
+- **repo docs** are promoted current evidence. They should describe live behavior, an active
+  constraint, or a legally/user-required record.
 - **working artifacts** are temporary scaffolding. Drafts, exploratory reports, human-facing
   comparisons, and similar scratch outputs are not agent truth by default; each skill names the
   specific artifact types it produces.
@@ -43,8 +43,8 @@ secret-adjacent data, extract only a safe summary and delete the raw local copy 
 
 Use lifecycle, not age:
 
-- **current**: keep in repo docs when the file describes live behavior, active constraints, or a
-  still-valid decision.
+- **current**: keep in repo docs when the file describes live behavior, an active constraint, or a
+  required record and has a clear owner or caller.
 - **compact**: extract the durable lesson into Memory v2, then discard or archive the working file.
 - **supersede**: record the replacement and source pointer when a newer decision or feature
   replaces the old one.
@@ -52,6 +52,10 @@ Use lifecycle, not age:
 
 Before deleting repo docs that Memory v2 cites, leave a durable tombstone, evidence record, source
 pack, or replacement source pointer so memory does not point at vanished proof.
+
+Git history, merged PRs, and tags are the historical record. Do not keep a file in the current tree
+only because it was once useful. Executable eval inputs belong with fixtures; raw run results belong
+in local or CI artifacts; their reusable conclusion belongs in a current contract or Memory claim.
 
 ## Maintenance Reports
 
@@ -65,6 +69,7 @@ first. If Memory v2 cites the old doc, leave a tombstone, evidence record, sourc
 replacement source pointer before removal. Always report before destructive cleanup; do not silently
 delete repo docs just because they look old.
 
-Aligned `/think` decision records keep their current contract: after alignment, write the decision
-record to `docs/decisions/`. This reference only adds a draft lane before alignment and a lifecycle
-review after a repo doc stops describing current reality.
+Internal plans default to the state root and are deleted after merge, abandonment, or replacement.
+A committed plan is exceptional and requires lasting shared value. `/think` likewise chooses the
+smallest durable record: update a current contract, write compact Memory, or create a dated decision
+record only when its rationale must remain independently auditable.

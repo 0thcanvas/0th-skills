@@ -782,8 +782,8 @@ test("validateProductAcceptanceReport: required acceptance with PASS + full payl
     required: true,
     required_rationale: "User-facing onboarding flow with copy and pedagogy review.",
     source: {
-      decision: "docs/decisions/2026-05-10-product-acceptance-loop.md",
-      plan: "docs/plans/2026-05-10-product-acceptance-loop.md",
+      decision: "skills/build/references/product-acceptance.md",
+      plan: "verification-report/plan.md",
       user_brief: "Learner sees a 3-step welcome before first lesson."
     },
     judgment_hierarchy: ["decision_record", "plan_acceptance_criteria", "explicit_user_brief", "repo_standards"],
@@ -809,8 +809,8 @@ test("ship-gate end-to-end: required:true PASS happy path exits 0", () => {
       required: true,
       required_rationale: "User-facing onboarding with copy and pedagogy review.",
       source: {
-        decision: "docs/decisions/2026-05-10-product-acceptance-loop.md",
-        plan: "docs/plans/2026-05-10-product-acceptance-loop.md",
+        decision: "skills/build/references/product-acceptance.md",
+        plan: "verification-report/plan.md",
         user_brief: null
       },
       judgment_hierarchy: ["decision_record", "plan_acceptance_criteria", "explicit_user_brief", "repo_standards"],

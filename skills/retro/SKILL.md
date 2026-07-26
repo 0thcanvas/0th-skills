@@ -8,7 +8,7 @@ argument-hint: "[correction or incident focus]"
 
 Capture facts before labels. Apply `../../references/skills-kernel.md` once for root-task preflight,
 authority, safety, and closeout. Read
-`../../docs/decisions/2026-05-03-skill-incident-log.md` before writing.
+`references/incident-contract.md` before writing.
 
 `$ARGUMENTS` narrows the incident focus; otherwise scan the current conversation. Skip when there
 was no concrete correction or workflow failure. `retro_open_loop_closeout` may trigger this skill
@@ -90,6 +90,7 @@ the incident file itself is already the evidence record.
 
 ## References
 
+- `references/incident-contract.md`
 - `../../references/skills-kernel.md`
 - `../../references/workflow-verification.md`
 - `../../references/memory-contract.md`

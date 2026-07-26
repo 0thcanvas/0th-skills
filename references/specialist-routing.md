@@ -9,7 +9,7 @@ Always route at the capability/workflow boundary: ask for a capability such as v
 frontend QA, iOS simulator proof, SwiftUI guidance, logged-in browser access, or framework-specific
 review. When a plugin is itself a workflow, let that plugin run its own internal steps; do not micromanage a plugin's internal skill sequence.
 
-Routing is a subroutine, not a transfer of workflow ownership. 0th still owns the decision record,
+Routing is a subroutine, not a transfer of workflow ownership. 0th still owns the decision,
 plan, proof tier, verifier evidence, product acceptance, ship gate, and retro/memory handoff.
 
 ## Handoff Envelope

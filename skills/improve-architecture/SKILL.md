@@ -46,9 +46,11 @@ Do not invent an interface yet.
 Ask for an **explicit user pick** before design work. **Do not refactor** in this skill.
 
 For the chosen candidate, clarify constraints and define the deepened module, seam, adapters, public
-behavior, and surviving tests. If accepted, write a short decision record and update `CONTEXT.md`
-only for vocabulary resolved during this discussion, then hand off to `/build`. If rejected for a
-load-bearing reason, record that decision so the same candidate is not repeatedly proposed.
+behavior, and surviving tests. If accepted, follow `/think`'s durability rule: update the owning
+current contract or Memory claim, and create a short decision record only when the exceptional ADR
+criteria apply. Update `CONTEXT.md` only for vocabulary resolved during this discussion, then hand
+off to `/build`. If rejected for a load-bearing reason, preserve the smallest durable record needed
+to avoid repeatedly proposing the same candidate.
 
 ## References
 

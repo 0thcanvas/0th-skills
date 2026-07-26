@@ -9,7 +9,7 @@
 // is absent from stack_minimums_exercised, the report is missing/malformed, or
 // outcome is not PASS.
 //
-// Per docs/decisions/2026-07-10-verification-authority.md.
+// Current proof authority is defined in references/workflow-verification.md.
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
@@ -402,9 +402,9 @@ export function validateProductAcceptanceReport(report, options = {}) {
   }
 
   // Freshness: `reviewed_at` must be a parseable ISO timestamp, must not be in the future
-  // (beyond clock skew), and must be within the freshness window of `now`. The decision
-  // record at docs/decisions/2026-05-10-product-acceptance-loop.md promises that ship
-  // checks evidence "presence, freshness, and outcome"; this is the freshness check.
+  // (beyond clock skew), and must be within the freshness window of `now`. The current
+  // product-acceptance contract requires ship to check evidence presence, freshness,
+  // and outcome; this is the freshness check.
   if (typeof report.reviewed_at !== "string" || report.reviewed_at.trim() === "") {
     reasons.push("reviewed_at must be a non-empty ISO timestamp string");
   } else if (!ISO_TIMESTAMP_PATTERN.test(report.reviewed_at)) {

@@ -15,14 +15,16 @@ once for root-task preflight, authority, optional delegation, safety, and closeo
 - Skip to `/build` when the solution and acceptance criteria are already clear.
 - `$ARGUMENTS` is the idea or design question when invoked directly.
 
-This workflow is read/design-only except for its decision record and an optional `CONTEXT.md`
-vocabulary update. **Do not implement**, scaffold, or make product changes during `/think`.
+This workflow is read/design-only except for the smallest durable record justified by the result and
+an optional `CONTEXT.md` vocabulary update. **Do not implement**, scaffold, or make product changes
+during `/think`.
 
 ## Process
 
 1. State the decision, uncertainty, constraints, non-goals, and what would make it resolved.
-2. Read the relevant decision records, project evidence, `CONTEXT.md`, and owning code paths. Answer
-   discoverable questions from evidence instead of asking the user.
+2. Read the relevant current contracts, Memory claims, project evidence, `CONTEXT.md`, and owning
+   code paths. Load historical records only when a source pointer makes their rationale relevant.
+   Answer discoverable questions from evidence instead of asking the user.
 3. Resolve technical implementation choices from evidence. Ask one consequential question at a
    time only for a user-owned outcome, authority boundary, lasting constraint, or material cost/risk
    tradeoff. Give a recommendation with the question.
@@ -31,14 +33,16 @@ vocabulary update. **Do not implement**, scaffold, or make product changes durin
 5. For hard independent analysis, use an optional bounded packet only when the capability gate in
    the Skills Kernel reports `allowed: true` and the additional perspective has an evidence
    advantage. Otherwise stay single-root.
-6. Once aligned, write `docs/decisions/YYYY-MM-DD-<topic>.md` using
-   `templates/decision-record.md`. Target 10–20 lines: context, decision, rationale, rejected
-   alternatives, consequences, and proof risk.
+6. Once aligned, choose the smallest durable record:
+   - update an existing current contract when it owns the surviving behavior;
+   - write a compact Memory claim when future recall needs the conclusion but no repo doc does;
+   - write `docs/decisions/YYYY-MM-DD-<topic>.md` from `templates/decision-record.md` only when the
+     user requested a committed ADR or the choice is hard to reverse, surprising without context,
+     the result of a real tradeoff, and not already captured by a current contract or code.
 7. If domain language was resolved, update `CONTEXT.md` in the same write. Never mutate vocabulary
-   mid-grill.
+   mid-grill. If no durable record is justified, write nothing.
 
-Mark `Durable: yes` only when the choice is hard to reverse, surprising without context, and the
-result of a real tradeoff. Otherwise future work may revisit it normally.
+Use `Durable: yes` only for the exceptional committed decision-record lane above.
 
 ## Review and handoff
 

@@ -91,8 +91,8 @@ test("the shared kernel owns preflight, authority, delegation, secrets, and clos
 
 test("each migrated skill retains its defining contract", () => {
   const expectations = {
-    think: ["Do not implement", "docs/decisions/", "CONTEXT.md", "Durable: yes"],
-    plan: ["vertical", "acceptance", "visual invariant", "docs/plans/"],
+    think: ["Do not implement", "smallest durable record", "CONTEXT.md", "current contract"],
+    plan: ["vertical", "acceptance", "visual invariant", "state root"],
     build: ["proof_contract_required", "minimum_proof_tier", "failure-dossier-runner.mjs", "Product Acceptance Loop"],
     debug: ["feedback loop", "root cause", "failing regression test", "blocked_real_env"],
     research: ["source buckets", "primary sources", "session-backed read receipt", "context_handoff"],

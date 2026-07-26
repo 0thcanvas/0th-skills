@@ -12,7 +12,7 @@ const codexMetaPath = path.join(repoRoot, "skills", "retro", "agents", "openai.y
 const claudeMdPath = path.join(repoRoot, "CLAUDE.md");
 const readmePath = path.join(repoRoot, "README.md");
 const smokeCheckPath = path.join(repoRoot, "scripts", "install-smoke-check.mjs");
-const decisionRelPath = "docs/decisions/2026-05-03-skill-incident-log.md";
+const incidentContractRelPath = "skills/retro/references/incident-contract.md";
 
 function read(filePath) {
   return fs.readFileSync(filePath, "utf8");
@@ -37,20 +37,20 @@ test("/retro skill prompt enforces the four staged steps in exact order", () => 
   );
 });
 
-test("/retro skill prompt links to the decision record so future readers can find it", () => {
+test("/retro skill prompt links to the current incident contract", () => {
   const source = read(skillPath);
   assert.ok(
-    source.includes(decisionRelPath),
-    `prompt should reference the decision record path ${decisionRelPath}`
+    source.includes("references/incident-contract.md"),
+    "prompt should reference the current incident contract"
   );
 });
 
-test("/retro decision record exists at the linked path so the SKILL.md reference resolves", () => {
-  const decisionAbsPath = path.join(repoRoot, decisionRelPath);
+test("/retro incident contract exists at the linked path", () => {
+  const contractAbsPath = path.join(repoRoot, incidentContractRelPath);
   assert.equal(
-    fs.existsSync(decisionAbsPath),
+    fs.existsSync(contractAbsPath),
     true,
-    `decision record should exist at ${decisionRelPath} (referenced by skills/retro/SKILL.md)`
+    `incident contract should exist at ${incidentContractRelPath}`
   );
 });
 

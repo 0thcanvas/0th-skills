@@ -31,7 +31,7 @@ not enter this workflow.
 ## Modes
 
 - `feasibility`: buildable architecture plus an experiment against the highest-risk assumption.
-- `decision`: evidence-backed comparison and decision record.
+- `decision`: evidence-backed comparison and durable conclusion.
 - `survey`: landscape and reusable wiki pages.
 
 Parse mode and question from `$ARGUMENTS`; if mode is absent, infer it only when unambiguous.
