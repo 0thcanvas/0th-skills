@@ -17,9 +17,10 @@ Memory write path or project KB instead; they do not enter `/retro` and must not
 
 ## Optional feedback migration
 
-Before the first new incident after an upgrade, run `scripts/feedback-migrator.mjs` in dry-run mode.
-If it reports un-migrated lines, ask before applying and report counts without echoing content. The
-migration is idempotent.
+Legacy feedback migration is separate from recording a current incident. Run
+`scripts/feedback-migrator.mjs` in dry-run mode only when migration is requested or relevant to the
+current scope. Apply it only with migration authority, reusing authorization already given. Report
+counts without echoing content. Its absence never blocks the current retro; migration is idempotent.
 
 ## Iron law
 
@@ -51,9 +52,11 @@ a prose junk drawer. Add severity, deduplicated tags, provisional root cause, an
 
 ## 4. Aggregate
 
-Resolve `${KB_ROOT}` from environment, project instructions, then one user question. Write one file
-per incident to `${KB_ROOT}/learning/skill-incidents/YYYY-MM-DD-<slug>.md`; on collision append
-`-2`, `-3`, and so on. Use an atomic write.
+Resolve the destination using `../../references/working-artifacts.md`. Honor an explicit user
+destination first. With a configured KB incident owner, write one file per incident to
+`${KB_ROOT}/learning/skill-incidents/YYYY-MM-DD-<slug>.md`; on collision append `-2`, `-3`, and so on.
+Use an atomic write. Without a configured KB, return the redacted incident in chat or write the
+requested file to the selected destination; do not invent a KB or require setup.
 
 Required body order:
 
@@ -68,7 +71,7 @@ Required body order:
 Frontmatter includes timezone-aware `date`, primary `skill`, optional `related_skills`,
 `classification`, `severity`, and unique `tags`. Do not copy schema comments into the incident.
 
-Run:
+When the configured incident directory is available, run:
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/retro-aggregator.mjs" \
@@ -77,15 +80,17 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
   --just-written "<incident-path>"
 ```
 
-Surface every bucket crossing three lifetime entries, its prior entries, whether three are within
-30 days, and one evidence-grounded action. The user chooses `apply`, `save for later`, or `ignore`;
+Without an incident corpus, report that historical aggregation was unavailable; the current
+incident is still complete. For an available corpus, surface every bucket crossing three lifetime
+entries, its prior entries, whether three are within 30 days, and one evidence-grounded action. The user chooses `apply`, `save for later`, or `ignore`;
 `/retro` never silently edits skills or behavior rules.
 
 ## Return
 
-Report new incident paths, classification × skill, surfaced patterns, proposed actions, and the
-user choice required. Run the Memory Write Gate only for a distinct durable workflow conclusion;
-the incident file itself is already the evidence record.
+Report the incident or saved path, classification × skill, any supported patterns, and proposed
+actions. Ask for a choice only when an action requires new authority; recording a retro alone
+does not require a follow-up approval. Run the Memory Write Gate only for a distinct durable
+workflow conclusion; the incident itself is already the evidence record.
 
 ## References
 
@@ -93,3 +98,4 @@ the incident file itself is already the evidence record.
 - `../../references/skills-kernel.md`
 - `../../references/workflow-verification.md`
 - `../../references/memory-contract.md`
+- `../../references/working-artifacts.md`

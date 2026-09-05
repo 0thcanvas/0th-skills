@@ -1,11 +1,11 @@
 ---
 name: test-runner
 description: |
-  Run tests and return condensed results. Use after every code change in /build and /debug.
+  Run a bounded set of tests and return condensed results when /build or /debug needs independent execution.
   Returns pass/fail with failure details only. Keeps raw output out of parent context.
 ---
 
-Run tests for the current project and return condensed results.
+Run the requested checks for the current project and return condensed results. Honor the supplied scope; when none is specified, select checks covering changed behavior and required project checks. Do not broaden or repeat passing checks without new changes, failures, or an unresolved risk. Do not modify product code or tests. Stop only processes and fixtures you create, and keep secrets and personal data out of logs and returned errors.
 
 ## Detect Test Setup
 

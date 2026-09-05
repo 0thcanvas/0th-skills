@@ -9,7 +9,7 @@ import { loadRuntimeProfile, validateRuntimeProfile } from "./runtime-profile.mj
 const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const SOURCES = new Set(["documented-only", "session-metadata", "runtime-probe"]);
-const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max"]);
+const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max", "ultra"]);
 const RISKS = new Set(["low", "medium", "high", "critical"]);
 const MUTATION_SCOPES = new Set(["read-only", "mutable"]);
 const COMPUTE_CLASSES = new Set(["auto", "economy", "balanced", "frontier", "inherit"]);
@@ -557,7 +557,7 @@ export function resolveLaunchPlan({ capabilities, packet, routing, runtimeProfil
   if (
     packet.task_risk === "low"
     && selection.selected === "economy"
-    && ["xhigh", "max"].includes(capabilities.reasoning_effort)
+    && ["xhigh", "max", "ultra"].includes(capabilities.reasoning_effort)
     && (computeProfile.reasoning_effort === "inherit" || !capabilities.effort_override)
   ) {
     reasons.push("disproportionate_inherited_effort");

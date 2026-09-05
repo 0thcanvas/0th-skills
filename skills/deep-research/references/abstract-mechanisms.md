@@ -3,8 +3,9 @@
 Cross-domain translation vocabulary. When a sub-problem has no solution in its obvious field,
 abstract the mechanism and search for solutions in fields listed here.
 
-This file grows over time. During Phase 5, when a successful cross-domain translation is found,
-append the mechanism if not already present. During Phase 7, confirm and commit new entries.
+Treat this library as read-only during research. Record newly discovered mechanisms and their
+evidence in the topic artifacts. Updating this reference requires a separate explicitly authorized
+skill-maintenance task.
 
 ## Mechanisms
 

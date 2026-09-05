@@ -22,7 +22,7 @@
     "launch_id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "harness": { "type": "string", "minLength": 1 },
     "actual_model": { "type": "string", "minLength": 1 },
-    "actual_reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+    "actual_reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max", "ultra"] },
     "source": { "enum": ["session-metadata", "runtime-probe"] },
     "observed_at": { "type": "string", "format": "date-time" },
     "adapter": { "type": "string", "minLength": 1 },

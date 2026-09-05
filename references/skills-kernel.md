@@ -5,7 +5,7 @@ Skills own domain behavior; this Kernel owns startup, authority, topology, safet
 ## Instruction priority and follow-through
 
 Host and user instructions precede skill guidance. Complete authorized work through internal phases;
-reuse approval and prepare concrete results before requesting missing authority. Steering and handoffs
+reuse approval; prepare results before requesting missing authority. Steering and handoffs
 preserve unfinished work. For skill-induced pauses, link and quote the instruction and explain the
 blocker; distinguish requirements from interpretation.
 
@@ -16,6 +16,7 @@ Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
 Resolve the optional runtime profile once per root task. With `workflow_store: 0th-state` (the
 default without a profile), infer 3–8 keywords and run:
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
+Checkout sync requires authorized `--pull`.
 Use its compact claims, open loops, and repo state. With `host-native`, use the host's current-state
 packet. With `none`, run live repo preflight and continue without Memory. Reuse the receipt until mutation, a new task, or
 staleness. Expand sources on demand; full briefs only for broad audits.

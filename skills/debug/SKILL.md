@@ -14,7 +14,7 @@ safety, and closeout.
 - Enter for bugs, test/build failures, regressions, flakiness, and performance failures.
 - `$ARGUMENTS` is the starting symptom when invoked directly.
 - A diagnosis request authorizes investigation and reporting, not a code change.
-- A fix request authorizes the smallest in-scope root-cause fix plus a regression test.
+- A fix request authorizes the smallest in-scope root-cause fix and proportionate verification.
 
 ## Iron laws
 
@@ -62,18 +62,21 @@ For browser-extension bugs, apply `../../references/browser-control-policy.md`. 
 
 When fixes are authorized:
 
-1. Write a failing regression test through the public interface.
-2. Confirm it fails for the proven reason.
-3. Make the smallest root-cause fix.
-4. Rerun the loop, focused tests, and relevant full suite.
-5. Remove temporary diagnostics and record the proof path.
+1. For testable behavior, add a public-interface regression test and confirm it fails for the
+   proven reason. For non-testable operational, configuration, or visual changes, capture the
+   before state and define the observable after-state check; do not manufacture a tautological test.
+2. Make the smallest root-cause fix.
+3. Rerun the feedback loop and the checks covering affected behavior. Run a broader suite when
+   coupling, risk, failures, or repository requirements justify it. Once checks pass, repeat or
+   broaden them only for new changes, failures, or unresolved concerns.
+4. Remove temporary diagnostics and record the proof path.
 
 Unavailable browser, simulator, sandbox, or session evidence returns `blocked_real_env`; weaker
 evidence cannot substitute. Non-obvious root causes may become a durable memory/KB claim at closeout.
 
 ## Report
 
-Return symptom, root cause, fix or diagnosis-only boundary, regression test, evidence, and status.
+Return symptom, root cause, fix or diagnosis-only boundary, verification evidence, and status.
 Apply `retro_open_loop_closeout` when proof was skipped, blocked, flaky, or repeatedly failed.
 
 ## References

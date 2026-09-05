@@ -33,19 +33,21 @@ Decompose branded language into the underlying capability and assign source buck
 Use primary sources first. Search results are discovery, not evidence. Recommendations require current
 maintenance, availability, and constraint checks. Time-sensitive claims need current sources.
 
-## Research loop
+## Direct answers and deeper coverage
 
-1. Frame the exact question and the decision it supports.
-2. Run a broad first pass to learn vocabulary, candidate sources, contradictions, and missing
-   buckets. Do not conclude yet.
-3. Re-query using learned terminology, source-specific searches, and dissenting hypotheses.
-4. Inspect the sources that support each material claim. Record source date, scope, limitations,
-   and disagreement.
-5. Stop when the decision is supported, the requested coverage is met, or another pass produces no
-   meaningful vocabulary or evidence improvement.
+For a bounded lookup, inspect the authoritative source that can resolve the question. If it gives
+current, sufficient support, answer with an adjacent citation and stop. No broad survey, second
+pass, handoff artifact, or formal report is required.
 
-Use `context_handoff` between passes: bounded summary, source pointers, unresolved gaps, and next
-read targets. Keep raw source material outside the root context.
+For comparisons, contested claims, or incomplete evidence, map the missing coverage and search
+accordingly. Re-query with learned terminology or dissenting hypotheses when that can resolve a
+material gap. Inspect the sources behind each material claim, including date, scope, limitations,
+and disagreement. Stop when the requested coverage is met or further work has no likely evidence
+benefit; report remaining gaps honestly.
+
+Use `context_handoff` only for delegation or context transfer: bounded summary, source pointers,
+unresolved gaps, and next read targets. The root may inspect primary sources directly. Keep bulky
+raw material outside the active context when a bounded extract suffices.
 
 ## Session-backed sources
 
@@ -66,7 +68,8 @@ silently. Session-backed adapters remain read-only unless the user explicitly au
 
 ## Output
 
-Use `templates/output-shape.md`:
+Lead with the answer and citations. Use `templates/output-shape.md` for longer reports when its
+structure helps the requested deliverable; omit irrelevant sections. Include as applicable:
 
 - verdict or direct answer first;
 - evidence-supported findings separated from inference;
@@ -77,7 +80,10 @@ Use `templates/output-shape.md`:
 For durable findings, use the canonical owner already configured by the project. Write a KB
 `raw/` note with `templates/raw-findings-note.md` only when the KB owns that research; otherwise
 update the current research/contract artifact or keep a compact Memory pointer. Do not duplicate the
-same finding across all three. Exploratory reports remain working artifacts.
+same finding across all three. Follow `../../references/working-artifacts.md` for destinations,
+including explicit user output paths and hosts without storage. A routine answer needs no saved
+note; a requested report can use a task-scoped workspace file. Exploratory reports remain working
+artifacts.
 
 ## References
 

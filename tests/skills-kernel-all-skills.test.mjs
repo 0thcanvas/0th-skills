@@ -93,14 +93,14 @@ test("the shared kernel owns preflight, authority, delegation, secrets, and clos
 test("each migrated skill retains its defining contract", () => {
   const expectations = {
     think: ["Do not implement", "smallest durable record", "CONTEXT.md", "current contract"],
-    plan: ["vertical", "acceptance", "visual invariant", "state root"],
+    plan: ["vertical", "acceptance", "visual invariant", "working-artifacts.md"],
     build: ["proof_contract_required", "minimum_proof_tier", "failure-dossier-runner.mjs", "Product Acceptance Loop"],
-    debug: ["feedback loop", "root cause", "failing regression test", "blocked_real_env"],
+    debug: ["feedback loop", "root cause", "public-interface regression test", "blocked_real_env"],
     research: ["source buckets", "primary sources", "session-backed read receipt", "context_handoff"],
     "deep-research": ["feasibility", "decision", "survey", "world model", "bounded summaries"],
     ship: ["ship-gate.mjs", "proof result tier", "PR-specific", "PR checks", "ready to merge"],
     retro: ["extract evidence", "redact", "classify", "aggregate", "candidate_new_category"],
-    "improve-architecture": ["deepening", "Deletion test", "explicit user pick", "Do not refactor"]
+    "improve-architecture": ["deepening", "Deletion test", "candidate the user already explicitly selected", "Do not refactor"]
   };
 
   for (const [skillName, fragments] of Object.entries(expectations)) {

@@ -1,11 +1,13 @@
+<!-- Prefer the repository PR template when present. Adapt to change size; omit empty sections. -->
+
 ## Summary
-- <what changed and why, 2-3 bullets>
+<Concrete problem and resulting behavior; explain the material reason for the change.>
 
-## Decision
-<link to the current contract or committed decision if one exists>
-
-## Test Evidence
-- <test suite output summary: X passing, 0 failing>
+## Validation
+<Checks actually run and their result, required runtime proof, and material limits.>
 
 ## Review Notes
-- <anything the reviewer should pay attention to>
+<Only unresolved concerns, tradeoffs, or useful evidence a reviewer needs. Omit when none.>
+
+<!-- Link an owning current contract or committed decision only when it helps review.
+Do not include local verification-report paths, a mandatory review/skip declaration, or empty scaffolding. -->

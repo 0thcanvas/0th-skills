@@ -62,7 +62,7 @@ test("specialist routing is guarded by build and ship gates", () => {
   assert.match(routing, /proof tier, verifier evidence, product acceptance, ship gate/);
 
   assert.match(ship, /specialist return receipts/);
-  assert.match(ship, /proof contract depends on specialist evidence/);
+  assert.match(ship, /proof contract depends on specialist\s+evidence/);
   assert.match(ship, /adapter_unavailable/);
 });
 

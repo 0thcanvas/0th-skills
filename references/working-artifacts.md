@@ -23,9 +23,11 @@ conclusion. A KB or repo doc should not restate Memory merely to create another 
 
 ## Paths
 
-Place temporary `work/` and `artifacts/` files under the existing 0th state root rather than
-hardcoding a home path. Resolve the state root using the same order as Memory v2:
-`$OTH_SKILLS_STATE_DIR`, then `$XDG_STATE_HOME`, then `~/.0th/skills/...`.
+Honor an explicit user destination first. Otherwise use the configured owning KB or state
+provider. For the 0th provider, resolve `$OTH_SKILLS_STATE_DIR`, then `$XDG_STATE_HOME`, then
+`~/.0th/skills/...`. With host-native or no memory provider, use a task-scoped workspace
+artifact when a file is requested or needed for continuation; otherwise answer in chat.
+Do not require KB configuration, migration, or persistence merely to complete a task.
 
 Use checkout-local `${VERIFICATION_REPORT_DIR:-verification-report}` for gate-consumed evidence.
 This is an explicit local-state exception: `/build`, `/ship`, and `ship-gate` read proof contracts,
@@ -73,7 +75,7 @@ first. If Memory v2 cites the old doc, leave a tombstone, evidence record, sourc
 replacement source pointer before removal. Always report before destructive cleanup; do not silently
 delete repo docs just because they look old.
 
-Internal plans default to the state root and are deleted after merge, abandonment, or replacement.
+Internal plans follow the destination policy above and are deleted after merge, abandonment, or replacement.
 A committed plan is exceptional and requires lasting shared value. `/think` likewise chooses the
 smallest durable record: update a current contract, write compact Memory, or create a dated decision
 record only when its rationale must remain independently auditable.

@@ -16,7 +16,7 @@ const expectedMirrors = {
     codexFile: "0th-implementer.toml",
     claudeFile: "implementer.md",
     requiredFragments: [
-      "Run tests after every change",
+      "Run focused checks after a coherent change",
       "NEEDS_CONTEXT",
       "STATUS: DONE | DONE_WITH_CONCERNS | NEEDS_CONTEXT | BLOCKED",
       "Whatever you spawn, you stop"
@@ -38,7 +38,7 @@ const expectedMirrors = {
     claudeFile: "experience-reviewer.md",
     requiredFragments: [
       "Product Acceptance Loop",
-      "current contract, committed plan acceptance criteria when one exists, explicit user brief, then repo standards",
+      "current authorized user intent first",
       "verification-report/product-acceptance.json",
       "Findings are hypotheses, not commands",
       "evidence-linked findings",
@@ -64,35 +64,24 @@ const expectedMirrors = {
     codexFile: "0th-verifier.toml",
     claudeFile: "verifier.md",
     requiredFragments: [
-      "Outcome: PASS | FAIL_UNRESOLVED | BLOCKED | BLOCKED_REAL_ENV | FAIL_FLAKY",
-      "Classify failure type",
-      "Max 3 verification rounds",
-      "Proof contract",
-      "proof-result.json",
-      "minimum_proof_tier",
+      "Verification-only is the default",
+      "workspace-write capability is not authorization",
+      "references/proof-tiers.md",
+      "verified_head",
+      "minimum_tier_satisfied",
       "BLOCKED_REAL_ENV",
       "resolve `logged_in_browser`",
       "resolve `browser_ui_fallback`",
-      "provider guidance",
       "exact required browser identity",
       "references/browser-control-policy.md",
-      "When a `.env.local` is present",
-      "or commands that place secrets in argv",
-      "Stack Minimum Detection",
-      "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/references/stack-minimums.md",
-      "Detection is multi-match",
+      "never inspect secret-file contents",
       "cannot claim real-user fidelity",
-      "This floor cannot be lowered",
       "stack_minimums_exercised",
       "pre_dispatch_tool_failures_reviewed",
       "${VERIFICATION_REPORT_DIR:-verification-report}/report.json",
-      "Name the visual invariant",
-      "If the claim is visual, the evidence must be visual",
       "screenshot inspection",
-      "pixel assertion",
       "visually inspected",
-      "Whatever you spawn, you stop",
-      "browser tabs or sessions created through the resolved capability",
+      "Close only browser tabs/sessions you created",
       "failure-dossier-runner.mjs",
       "--run-id"
     ]
@@ -101,9 +90,9 @@ const expectedMirrors = {
     codexFile: "0th-synthesizer.toml",
     claudeFile: "synthesizer.md",
     requiredFragments: [
-      "WORLD MODEL:",
-      "Every node must trace back",
-      "Never downgrade a verified consensus"
+      "world model",
+      "must trace to source-note paths",
+      "status is never immutable"
     ]
   },
   "deep-researcher": {
@@ -119,9 +108,9 @@ const expectedMirrors = {
     codexFile: "0th-experimenter.toml",
     claudeFile: "experimenter.md",
     requiredFragments: [
-      "FAIL_TECHNIQUE | FAIL_INTEGRATION | FAIL_ASSUMPTION | FAIL_ENVIRONMENT",
-      "Every experiment must have a reproducible `run.sh`",
-      "Test the hypothesis only."
+      "FAIL_TECHNIQUE, FAIL_INTEGRATION, FAIL_ASSUMPTION, FAIL_ENVIRONMENT",
+      "reproducible entrypoint",
+      "Test the supplied hypothesis within the budget"
     ]
   }
 };

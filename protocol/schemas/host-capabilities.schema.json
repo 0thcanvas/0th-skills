@@ -31,7 +31,7 @@
     "model": { "type": ["string", "null"] },
     "reasoning_effort": {
       "type": ["string", "null"],
-      "enum": [null, "low", "medium", "high", "xhigh", "max"]
+      "enum": [null, "low", "medium", "high", "xhigh", "max", "ultra"]
     },
     "available_models": {
       "type": ["array", "null"],
@@ -40,7 +40,7 @@
     },
     "available_reasoning_efforts": {
       "type": ["array", "null"],
-      "items": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+      "items": { "enum": ["low", "medium", "high", "xhigh", "max", "ultra"] },
       "uniqueItems": true
     },
     "available_model_effort_pairs": {
@@ -51,7 +51,7 @@
         "required": ["model", "reasoning_effort"],
         "properties": {
           "model": { "type": "string", "minLength": 1 },
-          "reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max"] }
+          "reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max", "ultra"] }
         }
       }
     },

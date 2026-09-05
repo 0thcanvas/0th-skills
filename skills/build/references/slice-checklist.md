@@ -6,7 +6,7 @@ Use this file when you need the compact execution loop, not as the default thing
 
 ### Behavior changes
 
-1. Write one failing test through the public interface.
+1. For testable behavior changes, write one failing test through the public interface.
 2. Confirm it fails for the reason you intend to fix.
 3. Implement the smallest change that makes it pass.
 4. Re-run the focused test, then relevant nearby tests.

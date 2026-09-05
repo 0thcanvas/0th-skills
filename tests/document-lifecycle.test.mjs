@@ -21,7 +21,7 @@ test("internal plans are temporary and committed plans require lasting shared va
   const plan = read("skills/plan/SKILL.md");
   const lifecycle = read("references/working-artifacts.md");
 
-  assert.match(plan, /state root/i);
+  assert.match(plan, /working-artifacts\.md/i);
   assert.match(plan, /committed plan/i);
   assert.match(plan, /lasting shared value/i);
   assert.doesNotMatch(plan, /Save the checklist to `docs\/plans/);

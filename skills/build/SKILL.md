@@ -11,7 +11,7 @@ Apply `../../references/skills-kernel.md` once.
 
 - Enter for a requested implementation, resolved decision, or build-ready plan.
 - Switch to `/think` for unresolved design and `/debug` for an unexpected failure.
-- External/live work needs explicit authority and a bounded effect contract, not an approved
+- External writes and live mutations need effect-specific authority and a bounded contract, not an approved
   `/plan`. Infer known fields and reuse existing authorization. Ask only for missing authority or
   an outcome-level tradeoff; a broken premise is `CONTRACT_INVALIDATED`.
 - Direct invocation: `$ARGUMENTS` is the instruction or plan path.
@@ -45,7 +45,7 @@ operation. Use the project runbook and owning tool or specialist, preserve user 
 build, signing, install, launch, and health evidence. Live or device actions still require
 effect-appropriate authority and real-environment proof.
 
-Source or configuration edits enter normal `/build` or `/debug` on a branch.
+Source edits enter `/build` or `/debug` on a branch.
 
 ## Slice loop
 
@@ -55,7 +55,7 @@ checks and before/after evidence, not tests duplicating wording or implementatio
 checks pass, test further only for new changes, failures, or unresolved risks.
 Follow `references/slice-checklist.md`; avoid unrelated cleanup.
 
-For a managed verification command, use:
+For managed verification:
 
 ```bash
 node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/failure-dossier-runner.mjs" \
@@ -76,8 +76,8 @@ Use a fresh `--run-id`. An unexpected failure routes to `/debug`; three failed a
 
 ## Verification
 
-For full-lane work, read `../../references/stack-minimums.md`, detect every applicable stack, and
-exercise each minimum. Tests alone cannot satisfy T2+. Persist `verification-report/brief.txt` and
+For full-lane work, read `../../references/stack-minimums.md` to derive required stacks from
+the change and proof contract; exercise their minimums. Tests alone cannot satisfy T2+. Persist `verification-report/brief.txt` and
 `proof-result.json`; only `outcome: PASS` with `minimum_tier_satisfied: true` proceeds. Missing required
 runtime evidence is `BLOCKED_REAL_ENV`, never a lower proof tier.
 
@@ -97,5 +97,5 @@ Report status, tests, proof tier, evidence, acceptance, and concerns. Apply `ret
 from `../../references/workflow-verification.md`: skipped verification, blocked environments,
 repeated failures, and unfinished work remain visible. Apply the Kernel's command-first Memory Write
 Gate; read `../../references/memory-contract.md` only if the executable gate cannot classify the event.
-Use `memory remember` for durable claims and `memory open-loop` for unfinished work. Gate evidence
+Use the configured memory provider for durable claims and unfinished work. Gate evidence
 stays uncommitted and follows `../../references/working-artifacts.md`.

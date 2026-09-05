@@ -33,7 +33,8 @@ test("remaining workflow boundaries preserve cheap no-op behavior", () => {
   const ship = read("skills/ship/SKILL.md");
   const architecture = read("skills/improve-architecture/SKILL.md");
 
-  assert.match(plan, /Skip to `\/build` when one bounded implementation loop is sufficient/);
+  assert.match(plan, /bounded loop/);
+  assert.match(plan, /already authorized/);
   assert.match(debug, /diagnosis request authorizes investigation and reporting, not a code change/);
   assert.match(ship, /does not authorize merge/);
   assert.match(architecture, /Do not refactor/);

@@ -11,7 +11,7 @@
 //
 // Current proof authority is defined in references/workflow-verification.md.
 
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync, lstatSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import process from "node:process";
@@ -20,7 +20,7 @@ const REQUIRED_ENTRY_KEYS = ["stack", "criterion", "tool", "evidence_path", "exe
 const ACCEPTANCE_OUTCOMES = new Set(["PASS", "NEEDS_ITERATION", "BLOCKED_BY_SPEC", "NOT_REQUIRED"]);
 const PROOF_TIERS = new Set(["T0", "T1", "T2", "T3", "T4"]);
 const PROOF_TIER_RANK = new Map([...PROOF_TIERS].map((tier, index) => [tier, index]));
-const PROOF_OUTCOMES = new Set(["PASS", "BLOCKED_REAL_ENV"]);
+const PROOF_OUTCOMES = new Set(["PASS", "FAIL_UNRESOLVED", "BLOCKED", "BLOCKED_REAL_ENV", "FAIL_FLAKY"]);
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 // Default freshness window for product-acceptance reports. /ship's gate fails a report whose
 // `reviewed_at` is older than this window — staleness was the contract the decision/plan
@@ -151,6 +151,58 @@ export function detectStacks(repoPath, brief = "") {
   }
 
   return [...stacks];
+}
+
+// Exempt only a declared documentation-only branch diff whose target/base can be
+// checked independently. Missing/invalid scope never weakens default detection.
+export function requiredStacks(repoPath, brief = "", contract = null) {
+  const detected = detectStacks(repoPath, brief);
+  if (!contract?.change_scope) return detected;
+  if (!validateProofContract(contract).ok) throw new Error("ship-gate: invalid proof contract for change scope");
+  const scope = contract.change_scope;
+  if (scope.kind !== "documentation-only") throw new Error("ship-gate: unsupported change scope");
+  if (!["T0", "T1"].includes(contract.minimum_proof_tier) || REAL_SESSION_PATTERN.test(brief)) return detected;
+  if (!/^[0-9a-f]{40,64}$/.test(scope.base_revision ?? "") ||
+      typeof scope.base_ref !== "string" || !scope.base_ref.startsWith("refs/heads/") && !scope.base_ref.startsWith("refs/remotes/")) {
+    throw new Error("ship-gate: documentation scope requires full base_revision and intended PR target base_ref");
+  }
+  const git = (...args) => execFileSync("git", args, {
+    cwd: repoPath, stdio: ["ignore", "pipe", "pipe"], encoding: "utf8"
+  }).trimEnd();
+  try {
+    git("merge-base", "--is-ancestor", scope.base_revision, "HEAD");
+    const target = git("rev-parse", "--verify", `${scope.base_ref}^{commit}`);
+    const mergeBase = git("merge-base", "--all", "HEAD", target);
+    if (mergeBase !== scope.base_revision) {
+      throw new Error("base_revision must equal the merge-base with the intended PR target; a recent commit can hide earlier branch changes");
+    }
+    // Separate unions catch staged code even when the worktree reverses it.
+    // --no-renames exposes both old and new paths instead of hiding a code rename.
+    const paths = new Set([
+      ...git("diff", "--name-only", "--no-renames", "-z", scope.base_revision, "HEAD", "--").split("\0"),
+      ...git("diff", "--cached", "--name-only", "--no-renames", "-z", "HEAD", "--").split("\0"),
+      ...git("diff", "--name-only", "--no-renames", "-z", "--").split("\0"),
+      ...git("ls-files", "--others", "--exclude-standard", "-z").split("\0")
+    ].filter(Boolean));
+    const documentationPath = /^(?:(?:README|CONTRIBUTING|CHANGELOG|LICENSE)(?:\.(?:md|txt|rst))?|docs\/(?:[^/]+\/)*[^/]+\.(?:md|txt|rst))$/i;
+    if (paths.size === 0 || [...paths].some(file => !documentationPath.test(file))) return detected;
+    // A documentation-looking symlink or executable is not static prose.
+    for (const file of paths) {
+      for (const revision of [scope.base_revision, "HEAD"]) {
+        const entry = git("ls-tree", revision, "--", file);
+        if (entry && !entry.startsWith("100644 blob ")) return detected;
+      }
+      const indexEntry = git("ls-files", "--stage", "--", file);
+      if (indexEntry && !indexEntry.startsWith("100644 ")) return detected;
+      if (existsSync(join(repoPath, file))) {
+        const stat = lstatSync(join(repoPath, file));
+        if (!stat.isFile() || (stat.mode & 0o111) !== 0) return detected;
+      }
+    }
+    return [];
+  } catch (err) {
+    throw new Error(`ship-gate: cannot validate documentation scope: ${err.message.split("\n")[0]}`);
+  }
 }
 
 function canonicalStack(stack) {
@@ -632,7 +684,9 @@ function main() {
     process.exit(1);
   }
 
-  const expected = detectStacks(repoPath, brief);
+
+  // Validate root manifests before reading optional scope; malformed signals fail closed.
+  let expected = detectStacks(repoPath, brief);
 
   if (!existsSync(acceptancePath)) {
     console.error(`ship-gate: missing product acceptance report at ${acceptancePath}`);
@@ -681,6 +735,8 @@ function main() {
     }
     process.exit(1);
   }
+
+  if (proofContractReport.change_scope) expected = requiredStacks(repoPath, brief, proofContractReport);
 
   if (!existsSync(proofResultPath)) {
     console.error(`ship-gate: missing proof result at ${proofResultPath}`);
@@ -739,7 +795,7 @@ function main() {
   }
 
   if (expected.length === 0) {
-    console.log("ship-gate: product acceptance and proof gates PASSED; no stacks detected for this repo");
+    console.log("ship-gate: product acceptance and proof gates PASSED; no runtime stacks required for this change");
     process.exit(0);
   }
 

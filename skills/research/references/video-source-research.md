@@ -97,7 +97,8 @@ Keep unresolved contradictions visible. Do not resolve them from plausibility.
 
 For a quick scan, return a concise findings list with source links and confidence.
 
-For durable research, write a raw KB note or digest with:
+For durable research, use the destination policy in `../../../references/working-artifacts.md`.
+When a saved digest helps, adapt this shape and omit irrelevant sections:
 
 ```md
 # Video Research Digest - YYYY-MM-DD

@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import { buildStartupPacket } from "../scripts/memory-startup.mjs";
 import { runMemoryCommand } from "../scripts/memory.mjs";
@@ -130,3 +131,53 @@ test("unified memory entrypoint exposes the startup packet", () => withTempState
   assert.equal(packet.schema_version, 1);
   assert.equal(packet.query, "memory startup");
 }));
+
+for (const [entrypoint, prefix, packetRepo] of [
+  ["memory.mjs", ["startup", "--query", "startup authority"], (packet) => packet.repo],
+  ["memory-startup.mjs", ["--query", "startup authority"], (packet) => packet.repo],
+  ["session-preflight.mjs", [], (packet) => packet]
+]) {
+  test(`${entrypoint} CLI preserves a clean behind revision until --pull is explicit`, () => withTempState(() => {
+    const repo = initRepo();
+    const root = tempDir();
+    const remote = path.join(root, "remote.git");
+    const writer = path.join(root, "writer");
+    const script = fileURLToPath(new URL(`../scripts/${entrypoint}`, import.meta.url));
+    const before = git(repo, ["rev-parse", "HEAD"]);
+    git(root, ["init", "--bare", "--initial-branch", "main", remote]);
+    git(repo, ["remote", "add", "origin", remote]);
+    git(repo, ["push", "-u", "origin", "main"]);
+    git(root, ["clone", remote, writer]);
+    git(writer, ["config", "user.email", "test@example.com"]);
+    git(writer, ["config", "user.name", "Test User"]);
+    fs.writeFileSync(path.join(writer, "README.md"), "remote update\n");
+    git(writer, ["add", "README.md"]);
+    git(writer, ["commit", "-m", "remote update"]);
+    git(writer, ["push", "origin", "main"]);
+    const after = git(writer, ["rev-parse", "HEAD"]);
+    const invoke = (flags = []) => spawnSync(process.execPath, [script, ...prefix, ...flags], {
+      cwd: repo, encoding: "utf8"
+    });
+
+    for (const flags of [[], ["--no-pull"]]) {
+      const result = invoke(flags);
+      assert.equal(result.status, 0, result.stderr);
+      const preflight = packetRepo(JSON.parse(result.stdout));
+      assert.equal(preflight.action, "fast_forward_available");
+      assert.equal(preflight.behind, 1);
+      assert.equal(git(repo, ["rev-parse", "HEAD"]), before);
+      assert.equal(fs.readFileSync(path.join(repo, "README.md"), "utf8"), "test\n");
+    }
+    for (const flags of [["--pull", "--no-pull"], ["--no-pull", "--pull"]]) {
+      const result = invoke(flags);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /--pull.*--no-pull.*conflict/i);
+      assert.equal(git(repo, ["rev-parse", "HEAD"]), before);
+    }
+    const result = invoke(["--pull"]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(packetRepo(JSON.parse(result.stdout)).action, "fast_forward_pulled");
+    assert.equal(git(repo, ["rev-parse", "HEAD"]), after);
+    assert.equal(fs.readFileSync(path.join(repo, "README.md"), "utf8"), "remote update\n");
+  }));
+}

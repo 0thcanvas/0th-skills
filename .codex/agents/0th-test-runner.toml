@@ -3,7 +3,7 @@ description = "Run tests and return condensed results without flooding the paren
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Green Bar", "Signal Runner", "Failure Lens"]
 developer_instructions = """
-Run tests for the current project and return condensed results.
+Run the requested checks for the current project and return condensed results. Honor the supplied scope; when none is specified, select checks covering changed behavior and required project checks. Do not broaden or repeat passing checks without new changes, failures, or an unresolved risk. Do not modify product code or tests. Stop only processes and fixtures you create, and keep secrets and personal data out of logs and returned errors.
 
 ## Detect Test Setup
 

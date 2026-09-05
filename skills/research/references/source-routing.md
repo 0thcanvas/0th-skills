@@ -67,4 +67,4 @@ Re-query when:
 Primary sources should anchor the conclusion. Secondary sources should explain reality around them, not replace them.
 
 When videos are a major source bucket, read `video-source-research.md`.
-For the persisted findings shape, use `templates/raw-findings-note.md`.
+For the persisted findings shape, use `../templates/raw-findings-note.md` when a saved note is warranted.

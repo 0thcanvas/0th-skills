@@ -1,23 +1,23 @@
-# state.md
-## Topic: {topic-slug}
-## Mode: {feasibility|decision|survey}
-## Current Phase: 0 (FRAME)
-## Original Question: "{question}"
-## Decomposition Version: 1
-## Iteration: 1
-## Completed Iterations: 0
+# Research State: {topic}
 
-## Vocabulary (terms learned per iteration):
-- Iteration 1: (populated after Phase 1)
+- Mode: {feasibility | decision | survey}
+- Accepted question and scope: {question, criteria, exclusions}
+- Destination: {topic path}
+- Source passes: {used}/2
+- Full loops: {used}/2
+- Reframes: {used}/1
+- Worker budget: 1 root unless bounded delegation is allowed
+- Authorized experiment limits: {scope, time, cost, side effects, or none}
+- Current action: {action}
 
-## Sub-problems (v1):
-1. {sub-problem} -> {status} ({technique}, {uncertainty})
+## Findings and gaps
+{Sub-problems, claim status, evidence paths, and decision-changing unknowns}
 
-## Quality Gate Retries:
-- (none yet)
+## Vocabulary and frame changes
+{Useful learned terms; changes and their evidence; preserve the accepted question}
 
-## Files:
-- raw/: 0 findings
-- world-model.md: not yet created
+## Completion evidence
+{Applicable criterion results and unresolved failures; no retry-based downgrades}
 
-## Next: {next action description}
+## Next action or termination
+{Next step with remaining budget, or termination reason and deliverable paths}

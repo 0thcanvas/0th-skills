@@ -11,7 +11,8 @@ once for root-task preflight, authority, optional delegation, safety, and closeo
 ## Enter / skip
 
 - Enter for new features, competing approaches, or decisions that affect architecture.
-- Skip to `/build` when the solution and acceptance criteria are already clear.
+- When the solution is already clear, return the decision directly. Continue to `/build` only if
+  implementation is part of the authorized request.
 - `$ARGUMENTS` is the idea or design question when invoked directly.
 
 This workflow is read/design-only except for the smallest durable record justified by the result and
@@ -27,7 +28,8 @@ during `/think`.
 3. Resolve technical implementation choices from evidence. Ask one consequential question at a
    time only for a user-owned outcome, authority boundary, lasting constraint, or material cost/risk
    tradeoff. Give a recommendation with the question.
-4. Compare 2–3 credible approaches. Lead with the recommendation and its decisive tradeoff. When
+4. Compare credible alternatives when a real tradeoff remains; do not invent alternatives to fill
+   a quota. Lead with the recommendation and its decisive tradeoff. When
    external evidence is missing, route to `/research` instead of filling the gap with plausibility.
 5. For hard independent analysis, use an optional bounded packet only when the capability gate in
    the Skills Kernel reports `allowed: true` and the additional perspective has an evidence
@@ -51,7 +53,8 @@ hypotheses; accept only those supported by the decision evidence or a new check.
 product direction and authority; the agent owns internal workflow mechanics.
 
 Let `../../references/execution-policy.md` select the internal coordination artifact. Hand off to
-`/plan` only for formal-plan mode; otherwise continue to `/build`.
+`/plan` only for formal-plan mode and `/build` only when implementation is already authorized.
+For a design-only request, return the decision and any justified record; do not start implementation.
 
 ## References
 
