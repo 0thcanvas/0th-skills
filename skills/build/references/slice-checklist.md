@@ -4,7 +4,7 @@ Use this file when you need the compact execution loop, not as the default thing
 
 ## Per-Slice Checklist
 
-### Testable work
+### Behavior changes
 
 1. Write one failing test through the public interface.
 2. Confirm it fails for the reason you intend to fix.
@@ -15,13 +15,18 @@ Use this file when you need the compact execution loop, not as the default thing
 7. Route a bounded test or review packet through the Skills Kernel capability gate only when it
    has an independent evidence advantage worth the added cost.
 
-### Non-testable work
+### Non-behavioral or non-testable work
 
 1. Capture the current state first.
 2. Make one bounded change.
 3. Capture the new state in the same format.
 4. Compare before/after artifacts directly.
 5. Commit only when the evidence matches the intended change.
+
+Use existing validation for docs, metadata, and other low-impact edits without behavior changes.
+Do not add tests that only restate edited prose or reproduce the implementation. Run required
+checks and tests covering the affected behavior; broaden or repeat only for new changes, failures,
+or unresolved risks. Proof-tier requirements still apply.
 
 ## Boundary Check
 
@@ -33,8 +38,8 @@ If the slice adds heavy local runtimes, ML models, or machine-specific services:
 
 ## Common Traps
 
-- "This is too small to test."
-  Small regressions still regress. Write the test.
+- "This behavior change is too small to test."
+  Cover the observable regression; size alone does not remove the need for behavioral proof.
 - "I'll clean up this adjacent thing while I'm here."
   Finish the slice first. Nearby refactors are how scope drifts.
 - "The output probably passed."

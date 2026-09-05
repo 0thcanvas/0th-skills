@@ -12,19 +12,17 @@ Apply `../../references/skills-kernel.md` once.
 - Enter for a requested implementation, resolved decision, or build-ready plan.
 - Switch to `/think` for unresolved design and `/debug` for an unexpected failure.
 - External/live work needs explicit authority and a bounded effect contract, not an approved
-  `/plan`. Infer known fields; ask only for missing authority or an outcome-level tradeoff, else
-  `CONTRACT_INVALIDATED`.
+  `/plan`. Infer known fields and reuse existing authorization. Ask only for missing authority or
+  an outcome-level tradeoff; a broken premise is `CONTRACT_INVALIDATED`.
 - Direct invocation: `$ARGUMENTS` is the instruction or plan path.
 - **Default: one root agent.** Read `../../references/delegation.md` only when delegation has a
   concrete advantage.
 
 ## Contract and Lightweight Build Lane
 
-Infer a compact TaskSpec from the Kernel. New evidence that breaks it is `CONTRACT_INVALIDATED`;
-work outside it is `SCOPE_EXPANSION_REQUIRED`.
-
-The agent selects the least coordination artifact in
-`../../references/execution-policy.md`; only formal-plan mode routes to `/plan`.
+Infer the Kernel TaskSpec: broken premises are `CONTRACT_INVALIDATED`; work outside it is
+`SCOPE_EXPANSION_REQUIRED`. Select the least coordination artifact from `../../references/execution-policy.md`;
+only formal-plan mode routes to `/plan`.
 
 Select the proof tier from `../../references/proof-tiers.md`. Under `proof_contract_required`,
 ship-bound implementation work requires `verification-report/proof-contract.json` with
@@ -47,14 +45,15 @@ operation. Use the project runbook and owning tool or specialist, preserve user 
 build, signing, install, launch, and health evidence. Live or device actions still require
 effect-appropriate authority and real-environment proof.
 
-If a source or configuration edit becomes necessary, stop the operational lane and enter normal
-`/build` or `/debug` on a branch as appropriate.
+Source or configuration edits enter normal `/build` or `/debug` on a branch.
 
 ## Slice loop
 
-For testable work: RED failing behavior test → GREEN smallest implementation → REFACTOR touched code
-only → VERIFY focused and nearby suites. For non-testable work, capture comparable before/after
-evidence. Follow `references/slice-checklist.md`; do not make unrelated cleanup.
+For behavior changes: RED failing behavior test → GREEN smallest implementation → REFACTOR touched
+code → VERIFY focused and nearby suites. For low-impact edits without behavior changes, use existing
+checks and before/after evidence, not tests duplicating wording or implementation. After required
+checks pass, test further only for new changes, failures, or unresolved risks.
+Follow `references/slice-checklist.md`; avoid unrelated cleanup.
 
 For a managed verification command, use:
 
