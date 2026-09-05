@@ -547,13 +547,12 @@ export function resolveLaunchPlan({ capabilities, packet, routing, runtimeProfil
   }
   if (
     !profileDisabled
-    && computeProfile.model !== "inherit"
-    && computeProfile.reasoning_effort !== "inherit"
+    && (computeProfile.model !== "inherit" || computeProfile.reasoning_effort !== "inherit")
   ) {
     if (capabilities.available_model_effort_pairs === null) {
       reasons.push("model_effort_pair_catalog_unobserved");
     } else if (!capabilities.available_model_effort_pairs.some(
-      (pair) => pair.model === computeProfile.model && pair.reasoning_effort === computeProfile.reasoning_effort
+      (pair) => pair.model === resolvedModel && pair.reasoning_effort === resolvedEffort
     )) {
       reasons.push("model_effort_pair_unavailable");
     }

@@ -61,3 +61,30 @@ test("malformed and unresolved effort values cannot masquerade as observations",
     assert.throws(() => validateHostCapabilities(capabilities), /reasoning_effort is invalid/);
   }
 });
+
+for (const inherit of ["model", "effort"]) {
+  test(`partially inherited ${inherit} requires the resolved observed pair`, () => {
+    const input = fixture();
+    Object.assign(input.capabilities, {
+      model: "fixture-current", reasoning_effort: "medium", model_override: true, effort_override: true,
+      available_models: ["fixture-next"], available_reasoning_efforts: ["low", "medium"],
+      available_model_effort_pairs: [{ model: "fixture-next", reasoning_effort: "low" }]
+    });
+    input.packet.compute_class = "frontier";
+    input.routing.profiles.frontier = {
+      model: inherit === "model" ? "inherit" : "fixture-next",
+      reasoning_effort: inherit === "effort" ? "inherit" : "low",
+      selection_mode: "per-invocation"
+    };
+    const result = resolveLaunchPlan(input);
+    assert.equal(result.allowed, false);
+    assert.ok(result.reasons.includes("model_effort_pair_unavailable"));
+    input.capabilities.available_model_effort_pairs.push({
+      model: inherit === "model" ? "fixture-current" : "fixture-next",
+      reasoning_effort: inherit === "effort" ? "medium" : "low"
+    });
+    assert.equal(resolveLaunchPlan(input).allowed, true);
+    input.capabilities.available_model_effort_pairs = null;
+    assert.ok(resolveLaunchPlan(input).reasons.includes("model_effort_pair_catalog_unobserved"));
+  });
+}

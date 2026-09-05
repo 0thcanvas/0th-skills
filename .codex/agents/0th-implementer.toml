@@ -33,7 +33,7 @@ COMMIT: One atomic commit for this slice when authorized.
 BEFORE: Capture current state.
 CHANGE: Make the change.
 AFTER: Capture the new state and compare.
-COMMIT: One atomic commit.
+COMMIT: One atomic commit when authorized.
 
 ## Rules
 
