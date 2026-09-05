@@ -228,6 +228,11 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 - Shared workflow sources live in `skills/`
 - Codex-facing skill entrypoints live in `codex-skills/`; generate them with `node scripts/build-codex-wrappers.mjs`
 - Codex wrappers stay compact and point back to the shared workflow sources without Claude-only frontmatter such as `argument-hint`
+- Runtime packaging publishes those entrypoints under standard `skills/<name>/SKILL.md` and
+  preserves each shared source beside it as `WORKFLOW.md`. Relative references and scripts remain
+  bundled; distribute the complete package, not individual skill files.
+- The generated package includes Codex, Claude-compatible, and Cursor manifests. Cursor's package
+  exposes skills only; native agent bindings require a separately verified harness adapter.
 - Do not inline full shared workflows into `codex-skills/`; `tests/plugin-smoke-check.test.mjs` guards the active Codex invoke budget
 
 ## Install
@@ -235,7 +240,7 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 ### Codex
 
 - Install the plugin from the repo in the Codex app or CLI plugin flow
-- Confirm the plugin exposes the nine skills under `codex-skills/`
+- Confirm the plugin exposes nine skills (`skills/` in runtime packages; `codex-skills/` in the source checkout)
 - Start a fresh thread after install so Codex reloads the plugin metadata
 
 ### Grok Build
@@ -254,6 +259,16 @@ assumes a profile, model, effort level, thread count, or host-specific name.
 
 - Use the repo as the Claude plugin directory so Claude can read `CLAUDE.md`, `agents/`, and `skills/`
 - Start a fresh session after install so Claude picks up the latest skill and agent metadata
+
+### Grok CLI and Cursor
+
+Use the generated runtime package for these hosts. Grok CLI can validate and install its
+Claude-compatible manifest with `grok plugin validate <package>` and
+`grok plugin install <package>`. Cursor uses the generated `.cursor-plugin/plugin.json` and
+standard skill tree. A manifest check proves packaging, not runtime behavior: test skill discovery,
+resource loading, and a bounded task in each host before claiming live compatibility. Node.js and
+the bundled scripts are required for executable workflow steps; model and tool controls remain
+host capabilities rather than skill assumptions.
 
 ### Failure dossier hooks
 

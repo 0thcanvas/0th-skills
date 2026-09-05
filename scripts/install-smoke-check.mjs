@@ -120,6 +120,16 @@ function verifyPluginRoot(rootPath) {
       path.join(codexSkillsRoot, skillName, "SKILL.md"),
       `${skillName} Codex SKILL.md`
     );
+    const entryPath = path.join(codexSkillsRoot, skillName, "SKILL.md");
+    const entry = fs.readFileSync(entryPath, "utf8");
+    const workflowLink = entry.match(/\[shared workflow\]\(([^)]+)\)/)?.[1];
+    if (workflowLink) {
+      const target = path.resolve(path.dirname(entryPath), workflowLink);
+      if (target === entryPath || !target.startsWith(`${path.resolve(rootPath)}${path.sep}`)) {
+        fail(`Invalid shared workflow link: ${entryPath}`);
+      }
+      assertFile(target, `${skillName} shared workflow`);
+    }
   }
 
   assertFile(path.join(rootPath, ".codex", "config.toml"), ".codex/config.toml");

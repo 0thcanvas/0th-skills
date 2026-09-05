@@ -22,7 +22,8 @@ test("runtime package keeps executable plugin surfaces and omits repository-only
     ".codex-plugin/plugin.json",
     ".claude-plugin/plugin.json",
     "CLAUDE.md",
-    "codex-skills/build/SKILL.md",
+    ".cursor-plugin/plugin.json",
+    "skills/build/WORKFLOW.md",
     "skills/build/SKILL.md",
     "references/skills-kernel.md",
     "references/delegation.md",
@@ -62,6 +63,56 @@ test("runtime package keeps executable plugin surfaces and omits repository-only
     outputRoot
   ], { encoding: "utf8" });
   assert.equal(smoke.status, 0, smoke.stderr || smoke.stdout);
+});
+
+test("packaged entry points use the standard skills layout without losing shared resources", (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-portable-layout-"));
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  const outputRoot = path.join(temporaryRoot, "plugin");
+  packageRuntimePlugin({ sourceRoot: repoRoot, outputRoot });
+  const manifest = JSON.parse(fs.readFileSync(path.join(outputRoot, ".codex-plugin/plugin.json")));
+  assert.equal(manifest.skills, "./skills/");
+  assert.equal(fs.existsSync(path.join(outputRoot, "codex-skills")), false);
+  const cursor = JSON.parse(fs.readFileSync(path.join(outputRoot, ".cursor-plugin/plugin.json")));
+  assert.equal(cursor.skills, "./skills/");
+  assert.equal(cursor.version, manifest.version);
+  const repackaged = path.join(temporaryRoot, "repackaged");
+  packageRuntimePlugin({ sourceRoot: outputRoot, outputRoot: repackaged });
+  assert.equal(fs.readFileSync(path.join(repackaged, "skills/build/WORKFLOW.md"), "utf8"),
+    fs.readFileSync(path.join(outputRoot, "skills/build/WORKFLOW.md"), "utf8"));
+  for (const name of fs.readdirSync(path.join(repoRoot, "skills"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory()).map((entry) => entry.name)) {
+    const sourceDir = path.join(repoRoot, "skills", name);
+    const targetDir = path.join(outputRoot, "skills", name);
+    assert.equal(fs.readFileSync(path.join(targetDir, "WORKFLOW.md"), "utf8"),
+      fs.readFileSync(path.join(sourceDir, "SKILL.md"), "utf8"));
+    const entry = fs.readFileSync(path.join(targetDir, "SKILL.md"), "utf8");
+    const link = entry.match(/\[shared workflow\]\(([^)]+)\)/)?.[1];
+    assert.ok(link, `${name} must expose its workflow`);
+    assert.equal(fs.realpathSync(path.resolve(targetDir, link)),
+      fs.realpathSync(path.join(targetDir, "WORKFLOW.md")));
+    assert.ok(entry.length < 500, `${name} keeps progressive disclosure`);
+    assert.ok(fs.existsSync(path.resolve(targetDir, "../../references/skills-kernel.md")));
+    assert.ok(fs.existsSync(path.resolve(targetDir, "../../scripts/0th.mjs")));
+  }
+  assert.equal(fs.readFileSync(path.join(outputRoot, "skills/retro/references/incident-contract.md"), "utf8"),
+    fs.readFileSync(path.join(repoRoot, "skills/retro/references/incident-contract.md"), "utf8"));
+  fs.unlinkSync(path.join(outputRoot, "skills/build/WORKFLOW.md"));
+  const smoke = spawnSync(process.execPath, [path.join(outputRoot, "scripts/install-smoke-check.mjs")], { encoding: "utf8" });
+  assert.notEqual(smoke.status, 0, "a broken workflow link must fail the package smoke check");
+});
+
+test("runtime packaging rejects a missing entry point before registering the package", (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "0th-incomplete-layout-"));
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  const sourceRoot = path.join(temporaryRoot, "source");
+  fs.mkdirSync(path.join(sourceRoot, ".codex-plugin"), { recursive: true });
+  fs.writeFileSync(path.join(sourceRoot, ".codex-plugin/plugin.json"), JSON.stringify({ skills: "./codex-skills/" }));
+  fs.mkdirSync(path.join(sourceRoot, "skills/build"), { recursive: true });
+  fs.mkdirSync(path.join(sourceRoot, "codex-skills"));
+  assert.throws(() => packageRuntimePlugin({ sourceRoot, outputRoot: path.join(temporaryRoot, "output"),
+    registerCurrent: true, env: {}, homeDir: temporaryRoot }), /divergent/);
+  assert.equal(fs.existsSync(currentRuntimeLinkPath({ env: {}, homeDir: temporaryRoot })), false);
 });
 
 test("runtime packager refuses to overwrite or recurse into the source", () => {

@@ -11,7 +11,7 @@ blocker; distinguish requirements from interpretation.
 
 ## Root-task preflight
 
-Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
+Set `OTH_SKILLS_ROOT` to two directories above the active skill's `SKILL.md` or `WORKFLOW.md`.
 
 Resolve the optional runtime profile once per root task. With `workflow_store: 0th-state` (the
 default without a profile), infer 3–8 keywords and run:
