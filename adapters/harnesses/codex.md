@@ -4,27 +4,23 @@ This guide contains Codex-specific behavior behind the portable model-routing an
 contracts. Shared skills and references should point to capabilities and the adapter registry, not
 copy these details.
 
-## GPT-6 Astra compatibility
+## Model upgrades
 
-For an Astra host, retain the shared Kernel's instruction priority and follow-through rules and
-the build workflow's proportional verification. These address Astra's sensitivity to conflicting
-skill instructions, clarification pauses, and excessive testing. The single-root default remains;
-use the existing delegation gate for independent work with a concrete advantage, subject to host
-authorization. A model upgrade alone does not authorize extra workers.
+Shared skills are model-neutral. Select the desired root model in the host; the bundled mapping
+inherits its model and effort. Concrete worker selectors belong in local routing configuration.
+Preserve deliberate economy/balanced choices when updating a frontier override. Never infer model
+or effort support from a name: require fresh observed capabilities and attest the actual execution.
+A routing-file change invalidates cached probe evidence.
 
-Select `gpt-6-astra` in the host for root work. The bundled mapping inherits the host; it does not
-select an older model. If a local routing override still pins frontier workers to an older model,
-update only that profile when migrating it. Preserve economy/balanced routes and an explicit effort
-supported by the target. Astra starts at `low`; preserve `medium` or stronger effort when already
-selected. Do not infer selector support from the model name: fresh capability evidence is still
-required before concrete worker dispatch. A routing-file change invalidates cached probe evidence.
+Effort identifiers are runtime-provided strings, not a fixed model-generation list. Unknown effort
+names can inherit or route through an observed exact pair. They are not automatically treated as
+cheap: unclassified inherited effort blocks implicit economy work. Use an intentional supported
+route or remain in the root. New provider protocols may still require an adapter change.
 
-The `workflow-vnext` evaluation is a frozen historical pilot, including its model identities. Keep
-it intact; a new-model comparison needs separate runs and receipts. Static checks demonstrate
-packaging and routing contracts, not improved model behavior or successful provider execution.
-
-Source: [OpenAI's Astra prompting and migration guidance](https://developers.openai.com/api/docs/guides/latest-model#prompting-best-practices),
-checked 2026-09-05. API parameter migrations belong to API clients; this adapter uses `codex exec`.
+The shared Kernel owns instruction priority, authorized follow-through and proportional testing.
+A model upgrade does not authorize extra workers or wider effects. Historical evaluations retain
+their recorded model identities; new comparisons need separate runs and receipts. Routing tests
+prove contract compatibility, not future model quality or live provider support.
 
 ## Live capability evidence
 

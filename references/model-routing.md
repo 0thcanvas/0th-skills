@@ -42,6 +42,12 @@ If a harness can only inherit the parent runtime, economy and balanced routing a
 Remain single-root unless the packet explicitly requests `inherit` and delegation still has an
 evidence, isolation, or measured latency advantage.
 
+Model and effort identifiers are supplied by the runtime and routing configuration, not shared
+skills. Accepting an identifier's syntax does not establish availability: concrete overrides still
+require the exact observed model/effort pair and matching execution receipt. Unclassified inherited
+effort cannot silently satisfy economy routing; remain single-root or use a deliberate supported
+route. Provider protocol changes may still require adapter updates.
+
 ## Receipt boundary
 
 Every allowed route has a deterministic `launch_id`. For a concrete route, execute the plan through

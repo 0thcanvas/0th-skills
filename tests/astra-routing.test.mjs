@@ -17,7 +17,7 @@ for(const effort of ['medium','ultra']) test(`Astra ${effort} survives routing a
  for(const schema of ['host-capabilities','model-routing','launch-plan','execution-receipt']){
   const s=read(`../protocol/schemas/${schema}.schema.json`);
   const field=s.properties?.reasoning_effort??s.properties?.actual_reasoning_effort??s.$defs?.profile?.properties.reasoning_effort;
-  assert.ok(field, `${schema} has an effort field`); assert.ok(field.enum.includes(effort));
+  assert.ok(field, `${schema} has an effort field`); assert.match(effort, new RegExp(field.pattern));
  }
 });
 test('concrete ultra routing still requires the exact observed model/effort pair',()=>{

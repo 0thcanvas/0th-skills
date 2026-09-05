@@ -21,7 +21,7 @@
     "harness": { "type": "string", "minLength": 1 },
     "compute_class": { "enum": ["economy", "balanced", "frontier", "inherit"] },
     "model": { "type": "string", "minLength": 1 },
-    "reasoning_effort": { "enum": ["low", "medium", "high", "xhigh", "max", "ultra"] },
+    "reasoning_effort": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}(?![\\s\\S])", "not": { "const": "inherit" } },
     "selection_mode": { "enum": ["per-invocation", "named-profile", "inherit"] },
     "escalation_class": { "type": ["string", "null"], "enum": [null, "balanced", "frontier"] },
     "selection_rationale": { "type": "string", "minLength": 1 },
