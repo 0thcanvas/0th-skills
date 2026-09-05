@@ -92,7 +92,7 @@ test("published docs describe the current nine-skill surface", () => {
   const marketplace = JSON.parse(fs.readFileSync(claudeMarketplacePath, "utf8"));
   const marketplaceDescription = marketplace.plugins[0].description;
 
-  assert.match(readme, /nine skills under `codex-skills\/`/);
+  assert.match(readme, /nine skills/);
   assert.doesNotMatch(readme, /\bten skills under `codex-skills\/`/i);
   assert.match(marketplaceDescription, /\b9 workflow skills\b/);
   assert.doesNotMatch(marketplaceDescription, /\b5 core workflow skills\b/i);

@@ -69,6 +69,48 @@ function linkResolvesTo(linkPath, targetPath) {
   }
 }
 
+// Authoring keeps host-specific entry points separate. Distributions expose one
+// standard skills tree, preserving workflow-relative resources in place.
+function normalizeSkillLayout(root) {
+  const manifestPath = path.join(root, ".codex-plugin", "plugin.json");
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  if (manifest.skills === "./codex-skills/") {
+    const wrappers = path.join(root, "codex-skills");
+    const names = (directory) => fs.readdirSync(directory, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
+    if (JSON.stringify(names(wrappers)) !== JSON.stringify(names(path.join(root, "skills")))) {
+      throw new Error("Cannot package divergent shared skills and entry points");
+    }
+    for (const entry of fs.readdirSync(wrappers, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const directory = path.join(root, "skills", entry.name);
+      const skill = path.join(directory, "SKILL.md");
+      const workflow = path.join(directory, "WORKFLOW.md");
+      const originalLink = `../../skills/${entry.name}/SKILL.md`;
+      const wrapper = fs.readFileSync(path.join(wrappers, entry.name, "SKILL.md"), "utf8");
+      if (!wrapper.includes(`](${originalLink})`) || fs.existsSync(workflow)) {
+        throw new Error(`Cannot package shared workflow for ${entry.name}`);
+      }
+      fs.renameSync(skill, workflow);
+      fs.writeFileSync(skill, wrapper.replace(`](${originalLink})`, "](./WORKFLOW.md)"));
+    }
+    fs.rmSync(wrappers, { recursive: true });
+    manifest.skills = "./skills/";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  }
+  const cursorManifestPath = path.join(root, ".cursor-plugin", "plugin.json");
+  if (!fs.existsSync(cursorManifestPath)) {
+    const { name, version, description, author, homepage, repository, license, keywords } = manifest;
+    fs.mkdirSync(path.dirname(cursorManifestPath), { recursive: true });
+    fs.writeFileSync(cursorManifestPath, `${JSON.stringify({
+      name, version, description, author, homepage, repository, license, keywords,
+      skills: "./skills/",
+      // Native agent tool bindings remain owned by their harness adapters.
+      agents: [], commands: []
+    }, null, 2)}\n`);
+  }
+}
+
 export function packageRuntimePlugin({
   sourceRoot = process.cwd(),
   outputRoot,
@@ -106,6 +148,7 @@ export function packageRuntimePlugin({
       return !isExcluded(normalizedRelative(source, candidate));
     }
   });
+  normalizeSkillLayout(output);
   const runtimeInventory = inventory(output);
   const runtimeLink = registerCurrent
     ? registerCurrentRuntime({ runtimeRoot: output, env, homeDir })
