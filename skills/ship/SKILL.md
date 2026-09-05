@@ -21,8 +21,9 @@ Ship through a PR and stop before merge unless the user approves that specific P
 
 ## 1. Verify
 
-Run the complete relevant test suite and inspect actual output. Then review branch status, full diff,
-stat, and commits against the intended scope. Stop on failures, unexpected files, secrets, unsafe
+Inspect the checks and actual output appropriate to the affected behavior and required proof tier.
+Reuse passing evidence for the unchanged revision; rerun when it is stale, incomplete, or the diff
+has changed. Then review branch status, full diff, stat, and commits against the intended scope. Stop on failures, unexpected files, secrets, unsafe
 secret access, debug residue, tracked verification artifacts, or workstation-local paths.
 
 Read `verification-report/proof-contract.json` and `verification-report/proof-result.json`.
@@ -40,18 +41,20 @@ node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/script
 
 The gate validates proof, stack minimums, the product acceptance report at
 `verification-report/product-acceptance.json`,
-specialist return receipts,
-review evidence or an explicit no-review reason, freshness, tracked local evidence, and local-path
-leaks. `/ship` does not re-judge product quality or start first-time substantive review. If the proof contract depends on specialist evidence, unresolved `adapter_unavailable` or incomplete receipts
-must already produce an honest blocked outcome.
+specialist return receipts, freshness, tracked local evidence, and local-path leaks. Optional
+advisory review requires neither a review artifact nor a skip explanation. `/ship` does not re-judge
+product quality or start first-time substantive review. If the proof contract depends on specialist
+evidence, unresolved `adapter_unavailable` or incomplete receipts must already produce an honest
+blocked outcome.
 
 Any non-zero exit returns to `/build`; do not create the PR.
 
 ## 3. Create PR
 
-Read `templates/pr-body.md` and fill that shape with scope, tests, proof tier, evidence paths,
-product acceptance, review decision/yield, and unresolved concerns. Then push the feature branch and
-create the PR. Never force-push main.
+Use `templates/pr-body.md` when the repository has no owning PR template. Describe the concrete
+problem, resulting behavior, relevant verification and unresolved concerns. Include advisory review
+findings only when they add useful evidence; omit empty review sections and local-only evidence
+paths. Then push the feature branch and create the PR. Never force-push main.
 
 Present the PR URL, file list, evidence status, proof status, and concerns. Stop at **ready to merge**.
 Merge approval is PR-specific; a previous “ship it” or general automation instruction does not

@@ -26,7 +26,7 @@
       "required": ["model", "reasoning_effort", "selection_mode"],
       "properties": {
         "model": { "type": ["string", "null"], "minLength": 1 },
-        "reasoning_effort": { "type": ["string", "null"], "enum": [null, "inherit", "low", "medium", "high", "xhigh", "max"] },
+        "reasoning_effort": { "type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}(?![\\s\\S])" },
         "selection_mode": { "enum": ["per-invocation", "named-profile", "inherit", "disabled"] }
       }
     }

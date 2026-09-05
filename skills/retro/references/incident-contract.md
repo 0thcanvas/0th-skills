@@ -2,9 +2,11 @@
 
 <!-- lifecycle: current — owned by /retro and scripts/retro-aggregator.mjs. -->
 
-Store one redacted incident per file at
+For a configured KB incident owner, store one redacted incident per file at
 `${KB_ROOT}/learning/skill-incidents/YYYY-MM-DD-<slug>.md`; append `-2`, `-3`, and so on when the
-slug already exists. The same agent that observed the miss captures facts first, then applies the
+slug already exists. An explicit user destination takes precedence. Without a configured KB, return
+the redacted incident in chat or write a requested file using
+`../../../references/working-artifacts.md`; KB setup and historical aggregation are not prerequisites. The same agent that observed the miss captures facts first, then applies the
 ordered workflow in `../SKILL.md`: extract evidence, redact, classify, aggregate.
 
 Frontmatter contains a timezone-aware `date`, one primary `skill`, optional `related_skills`, one
@@ -26,7 +28,7 @@ Resolved secrets, tokens, cookies, customer PII, private prompt bodies, and unne
 must not enter an incident. Secret-manager references such as `op://` may be named; their resolved
 values may not.
 
-Aggregation uses the primary skill without fanning out `related_skills`. Surface every bucket that
+When an incident corpus is available, aggregation uses the primary skill without fanning out `related_skills`. Surface every bucket that
 reaches three lifetime entries and annotate whether three occurred in the inclusive prior 30 days.
 The user chooses whether to apply, save, or ignore a proposed workflow change. Incident capture never
 silently edits a skill.

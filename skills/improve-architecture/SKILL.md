@@ -42,13 +42,15 @@ Return a ranked candidate list. For each candidate include files, current fricti
 move, leverage, locality, test impact, migration risk, and any durable decision it conflicts with.
 Do not invent an interface yet.
 
-Ask for an **explicit user pick** before design work. **Do not refactor** in this skill.
+Reuse a candidate the user already explicitly selected. Otherwise ask for a pick when the ranked
+options require a user-owned choice; do not ask them to select the same candidate again.
+**Do not refactor** in this skill.
 
 For the chosen candidate, clarify constraints and define the deepened module, seam, adapters, public
 behavior, and surviving tests. If accepted, follow `/think`'s durability rule: update the owning
 current contract or Memory claim, and create a short decision record only when the exceptional ADR
 criteria apply. Update `CONTEXT.md` only for vocabulary resolved during this discussion, then hand
-off to `/build`. If rejected for a load-bearing reason, preserve the smallest durable record needed
+off to `/build` only if implementation is already authorized. Otherwise return the proposal. If rejected for a load-bearing reason, preserve the smallest durable record needed
 to avoid repeatedly proposing the same candidate.
 
 ## References

@@ -83,7 +83,7 @@ function generateWrapper(skillName) {
     "",
     `# ${titleFor(name)}`,
     "",
-    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth; this Codex wrapper omits Claude-only \`argument-hint\`.`
+    `Read the [shared workflow](../../skills/${name}/SKILL.md) before acting. It is the source of truth.`
   );
   lines.push("");
   return `${lines.join("\n")}`;

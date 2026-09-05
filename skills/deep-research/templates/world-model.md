@@ -1,50 +1,21 @@
-# World Model: {Topic}
-## Version: 1
-## Last Updated: YYYY-MM-DD
-## Decomposition: v1
+# World Model: {topic}
 
----
+- Version: {n}
+- Updated: {date}
+- Question and scope: {accepted question}
 
-## Nodes
+## Claims
+| Claim | Status | Evidence paths and source origins | Scope, methods, and limitations |
+|---|---|---|---|
 
-### Techniques
-| ID | Name | Domain | Uncertainty | Sources | Notes |
-|----|------|--------|-------------|---------|-------|
+Statuses: supported, tentative, disputed, refuted, superseded. State why each claim's evidence is
+sufficient or insufficient. Source buckets and worker counts do not establish independence.
 
-### Papers
-| ID | Title | Year | Cited By | Relevance |
-|----|-------|------|----------|-----------|
+## Relationships (when useful)
+{Techniques, papers, benchmarks, limitations; solves, evaluated_on, causes, analogous_to edges}
 
-### Benchmarks
-| ID | Name | Metric | Domain | Notes |
-|----|------|--------|--------|-------|
+## Contradictions and gaps
+{Competing claims, relevant conditions, missing evidence, and decision impact}
 
-### Limitations
-| ID | Description | Uncertainty | Affects |
-|----|-------------|-------------|---------|
-
-### Gaps
-| ID | Description | Severity | Status |
-|----|-------------|----------|--------|
-
----
-
-## Edges
-
-### Technique -> Sub-problem
-<!-- T1 ->[solves]-> "sub-problem" (confidence: high|medium|low) -->
-
-### Technique -> Benchmark
-<!-- T1 ->[evaluated_on]-> B1 (metric: value) -->
-
-### Limitation -> Gap
-<!-- L1 ->[causes]-> GAP1 -->
-
-### Cross-Domain Connections
-<!-- "abstract mechanism" (field) ->[analogous_to]-> "our problem" -->
-
----
-
-## Consensus Log
-| Finding | Agent A (arXiv) | Agent B (GitHub) | Agent C (web) | Result |
-|---------|----------------|-----------------|---------------|--------|
+## Changes of conclusion
+{Old status, new status, and evidence warranting revision or withdrawal}

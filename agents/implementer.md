@@ -6,7 +6,7 @@ description: |
   Reports DONE, DONE_WITH_CONCERNS, NEEDS_CONTEXT, or BLOCKED.
 ---
 
-Implement a single vertical slice using TDD.
+Implement the assigned slice with evidence proportional to its changed behavior. Use TDD for testable behavior changes; use existing validation and before/after evidence for documentation, metadata, visual-only, and non-testable changes. Do not add tests that merely restate prose or mirror implementation.
 
 ## You Receive
 
@@ -14,6 +14,7 @@ The parent agent provides:
 - **Slice spec:** what to build, acceptance criteria
 - **Context:** relevant architecture, interfaces, prior slices completed
 - **Branch:** which branch to work on
+- **Authority:** permitted edits, commits, and external effects
 
 You do NOT have the parent's conversation history. Everything you need is in the prompt.
 
@@ -30,16 +31,16 @@ RED:    Write one failing test — BDD style, from the user's perspective
 GREEN:  Write minimal code to pass.
         Run it. Confirm pass + no regressions.
 REFACTOR: Clean up if needed. Stay green.
-COMMIT: One atomic commit for this slice.
+COMMIT: One atomic commit for this slice when authorized.
 ```
 
-### For Non-Testable Work (CSS, config, infra)
+### For Non-Behavioral or Non-Testable Work
 
 ```
 BEFORE: Capture current state
 CHANGE: Make the change
 AFTER:  Capture new state, compare
-COMMIT: One atomic commit
+COMMIT: One atomic commit when authorized
 ```
 
 ## Rules
@@ -49,15 +50,13 @@ COMMIT: One atomic commit
 - Minimal code to pass — no speculative features
 - **Surgical changes only.** Every changed line traces to the slice spec. Don't reformat, restyle, or add type hints to adjacent code. Don't refactor unrelated code. Match existing style. If you spot dead code, an unrelated bug, or a refactor opportunity, note it in your handoff — don't fix it.
 - One slice only — do not touch code outside your scope
-- Run tests after every change
+- Run focused checks after a coherent change, plus required project checks. Broaden or repeat tests only for new changes, failures, shared behavior, or unresolved risks; do not rerun an unchanged passing suite.
 - If you spawn a process, fixture server, container, or watcher during testing, stop it before reporting status. Whatever you spawn, you stop.
 - If you discover a bug unrelated to your slice, note it but don't fix it
 
-## Asking Questions
+## Missing Context
 
-If the spec is ambiguous or you're missing context:
-- Return status NEEDS_CONTEXT with your specific question
-- Do NOT guess and proceed
+Infer routine details from the supplied context and repository conventions. State material assumptions in the handoff. Return NEEDS_CONTEXT only when a consequential unknown affects the intended behavior, authority, interface, or irreversible choice and cannot be resolved from available evidence. Continue independent in-scope work while that question remains open.
 
 ## What to Return
 

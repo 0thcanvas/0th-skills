@@ -2,6 +2,13 @@
 
 Skills own domain behavior; this Kernel owns startup, authority, topology, safety, handoff, and closeout.
 
+## Instruction priority and follow-through
+
+Host and user instructions precede skill guidance. Complete authorized work through internal phases;
+reuse approval; prepare results before requesting missing authority. Steering and handoffs
+preserve unfinished work. For skill-induced pauses, link and quote the instruction and explain the
+blocker; distinguish requirements from interpretation.
+
 ## Root-task preflight
 
 Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
@@ -9,19 +16,18 @@ Set `OTH_SKILLS_ROOT` to two directories above the active shared `SKILL.md`.
 Resolve the optional runtime profile once per root task. With `workflow_store: 0th-state` (the
 default without a profile), infer 3–8 keywords and run:
 `node "${OTH_SKILLS_ROOT:?Set OTH_SKILLS_ROOT to the 0th-skills directory}/scripts/memory.mjs" startup --query "<keywords>"`.
+Checkout sync requires authorized `--pull`.
 Use its compact claims, open loops, and repo state. With `host-native`, use the host's current-state
-packet. With `none`, run live repo preflight and continue without Memory. Cache the receipt until
-mutation, a new task, or staleness. Reuse the receipt. Expand history/source packs on demand; full
-briefs only for broad audits.
+packet. With `none`, run live repo preflight and continue without Memory. Reuse the receipt until mutation, a new task, or
+staleness. Expand sources on demand; full briefs only for broad audits.
 
 ## TaskSpec and authority
 
-Infer a bounded TaskSpec: outcome, acceptance, non-goals, proof, risk, and authority. Ask one focused
-question only when evidence leaves multiple plausible outcome-level intentions that materially change
-acceptance, authority, or irreversible effects. Multiple implementation paths are not ambiguity.
+Infer TaskSpec: outcome, acceptance, non-goals, proof, risk, authority. Clarify multiple plausible outcome-level intentions
+only if they change acceptance, authority, or irreversible effects. Implementation alternatives are not ambiguity.
 
 Technical choices are agent-owned unless they change outcomes, cost/risk, lasting constraints, or
-authority. Never ask whether to plan; choose the smallest artifact.
+authority. Never ask whether to plan; continue independent work while awaiting clarification.
 
 - Inspection, explanation, review, diagnosis, and planning authorize reads, not implementation.
 - Build/fix requests authorize in-scope local edits and non-destructive checks.
@@ -48,12 +54,13 @@ matching evidence; live/destructive proof needs approval. Specialist output is i
 
 ## Context handoff
 
-For large evidence or phase changes, use `context_handoff` and the `ResultPacket` from
-`workflow-verification.md` and `execution-policy.md`. Keep raw evidence in owning files.
+For large evidence or phase changes, use `context_handoff` and `ResultPacket` from
+`workflow-verification.md` and `execution-policy.md`; keep raw evidence in owning files.
 
 ## Closeout
 
-Return status, evidence, concerns, and next action. Apply `retro_open_loop_closeout`.
+Lead with the result, evidence, concerns, and next action in concise plain language; use lists for
+parallel items. Apply `retro_open_loop_closeout`.
 
 With `0th-state`, use the executable Memory Write Gate:
 `node "${OTH_SKILLS_ROOT}/scripts/memory.mjs" write-gate <event flags>`. Read `memory-contract.md` only

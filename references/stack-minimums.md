@@ -8,9 +8,27 @@ A verifier cannot return PASS by skipping the only check that exercises the seam
 
 ## Detection is multi-match (root signals only, in v1)
 
-A repo can match multiple rows when distinct *root-level* signals are present: e.g., `package.json` with `electron` dep AND `manifest.json` with `manifest_version: 3` matches both `electron-desktop` and `chrome-mv3-extension`. Every matched row is required.
+A repo can match multiple rows when distinct *root-level* signals are present: e.g., `package.json` with `electron` dep AND `manifest.json` with `manifest_version: 3` matches both `electron-desktop` and `chrome-mv3-extension`. Every matched row is required unless the documentation-only exception below is independently validated.
 
 **v1 limitation:** The gate script only inspects root-level files; nested workspaces (subdir packages with their own `package.json`, an extension with a separate `cli/` workspace) are not detected. Per-row signals also exclude themselves under conflict — `cli` requires "no UI deps," so a parent UI repo with a child CLI workspace will only match the UI row at the gate level even though both should be exercised. When you have a true monorepo or hybrid with nested workspaces, name the additional rows in the verifier brief so the verifier still exercises them — **but note that the v1 gate only validates rows its own detection logic finds at the root**, not stack ids mentioned in `brief.txt`. Nested-row enforcement is verifier-side (LLM-enforced) only in v1; for gate-level enforcement of nested rows, extend per-row signals here or wait for v2's subdirectory walker. Revisit when 0th has a real monorepo in production.
+
+## Documentation-only change scope
+
+Root detection remains conservative for code, configuration, mixed changes, and unspecified scope.
+A valid T0/T1 proof contract may declare `change_scope` as documented in `proof-tiers.md`. The gate
+checks its full base revision against the merge-base with the intended PR target ref, then inspects
+the union of committed, staged, unstaged, and untracked non-ignored paths. A recent base cannot
+exclude earlier branch changes. Code renamed into docs still counts as a code change.
+
+Only non-executable regular documentation files qualify: root README, CONTRIBUTING, CHANGELOG,
+or LICENSE (with no extension or `.md`, `.txt`, `.rst`), and `.md`/`.txt`/`.rst` beneath `docs/`.
+Unknown paths, symlinks, executable files, mixed changes, or an empty diff keep all detected rows.
+Invalid base/scope metadata fails closed. Ignored local verification artifacts are not source changes.
+A docs-site behavior change is not documentation-only merely because its input is Markdown.
+
+This exception removes unrelated stack rows, not the declared proof tier or evidence requirements.
+T2+ and briefs requesting real-session behavior never receive this exemption. The verifier may
+exercise additional affected seams beyond root detection, especially in nested workspaces.
 
 ## Tool chain
 
@@ -33,7 +51,7 @@ If no chain tool is usable for the matched stack on the running agent, the verif
 |---|---|---|
 | `electron-desktop` | `package.json` has `electron` in `dependencies`/`devDependencies`, or `electron/main.*` file present | Launch the built binary; renderer invokes ≥1 method through the `contextBridge → preload → ipcRenderer → ipcMain` chain; assert the resolved value (not just no exception). Crossing the IPC bridge is the point — paper-level symmetry checks do not satisfy this row. |
 | `chrome-mv3-extension` | `manifest.json` with `"manifest_version": 3` | Background service worker responds to a message dispatched from a content script or extension popup; assert response shape. Real-environment proof resolves `logged_in_browser` and uses the exact configured application, profile, and extension build. Hermetic automation may supplement but cannot replace it. If programmatic loading fails, follow the capability recovery in `references/browser-control-policy.md`. |
-| `web-app` | `next.config.*`, `vite.config.*`, `astro.config.*`, or `app/` / `pages/` directory present, AND no `electron` dep | Loaded route fetches ≥1 backend response and renders without console errors. Exit criteria: backend hit count ≥ 1, console error count = 0. |
+| `web-app` | `next.config.*`, `vite.config.*`, `astro.config.*`, or `app/` / `pages/` directory present, AND no `electron` dep | Load the affected route and inspect its real render without console errors. For static frontends, verify the changed content/interaction and record render evidence; no backend is required. When the affected behavior uses a backend, exercise ≥1 relevant response and assert its rendered result. |
 | `cli` | `package.json` has `bin` field and no UI/electron deps | Spawn binary with fixture input; diff stdout against a known-good snapshot; assert exit code. |
 | `service` | `Dockerfile`, `fly.toml`, or a declared health endpoint, with no UI surface | Hit ≥1 endpoint of the running service (deployed or local docker); verify response shape and status; assert auth boundary if present. |
 | `session-backed-browser` | Brief explicitly names real-session, logged-in, shared-tab, user's browser, extension, anti-bot, or real-environment proof | Same evidence shape as `web-app`, sourced through the resolved `logged_in_browser` capability and exact configured identity. Check provider availability and existing sessions, load its guidance, reuse a matching session, and resolve `browser_ui_fallback` only when a required UI action remains unavailable. |
@@ -44,7 +62,8 @@ The verifier's structured report at `${VERIFICATION_REPORT_DIR:-verification-rep
 
 ```json
 {
-  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|FAIL_FLAKY",
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|BLOCKED_REAL_ENV|FAIL_FLAKY",
+  "pre_dispatch_tool_failures_reviewed": true,
   "stack_minimums_exercised": [
     {
       "stack": "electron-desktop",

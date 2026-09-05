@@ -103,7 +103,7 @@ export function compactPreflightResult(result) {
 
 export function runPreflight({
   cwd = process.cwd(),
-  allowPull = true,
+  allowPull = false,
   memoryFile,
   repoStateFile
 } = {}) {
@@ -326,7 +326,10 @@ export function runPreflight({
 
 function main() {
   const args = process.argv.slice(2);
-  const allowPull = !args.includes("--no-pull");
+  if (args.includes("--pull") && args.includes("--no-pull")) {
+    throw new Error("--pull and --no-pull conflict; choose one startup synchronization policy");
+  }
+  const allowPull = args.includes("--pull");
   const verbose = args.includes("--verbose");
   const memoryFileIndex = args.indexOf("--memory-file");
   const memoryFile = memoryFileIndex === -1 ? undefined : args[memoryFileIndex + 1];

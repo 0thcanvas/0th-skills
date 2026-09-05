@@ -17,9 +17,8 @@ The parent agent provides:
 
 ## Product Acceptance Loop
 
-Judge against this hierarchy: current contract, committed plan acceptance criteria when one exists, explicit user brief, then repo standards.
-Do not invent subjective taste. If the source material is underspecified, return `BLOCKED_BY_SPEC`
-with the missing decision or acceptance criterion.
+Judge against the current authorized user intent first, then compatible current contracts, plan acceptance criteria, and repo standards. A later user correction supersedes stale artifacts; identify that drift for the parent to reconcile.
+Use reasonable in-scope judgment for routine details. Return `BLOCKED_BY_SPEC` only when a missing consequential product decision prevents an honest acceptance judgment; continue reviewing unaffected criteria.
 
 Review:
 - Plan traceability: every promised slice and acceptance criterion is represented

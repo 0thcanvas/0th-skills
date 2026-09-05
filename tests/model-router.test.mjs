@@ -175,6 +175,51 @@ test("inherit-only runtime fails closed instead of pretending economy routing", 
   assert.ok(result.reasons.includes("effort_override_unavailable"));
 });
 
+test("bundled frontier routing preserves an Astra host and its effort", () => {
+  const astra = { ...capabilities, model: "gpt-6-astra", reasoning_effort: "medium" };
+  const bundled = JSON.parse(fs.readFileSync(path.join(repoRoot, "adapters/codex.models.json"), "utf8"));
+  const result = resolveLaunchPlan({
+    capabilities: astra,
+    packet: packet({ work_kind: "architecture", escalation_class: null }),
+    routing: bundled
+  });
+  assert.equal(result.allowed, true);
+  assert.equal(result.launch_plan.model, astra.model);
+  assert.equal(result.launch_plan.reasoning_effort, astra.reasoning_effort);
+  assert.equal(result.launch_plan.selection_mode, "inherit");
+});
+
+test("an Astra frontier override needs observed support and preserves cheaper routes", () => {
+  const migrated = structuredClone(routing);
+  migrated.profiles.frontier = {
+    model: "gpt-6-astra", reasoning_effort: "medium", selection_mode: "per-invocation"
+  };
+  const work = packet({ work_kind: "architecture", escalation_class: null });
+  const unavailable = resolveLaunchPlan({ capabilities, packet: work, routing: migrated });
+  assert.equal(unavailable.allowed, false);
+  assert.ok(unavailable.reasons.includes("model_unavailable"));
+
+  const observed = {
+    ...capabilities,
+    available_models: [...capabilities.available_models, "gpt-6-astra"],
+    available_model_effort_pairs: [
+      ...capabilities.available_model_effort_pairs,
+      { model: "gpt-6-astra", reasoning_effort: "medium" }
+    ]
+  };
+  const frontier = resolveLaunchPlan({ capabilities: observed, packet: work, routing: migrated });
+  assert.equal(frontier.allowed, true);
+  assert.equal(frontier.launch_plan.model, "gpt-6-astra");
+  assert.equal(frontier.launch_plan.reasoning_effort, "medium");
+  for (const workKind of ["source_discovery", "bounded_implementation"]) {
+    const before = resolveLaunchPlan({ capabilities: observed, packet: packet({ work_kind: workKind, escalation_class: null }), routing });
+    const after = resolveLaunchPlan({ capabilities: observed, packet: packet({ work_kind: workKind, escalation_class: null }), routing: migrated });
+    assert.equal(after.allowed, true);
+    assert.equal(after.launch_plan.model, before.launch_plan.model);
+    assert.equal(after.launch_plan.reasoning_effort, before.launch_plan.reasoning_effort);
+  }
+});
+
 test("concrete routes require observed model and effort availability", () => {
   const unobserved = resolveLaunchPlan({
     capabilities: {

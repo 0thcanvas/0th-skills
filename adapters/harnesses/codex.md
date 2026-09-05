@@ -4,6 +4,24 @@ This guide contains Codex-specific behavior behind the portable model-routing an
 contracts. Shared skills and references should point to capabilities and the adapter registry, not
 copy these details.
 
+## Model upgrades
+
+Shared skills are model-neutral. Select the desired root model in the host; the bundled mapping
+inherits its model and effort. Concrete worker selectors belong in local routing configuration.
+Preserve deliberate economy/balanced choices when updating a frontier override. Never infer model
+or effort support from a name: require fresh observed capabilities and attest the actual execution.
+A routing-file change invalidates cached probe evidence.
+
+Effort identifiers are runtime-provided strings, not a fixed model-generation list. Unknown effort
+names can inherit or route through an observed exact pair. They are not automatically treated as
+cheap: unclassified inherited effort blocks implicit economy work. Use an intentional supported
+route or remain in the root. New provider protocols may still require an adapter change.
+
+The shared Kernel owns instruction priority, authorized follow-through and proportional testing.
+A model upgrade does not authorize extra workers or wider effects. Historical evaluations retain
+their recorded model identities; new comparisons need separate runs and receipts. Routing tests
+prove contract compatibility, not future model quality or live provider support.
+
 ## Live capability evidence
 
 ```bash

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   detectStacks,
+  requiredStacks,
   findLocalPathLeaksInText,
   listTrackedVerificationArtifacts,
   loadBrief,
@@ -1079,4 +1080,105 @@ test("findLocalPathLeaksInText: leak records do NOT echo full line content (secr
     !serialized.includes("API_KEY"),
     `leak record must not echo arbitrary line content; got ${serialized}`
   );
+});
+
+function documentationScopeFixture(t) {
+  const repo = makeTempGitRepo();
+  t.after(() => fs.rmSync(repo, { recursive: true, force: true }));
+  const git = (...args) => execFileSync("git", args, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  git("config", "user.name", "Fixture");
+  git("config", "user.email", "fixture@example.invalid");
+  fs.writeFileSync(path.join(repo, "vite.config.ts"), "export default {};\n");
+  fs.writeFileSync(path.join(repo, "README.md"), "Before\n");
+  fs.writeFileSync(path.join(repo, "app.js"), "export const value = 1;\n");
+  fs.writeFileSync(path.join(repo, ".gitignore"), "verification-report/\n");
+  git("add", "."); git("commit", "-qm", "base");
+  const base = git("rev-parse", "HEAD");
+  git("branch", "target-base");
+  git("checkout", "-qb", "documentation-change");
+  fs.writeFileSync(path.join(repo, "README.md"), "After\n");
+  git("add", "README.md"); git("commit", "-qm", "docs");
+  const contract = {
+    schema_version: 1, minimum_proof_tier: "T0", selected_rationale: "Static documentation only",
+    required_evidence: ["documentation diff"], real_env_risks: [], created_at: new Date().toISOString(),
+    change_scope: { kind: "documentation-only", base_revision: base, base_ref: "refs/heads/target-base" }
+  };
+  return { repo, git, contract, base };
+}
+
+test("requiredStacks: real documentation diff skips unrelated web runtime and passes CLI gate", t => {
+  const { repo, git, contract } = documentationScopeFixture(t);
+  assert.deepEqual(requiredStacks(repo, "", contract), []);
+  assert.deepEqual(requiredStacks(repo), ["web-app"]);
+  writeProductAcceptance(repo);
+  writeProofContract(repo, contract);
+  writeProofResult(repo, { verified_head: git("rev-parse", "HEAD") });
+  const output = execFileSync(process.execPath, [path.resolve("scripts/ship-gate.mjs")], { cwd: repo, encoding: "utf8" });
+  assert.match(output, /no runtime stacks required/);
+});
+
+test("requiredStacks: all staged, unstaged, and untracked code preserves runtime floor", async t => {
+  for (const state of ["committed", "staged", "unstaged", "untracked", "staged-reverted"]) {
+    await t.test(state, t => {
+      const { repo, git, contract } = documentationScopeFixture(t);
+      const file = state === "untracked" ? "new.js" : "app.js";
+      fs.writeFileSync(path.join(repo, file), "export const value = 2;\n");
+      if (["committed", "staged", "staged-reverted"].includes(state)) git("add", file);
+      if (state === "committed") git("commit", "-qm", "code");
+      if (state === "staged-reverted") fs.writeFileSync(path.join(repo, file), "export const value = 1;\n");
+      assert.deepEqual(requiredStacks(repo, "", contract), ["web-app"]);
+    });
+  }
+});
+
+test("requiredStacks: invalid or shortened base cannot hide earlier code", t => {
+  const { repo, git, contract } = documentationScopeFixture(t);
+  for (const base of ["missing", "f".repeat(40), git("rev-parse", "HEAD")]) {
+    assert.throws(() => requiredStacks(repo, "", { ...contract, change_scope: { ...contract.change_scope, base_revision: base } }), /base|scope/);
+  }
+  git("checkout", "--orphan", "unrelated");
+  git("add", "."); git("commit", "-qm", "unrelated");
+  const unrelated = git("rev-parse", "HEAD");
+  git("checkout", "documentation-change");
+  assert.throws(() => requiredStacks(repo, "", { ...contract, change_scope: { ...contract.change_scope, base_revision: unrelated } }), /scope/);
+  fs.writeFileSync(path.join(repo, "app.js"), "export const value = 2;\n");
+  git("add", "app.js"); git("commit", "-qm", "earlier code");
+  const recent = git("rev-parse", "HEAD");
+  fs.writeFileSync(path.join(repo, "README.md"), "Later docs\n");
+  git("add", "README.md"); git("commit", "-qm", "later docs");
+  assert.throws(() => requiredStacks(repo, "", { ...contract, change_scope: { ...contract.change_scope, base_revision: recent } }), /merge-base/);
+});
+
+test("requiredStacks: T2+ and real-session proof never exempt runtime stacks", t => {
+  const { repo, contract } = documentationScopeFixture(t);
+  for (const minimum_proof_tier of ["T2", "T3", "T4"]) {
+    assert.deepEqual(requiredStacks(repo, "", { ...contract, minimum_proof_tier }), ["web-app"]);
+  }
+  assert.deepEqual(requiredStacks(repo, "verify logged-in session", contract), ["web-app", "session-backed-browser"]);
+  assert.throws(() => requiredStacks(repo, "", { ...contract, required_evidence: [] }), /invalid proof contract/);
+});
+
+test("requiredStacks: code renamed to documentation and executable docs cannot bypass runtime", t => {
+  const { repo, git, contract } = documentationScopeFixture(t);
+  git("mv", "app.js", "CONTRIBUTING.md");
+  assert.deepEqual(requiredStacks(repo, "", contract), ["web-app"]);
+  git("reset", "--hard", "HEAD");
+  fs.chmodSync(path.join(repo, "README.md"), 0o755);
+  assert.deepEqual(requiredStacks(repo, "", contract), ["web-app"]);
+});
+
+test("validateProofResult: truthful failure outcomes are recognized but cannot ship", () => {
+  for (const outcome of ["FAIL_UNRESOLVED", "BLOCKED", "BLOCKED_REAL_ENV", "FAIL_FLAKY"]) {
+    const result = validateProofResult({
+      schema_version: 1, minimum_proof_tier: "T1",
+      selected_rationale: "CLI behavior requires runtime evidence.",
+      required_evidence: ["CLI behavior check"], outcome, minimum_tier_satisfied: false,
+      evidence_paths: ["verification-report/finding.txt"], blocked_reason: "Observed failure details.",
+      checked_at: "2026-05-10T20:30:00.000Z"
+    }, { now: new Date("2026-05-10T20:30:00.000Z") });
+    assert.equal(result.ok, false);
+    assert.ok(result.reasons.includes(`proof result outcome is '${outcome}', not 'PASS'`));
+    assert.ok(result.reasons.includes("minimum_tier_satisfied must be true"));
+    assert.doesNotMatch(result.reasons.join("\n"), /outcome must be one of/);
+  }
 });

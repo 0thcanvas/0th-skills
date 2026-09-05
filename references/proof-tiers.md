@@ -32,6 +32,34 @@ Before coding, `/build` writes `${VERIFICATION_REPORT_DIR:-verification-report}/
 Do not choose a lower tier because the real environment is inconvenient. If the proper tier cannot
 run, the result is blocked.
 
+### Optional documentation scope
+
+For a documentation-only T0/T1 change, the contract may add:
+
+```json
+{
+  "change_scope": {
+    "kind": "documentation-only",
+    "base_revision": "<full merge-base commit id>",
+    "base_ref": "refs/remotes/origin/main"
+  }
+}
+```
+
+`base_ref` is the actual intended PR target, supplied from task/repository context; the example is
+not a default to copy blindly. Record the complete branch comparison base before implementation:
+`git merge-base HEAD <intended-target-ref>`. The gate requires `base_revision` to be an ancestor of
+HEAD and equal that merge-base. Choosing a recent feature commit would hide earlier branch work
+and is rejected. The target ref must resolve locally; this check does not fetch or change a checkout.
+It validates consistency with the declared target, not the user's authority to choose that target.
+
+The gate examines actual committed, staged, unstaged, and non-ignored untracked paths, including
+both sides of renames. Only the narrow documentation allowlist in `stack-minimums.md` can exempt
+unrelated runtime rows. Omit this optional scope for mixed/code changes or when a reliable base is
+unavailable; default root stack requirements apply. Invalid scope/base data fails closed. T2+ and
+real-session requirements cannot be exempted. Static frontend behavior still needs runtime render
+proof, but does not need a fictional backend.
+
 ## Proof Result
 
 After verification, the verifier writes `${VERIFICATION_REPORT_DIR:-verification-report}/proof-result.json`:
@@ -43,7 +71,7 @@ After verification, the verifier writes `${VERIFICATION_REPORT_DIR:-verification
   "minimum_proof_tier": "T0|T1|T2|T3|T4",
   "selected_rationale": "<copied or sharpened from proof-contract.json>",
   "required_evidence": ["<evidence item>", "<evidence item>"],
-  "outcome": "PASS|BLOCKED_REAL_ENV",
+  "outcome": "PASS|FAIL_UNRESOLVED|BLOCKED|BLOCKED_REAL_ENV|FAIL_FLAKY",
   "minimum_tier_satisfied": true,
   "verified_head": "<full commit id verified by this result>",
   "evidence_paths": ["verification-report/<evidence-path>"],
@@ -51,6 +79,17 @@ After verification, the verifier writes `${VERIFICATION_REPORT_DIR:-verification
   "checked_at": "2026-05-10T20:30:00.000Z"
 }
 ```
+
+Record the observed outcome, including failures; do not rewrite a failed check as PASS or
+BLOCKED_REAL_ENV merely to fit the result schema. Set `minimum_tier_satisfied` to `false` whenever
+required proof is missing or unsuccessful. Include sanitized details in `blocked_reason` for blocked
+outcomes and reference failure evidence for unresolved/flaky outcomes. A non-PASS result is a valid
+record of verification, but never permission to ship.
+
+All timestamps in these artifacts use UTC with a literal `Z` suffix: `YYYY-MM-DDTHH:mm:ssZ` or
+`YYYY-MM-DDTHH:mm:ss.sssZ` (exactly three fractional digits). For example, JavaScript's
+`new Date().toISOString()` produces the accepted form. Normalize Python or other offset formats
+such as `+00:00` and microsecond precision before writing; the gate accepts neither format.
 
 `/ship` fails closed when `proof-result.json` is missing, stale, malformed, bound to a different
 commit, has `outcome != "PASS"`, `minimum_tier_satisfied != true`, or cites missing/empty evidence.

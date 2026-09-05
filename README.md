@@ -272,6 +272,18 @@ Hook installation is user-scope because repo-local Codex hooks are not the valid
 
 ## Release notes
 
+### 0.5.1
+
+- Made all nine workflows preserve current user intent, scope, and existing authorization while
+  scaling planning, testing, research, and review to the actual work.
+- Unified deep-research budgets and evidence rules; claims can be revised when new evidence
+  contradicts them, and research cannot modify its own skill library.
+- Made startup preserve the checkout unless synchronization is explicitly requested with `--pull`.
+- Aligned verifier authority and proof records with the ship gate. Documentation-only changes can
+  omit unrelated runtime checks through a verified Git scope; T2+ proof remains mandatory.
+- Removed fixed model-generation effort catalogs. Observed future model/effort identifiers pass
+  through routing, while exact capability checks and execution attestation remain required.
+
 ### 0.5.0
 
 - Made all nine shared skill entrypoints pass the portable skill schema by removing host-only

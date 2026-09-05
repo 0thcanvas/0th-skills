@@ -34,22 +34,25 @@ not enter this workflow.
 - `survey`: landscape and reusable wiki pages.
 
 Parse mode and question from `$ARGUMENTS`; if mode is absent, infer it only when unambiguous.
-Generate a short topic slug and resolve the KB root through project configuration.
+Generate a short topic slug and resolve its destination using the disk contract below.
 
 ## Disk contract
 
-Use `{KB_ROOT}/research/{topic}/` with `state.md`, `journal.md`, `raw/`, `raw/archived/`, `wiki/`,
-and `experiments/`. Existing `state.md` is the resume authority. Two sessions must not mutate the
-same topic concurrently.
+Follow `../../references/working-artifacts.md`: honor an explicit user destination, then the
+configured owning KB/state provider, otherwise use a task-scoped workspace artifact directory.
+Optional KB configuration must not block research. Use a topic directory with `state.md`, source
+notes in `raw/`, and `world-model.md`; create `wiki/`, `journal.md`, and `experiments/` only when
+needed for the deliverable or continuation. Resume relevant existing state without overwriting
+another active session's files.
 
-Raw sources and experiments stay on disk. The root carries only `state.md`, bounded summaries,
-source pointers, unresolved gaps, and next read targets through `context_handoff`; each summary stays
-small and does not
-accumulate raw source material.
+The root can read original sources, source excerpts, and experiment output directly. Save useful
+evidence and provenance to disk; carry bounded summaries, pointers, remaining budgets, and next
+read targets through `context_handoff`. Worker count never determines evidence independence.
 
 ## Adaptive phase loop
 
-Read the relevant section of `references/phase-guide.md` before each phase.
+Use `references/phase-guide.md` for source handling, evidence revision, and mode-specific output.
+These are available activities, not mandatory phase ceremonies.
 
 1. **Frame:** define verdict criteria, decompose sub-problems, assign source buckets, and identify
    the assumption most likely to invalidate the frame.
@@ -57,7 +60,7 @@ Read the relevant section of `references/phase-guide.md` before each phase.
    source packets only when the Skills Kernel capability gate allows them.
 3. **Build world model:** synthesize claims, mechanisms, contradictions, confidence, and provenance
    into `world-model.md`.
-4. **Probe gaps:** show verified findings, unverified claims, conflicting evidence, and threats to
+4. **Probe gaps:** show supported findings, tentative claims, conflicting evidence, and threats to
    the decomposition.
 5. **Reassess:** change the frame when evidence invalidates it; do not defend the original split.
 6. **Develop:** assemble the architecture, decision, or survey and run
@@ -67,8 +70,9 @@ Read the relevant section of `references/phase-guide.md` before each phase.
 8. **Conclude:** state `SUCCESS`, `PARTIAL`, `PIVOT`, `EXHAUSTED`, `USER_STOP`, or
    `MAX_ITERATIONS`, with evidence paths and remaining gaps.
 
-Human alignment is required before a materially new frame, destructive/live experiment, or final
-decision that exceeds the accepted TaskSpec. A routine phase transition is not a reason to pause.
+Existing user scope and authority govern reframing and experiments. Continue authorized work; ask
+only for missing consequential information or authority. A routine phase transition or delivery of
+a recommendation is not a reason to pause. Research does not authorize modifying this skill library.
 
 ## Termination
 

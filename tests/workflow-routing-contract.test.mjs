@@ -40,7 +40,7 @@ test("build defines a no-code operational lane for an existing revision", () => 
   assert.match(build, /## No-code Operational Lane/);
   assert.match(build, /build, sign, install, launch, restart, or verify an\s+existing revision/is);
   assert.match(build, /do not create a feature branch, TDD test, PR, or `verification-report`/is);
-  assert.match(build, /source or configuration edit.*normal\s+`\/build` or `\/debug`/is);
+  assert.match(build, /Source edits enter `\/build` or `\/debug`/is);
   assert.match(build, /build, signing, install, launch, and health evidence/is);
 });
 
@@ -56,7 +56,7 @@ test("external acquisition separates effect authority from internal planning", (
   assert.match(plan, /billing unit.*worst-case cost/is);
   assert.match(plan, /maximum live-probe budget.*stop condition/is);
   assert.match(plan, /Unknown pricing, authorization, or event semantics.*BLOCKED_BY_SPEC/is);
-  assert.match(build, /External\/live work needs explicit authority and a bounded effect contract/is);
+  assert.match(build, /External writes and live mutations need effect-specific authority and a bounded contract/is);
   assert.match(build, /not an approved\s+`\/plan`/i);
   assert.match(policy, /target, authority, cost\s+ceiling, reversibility, and stop condition/is);
   assert.match(policy, /ask the user only for missing authority or an outcome-level tradeoff/i);

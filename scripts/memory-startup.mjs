@@ -39,7 +39,7 @@ function contentRelevant(result, tokens) {
 export function buildStartupPacket({
   cwd = process.cwd(),
   query,
-  allowPull = true,
+  allowPull = false,
   claimLimit = 3,
   globalClaimLimit = 1,
   openLoopLimit = 2,
@@ -116,10 +116,14 @@ export function buildStartupPacket({
 }
 
 function parseArgs(argv) {
+  if (argv.includes("--pull") && argv.includes("--no-pull")) {
+    throw new Error("--pull and --no-pull conflict; choose one startup synchronization policy");
+  }
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === "--query" || token === "-q") options.query = argv[++index];
+    else if (token === "--pull") options.allowPull = true;
     else if (token === "--no-pull") options.allowPull = false;
     else if (token === "--claim-limit") options.claimLimit = Number.parseInt(argv[++index], 10);
     else if (token === "--global-claim-limit") options.globalClaimLimit = Number.parseInt(argv[++index], 10);

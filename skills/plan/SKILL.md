@@ -15,7 +15,8 @@ root-task preflight, authority, optional delegation, safety, and closeout.
 - Do not ask the user whether a plan is needed. The agent owns that internal coordination choice.
 - External/live or irreversible work is a risk signal, not an automatic plan trigger. It still
   requires the authority and effect contract defined by the execution policy.
-- Skip to `/build` when one bounded implementation loop is sufficient.
+- When one bounded loop is sufficient, give a compact checklist for a plan-only request. Skip to
+  `/build` only when implementation is already authorized.
 - Ordered multi-file or debugging work alone is not a plan trigger; `/build` may use an adaptive
   checkpoint while evidence evolves.
 - `$ARGUMENTS` is the resolved decision or requested scope when invoked directly.
@@ -28,7 +29,7 @@ mechanics.
 
 1. Load the resolved decision or direct instruction and every declared dependency. If a material
    product or architecture question remains unresolved, return `BLOCKED_BY_SPEC` or `/think`.
-2. Capture 3–5 cross-slice decisions: data shape, key interfaces, authority boundary, proof tier,
+2. Capture the cross-slice decisions that matter: data shape, key interfaces, authority boundary, proof tier,
    deployment/runtime boundary, and any irreversible migration.
 3. When a formal plan covers an external API, paid data source, webhook/stream, or other external
    acquisition, add an **Acquisition Contract** before slicing:
@@ -50,11 +51,12 @@ mechanics.
    and required screenshot evidence, screenshot assertion, or pixel assertion.
 7. For specialist work, name the capability boundary, handoff envelope, return receipt, and native
    fallback. Never plan a plugin’s internal workflow.
-8. Save an internal plan under the 0th state root described by
-   `../../references/working-artifacts.md`, then hand off that path. A committed plan under
-   `docs/plans/` is exceptional: use it only when the user requests the plan as a repository
-   deliverable or the checklist has lasting shared value beyond the active task. Delete temporary
-   plans after merge, abandonment, or replacement.
+8. Resolve the plan destination using `../../references/working-artifacts.md`: honor the user
+   destination, then the configured owner. Without a workflow store, use a task-scoped workspace
+   artifact for a requested file deliverable or return the plan in chat when no file is needed.
+   A committed plan under `docs/plans/` is exceptional: use it only when requested as a repository
+   deliverable or the checklist has lasting shared value. Delete temporary internal plans after
+   merge, abandonment, or replacement; preserve requested deliverables.
 
 Plan shape:
 
@@ -83,8 +85,8 @@ Use `ask-counterpart-review` only when ordering, migration risk, or missing cove
 a concrete evidence advantage. Treat findings as hypotheses and accept them only when the request,
 decision evidence, or a reproducible constraint supports them. An unavailable or skipped reviewer
 does not block the plan. The user may reorder or narrow a user-facing plan, but do not insert an
-approval pause for an internal plan when implementation already has authority. Hand off to `/build`
-with the plan path.
+approval pause for an internal plan when implementation already has authority. In that case, hand
+off to `/build` with the plan or its path. For a plan-only request, return the plan and stop.
 
 ## References
 

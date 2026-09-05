@@ -81,7 +81,7 @@ test("preflight fast-forwards a clean branch that is behind upstream", () => {
   const beforeHead = sh(local, ["git", "rev-parse", "HEAD"]);
   pushRemoteCommit(remote, "remote update", "remote\n");
 
-  const result = runPreflight({ cwd: local, memoryFile, repoStateFile });
+  const result = runPreflight({ cwd: local, memoryFile, repoStateFile, allowPull: true });
   const [claim] = readJsonl(memoryFile);
   const repoState = JSON.parse(fs.readFileSync(repoStateFile, "utf8"));
 
@@ -111,7 +111,7 @@ test("preflight does not pull a dirty branch that is behind upstream", () => {
   pushRemoteCommit(remote, "remote update", "remote\n");
   writeFile(local, "local-only.txt", "dirty\n");
 
-  const result = runPreflight({ cwd: local });
+  const result = runPreflight({ cwd: local, allowPull: true });
 
   assert.equal(result.clean, false);
   assert.equal(result.behind, 1);
@@ -129,7 +129,7 @@ test("preflight does not merge or pull a divergent branch", () => {
   commit(local, "local update");
   const beforeHead = sh(local, ["git", "rev-parse", "HEAD"]);
 
-  const result = runPreflight({ cwd: local });
+  const result = runPreflight({ cwd: local, allowPull: true });
 
   assert.equal(result.clean, true);
   assert.equal(result.ahead, 1);
@@ -162,16 +162,16 @@ test("preflight returns no_upstream action when current branch has no tracking r
   assert.match(result.warnings.join("\n"), /upstream/i);
 });
 
-test("preflight returns fast_forward_available (not pulled) when allowPull=false", () => {
+test("preflight defaults to fast_forward_available without changing HEAD", () => {
   const { remote, local } = initRepoWithRemote();
   pushRemoteCommit(remote, "remote upd", "remote-content\n");
   const beforeHead = sh(local, ["git", "rev-parse", "HEAD"]);
 
-  const result = runPreflight({ cwd: local, allowPull: false });
+  const result = runPreflight({ cwd: local });
 
   assert.equal(result.action, "fast_forward_available");
   assert.equal(result.behind, 1);
-  // Critical: HEAD must not have moved because allowPull was false
+  // Default startup reports an available update without changing the chosen revision.
   assert.equal(result.after_head, beforeHead);
 });
 
@@ -187,7 +187,7 @@ test("preflight captures a memory-sync failure into warnings, doesn't reverse th
   const memoryFile = path.join(root, "claims.jsonl");
   fs.writeFileSync(memoryFile, "{NOT JSON\n");
 
-  const result = runPreflight({ cwd: local, memoryFile });
+  const result = runPreflight({ cwd: local, memoryFile, allowPull: true });
 
   // Pull DID happen — gate must not undo that
   assert.equal(result.action, "fast_forward_pulled");

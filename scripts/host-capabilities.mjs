@@ -9,7 +9,11 @@ import { loadRuntimeProfile, validateRuntimeProfile } from "./runtime-profile.mj
 const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const SOURCES = new Set(["documented-only", "session-metadata", "runtime-probe"]);
-const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max"]);
+// Effort identifiers belong to the observed runtime, not a versioned model catalog.
+const EFFORT_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}(?![\s\S])/;
+const KNOWN_HIGH_EFFORTS = new Set(["xhigh", "max", "ultra"]);
+const KNOWN_ROUTINE_EFFORTS = new Set(["low", "medium", "high"]);
+const isEffort = value => typeof value === "string" && value !== "inherit" && EFFORT_IDENTIFIER.test(value);
 const RISKS = new Set(["low", "medium", "high", "critical"]);
 const MUTATION_SCOPES = new Set(["read-only", "mutable"]);
 const COMPUTE_CLASSES = new Set(["auto", "economy", "balanced", "frontier", "inherit"]);
@@ -189,7 +193,7 @@ function assertNullableModelEffortPairs(value, label) {
     if (typeof pair.model !== "string" || pair.model.trim() === "") {
       throw new Error(`${label}: model must be a non-empty string`);
     }
-    if (!EFFORTS.has(pair.reasoning_effort)) throw new Error(`${label}: reasoning_effort is invalid`);
+    if (!isEffort(pair.reasoning_effort)) throw new Error(`${label}: reasoning_effort is invalid`);
   }
 }
 
@@ -218,7 +222,7 @@ export function validateHostCapabilities(value) {
     throw new Error("host capabilities: live observations require observed_at");
   }
   assertNullableString(value.model, "host capabilities: model");
-  if (value.reasoning_effort !== null && !EFFORTS.has(value.reasoning_effort)) {
+  if (value.reasoning_effort !== null && !isEffort(value.reasoning_effort)) {
     throw new Error("host capabilities: reasoning_effort is invalid");
   }
   assertNullableStringArray(value.available_models, "host capabilities: available_models");
@@ -232,7 +236,7 @@ export function validateHostCapabilities(value) {
   );
   if (
     value.available_reasoning_efforts !== null
-    && value.available_reasoning_efforts.some((effort) => !EFFORTS.has(effort))
+    && value.available_reasoning_efforts.some((effort) => !isEffort(effort))
   ) throw new Error("host capabilities: available_reasoning_efforts contains an invalid effort");
   assertBoolean(value.model_override, "host capabilities: model_override");
   assertBoolean(value.effort_override, "host capabilities: effort_override");
@@ -344,7 +348,7 @@ export function validateModelRouting(value) {
     if (typeof profile.model !== "string" || profile.model.trim() === "") {
       throw new Error(`model routing: profiles.${computeClass}.model must be a non-empty string`);
     }
-    if (profile.reasoning_effort !== "inherit" && !EFFORTS.has(profile.reasoning_effort)) {
+    if (profile.reasoning_effort !== "inherit" && !isEffort(profile.reasoning_effort)) {
       throw new Error(`model routing: profiles.${computeClass}.reasoning_effort is invalid`);
     }
     if (profile.selection_mode === "inherit" && (profile.model !== "inherit" || profile.reasoning_effort !== "inherit")) {
@@ -543,13 +547,12 @@ export function resolveLaunchPlan({ capabilities, packet, routing, runtimeProfil
   }
   if (
     !profileDisabled
-    && computeProfile.model !== "inherit"
-    && computeProfile.reasoning_effort !== "inherit"
+    && (computeProfile.model !== "inherit" || computeProfile.reasoning_effort !== "inherit")
   ) {
     if (capabilities.available_model_effort_pairs === null) {
       reasons.push("model_effort_pair_catalog_unobserved");
     } else if (!capabilities.available_model_effort_pairs.some(
-      (pair) => pair.model === computeProfile.model && pair.reasoning_effort === computeProfile.reasoning_effort
+      (pair) => pair.model === resolvedModel && pair.reasoning_effort === resolvedEffort
     )) {
       reasons.push("model_effort_pair_unavailable");
     }
@@ -557,10 +560,12 @@ export function resolveLaunchPlan({ capabilities, packet, routing, runtimeProfil
   if (
     packet.task_risk === "low"
     && selection.selected === "economy"
-    && ["xhigh", "max"].includes(capabilities.reasoning_effort)
+    && !KNOWN_ROUTINE_EFFORTS.has(capabilities.reasoning_effort)
     && (computeProfile.reasoning_effort === "inherit" || !capabilities.effort_override)
   ) {
-    reasons.push("disproportionate_inherited_effort");
+    reasons.push(KNOWN_HIGH_EFFORTS.has(capabilities.reasoning_effort)
+      ? "disproportionate_inherited_effort"
+      : "inherited_effort_cost_unclassified");
   }
 
   if (reasons.length > 0) {
@@ -617,7 +622,7 @@ export function validateExecutionReceipt(value) {
   if (!["explicit-launch-completed", "runtime-metadata"].includes(value.attestation_basis)) {
     throw new Error("execution receipt: attestation_basis is invalid");
   }
-  if (!EFFORTS.has(value.actual_reasoning_effort)) {
+  if (!isEffort(value.actual_reasoning_effort)) {
     throw new Error("execution receipt: actual_reasoning_effort is invalid");
   }
   if (!RECEIPT_SOURCES.has(value.source)) throw new Error("execution receipt: source is invalid");
@@ -638,7 +643,7 @@ export function validateLaunchPlan(value) {
   if (![...ROUTABLE_COMPUTE_CLASSES, "inherit"].includes(value.compute_class)) {
     throw new Error("launch plan: compute_class is invalid");
   }
-  if (!EFFORTS.has(value.reasoning_effort)) throw new Error("launch plan: reasoning_effort is invalid");
+  if (!isEffort(value.reasoning_effort)) throw new Error("launch plan: reasoning_effort is invalid");
   if (!SELECTION_MODES.has(value.selection_mode)) throw new Error("launch plan: selection_mode is invalid");
   if (value.escalation_class !== null && !ROUTABLE_COMPUTE_CLASSES.includes(value.escalation_class)) {
     throw new Error("launch plan: escalation_class is invalid");

@@ -18,7 +18,7 @@ Use this file when the main protocol is clear but you need sharper investigation
 
 ## 3-Strike Boundary
 
-If three hypotheses fail:
+After three failed attempts on the same hypothesis:
 
 1. Stop trying variants of the same idea.
 2. Summarize what has been ruled out.

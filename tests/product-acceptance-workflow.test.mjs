@@ -21,7 +21,7 @@ test("build owns evidence-triggered product acceptance and review before ship", 
   assert.match(acceptance, /verification-report\/product-acceptance\.json/);
   assert.match(source, /verification-report\/proof-contract\.json/);
   assert.match(source, /proof-result\.json/);
-  assert.match(acceptance, /current contract, committed\s+plan acceptance criteria when one exists, explicit user brief, then repo standards/);
+  assert.match(acceptance, /current authorized user intent\s+first/);
   assert.match(acceptance, /evidence advantage/);
   assert.match(acceptance, /ask-counterpart-review/);
   assert.doesNotMatch(acceptance, /0th_experience_reviewer/);
@@ -34,7 +34,7 @@ test("ship stays a lightweight evidence checker instead of starting substantive 
   assert.match(source, /product acceptance report/);
   assert.match(source, /verification-report\/product-acceptance\.json/);
   assert.match(source, /proof-result\.json/);
-  assert.match(source, /does not re-judge product quality/);
+  assert.match(source, /does not re-judge\s+product quality/);
   assert.doesNotMatch(source, /Send the branch diff to the counterpart reviewer/);
   assert.doesNotMatch(source, /If blockers exist: fix on the branch, push, re-run counterpart review/);
 });

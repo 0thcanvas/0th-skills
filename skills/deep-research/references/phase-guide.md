@@ -1,482 +1,110 @@
-# Deep Research Phase Guide
-
-Eight-phase research loop for problems that need more than a search engine.
-
-Decomposes hard questions into sub-problems, researches each with parallel agents and
-multi-source consensus, validates with experiments, and produces buildable architectures.
-All state lives on disk. Agents communicate through the filesystem, not through context.
-
-## Direct Invocation
-
-Invocation parsing (mode, question, topic slug) and the per-mode phase table are
-defined once in `SKILL.md` under `## Direct Invocation`. Read that section before
-the first phase; do not duplicate the mode-to-phases table here.
-
-## KB Root
-
-Before creating any files, resolve the KB root using `PROTOCOL.md`:
-1. `KB_ROOT`
-2. project instructions
-3. ask the user once
-
-Use these logical paths throughout the workflow:
-- `RESEARCH_ROOT = {KB_ROOT}/research`
-- `TOPIC_ROOT = {RESEARCH_ROOT}/{topic}`
-
-## Session Resumption
-
-Session resumption (the `state.md` check, resume vs. start-fresh prompt, and
-single-session-per-topic concurrency rule) is defined in `SKILL.md` under
-`## Session Resumption`. Apply that flow before any phase work; do not
-re-implement it here.
-
-## KB Scaffolding (First Run)
-
-If `RESEARCH_ROOT` does not exist, create:
-```
-{KB_ROOT}/research/
-  index.md    # Master catalog: "# Research KB Index\n\n| Topic | Mode | Status | Started |"
-  log.md      # Append-only log: "# Research Log"
-```
-
-Create the topic directory:
-```
-{RESEARCH_ROOT}/{topic}/
-  state.md          # From templates/state.md
-  journal.md        # "# Research Journal: {Topic}"
-  raw/
-  raw/archived/
-  wiki/
-  experiments/
-```
-
----
-
-## Phase 0 — FRAME (Human-Gated)
-
-**Goal:** Build the research frame. Do NOT start researching yet.
-
-Steps:
-1. **Restate the question** in precise technical terms. Remove ambiguity.
-2. **Decompose into sub-problems.** Each sub-problem should be independently researchable.
-3. **Tag each sub-problem** with an abstract mechanism from `references/abstract-mechanisms.md`.
-   If no existing mechanism fits, propose a new one.
-4. **Cross-domain hints** per sub-problem: "What other fields solve this same abstract problem?"
-   List 2-3 adjacent fields with mature solutions.
-5. **Assign source buckets** per sub-problem: arXiv, GitHub, primary docs, forums, general web,
-   video/transcript sources, social discourse through `session_backed_reading`, or other
-   session-backed sites when logged-in/user-visible discussion is the evidence source.
-6. **Present the full frame** to the user for approval. Format:
-
-```
-## Research Frame: {question}
-
-Sub-problems:
-  1. {sub-problem}
-     Abstract mechanism: {mechanism}
-     Cross-domain: {field1} ({technique}), {field2} ({technique})
-     Sources: {bucket1}, {bucket2}
-
-  2. ...
-
-Approve, modify, or reject this decomposition.
-```
-
-7. Wait for user approval. User may approve, modify, or reject entirely.
-
-**Writes:**
-- `state.md` — populate with approved frame, set Phase to 0 complete, Next to Phase 1.
-- `RESEARCH_ROOT/index.md` — append topic entry.
-- `RESEARCH_ROOT/log.md` — `[date] frame | {topic} | Decomposed into N sub-problems (v1)`
-
----
-
-## Phase 1 — SEARCH (Autonomous, Adaptive)
-
-**Goal:** Map the solution space. Two passes.
-
-### Pass 1 — Broad search
-
-For each sub-problem × source-bucket combination, create a bounded search packet. Execute it in the
-root by default. Route independent packets concurrently only when the Skills Kernel capability gate
-returns `allowed: true` and the source split has a concrete evidence or latency advantage.
-- **Question:** the sub-problem, phrased for the source bucket.
-- **Source bucket:** the assigned bucket.
-- **Context:** which sub-problem this serves.
-
-When the source bucket requires a session-backed site, resolve `session_backed_reading`, load its
-provider guidance, and use read-only commands. Do not use write actions unless the user explicitly asks.
-Treat results as user-visible/session evidence; note pagination, missing metadata, and
-search/operator limits.
-
-Each search packet returns <= 30 lines. Write each result to:
-```
-TOPIC_ROOT/raw/YYYY-MM-DD-{subproblem-slug}-{source-bucket}.md
-```
-Use the raw finding template (`templates/raw-finding.md`). Tag provenance as `original` or
-`derivative`.
-
-### Pass 2 — Vocabulary expansion + deep dives
-
-1. Read all Pass 1 findings (by file path — do NOT load full content into orchestrator context,
-   only agent summaries).
-2. Extract new vocabulary: terms, names, techniques, model names, paper titles discovered.
-3. Re-query with learned vocabulary using additional bounded search packets.
-4. For key papers or repositories surfaced in Pass 1 or Pass 2, run a deep extraction packet with:
-   - **Source URL:** the paper/repo URL.
-   - **Extraction questions:** architecture details, methods, quantitative results, limitations.
-   - **Context:** which sub-problem and gap this fills.
-5. Write additional raw notes to `raw/`.
-
-**Update state.md:**
-- Vocabulary section: add all new terms under current iteration.
-- File counts.
-- Set Phase to 1 complete, Next to Phase 2.
-
-### Context Rule (Critical)
-
-The orchestrator NEVER sees raw web pages. Only agent summaries (<=30 lines each) enter context.
-After writing to KB, reference findings by file path, not by content.
-
----
-
-## Phase 2 — BUILD WORLD MODEL (Autonomous)
-
-**Goal:** Synthesize raw findings into a structured world model.
-
-Build the world model in the root by default. A synthesis packet may be delegated only when the
-Skills Kernel gate allows it and file-backed context isolation is an evidence advantage. Inputs:
-- **Raw note paths:** paths to NEW raw notes from the current iteration's Phase 1 only.
-- **Existing world-model path:** `TOPIC_ROOT/world-model.md` (if iteration > 1).
-- **World-model output path:** `TOPIC_ROOT/world-model.md`.
-- **Sub-problems list:** the current decomposition from state.md.
-- **Mode:** `build` (iteration 1) or `merge` (iteration 2+).
-
-The synthesis step:
-- Extracts nodes: Technique, Paper, Benchmark, Limitation.
-- Builds typed edges: solves, evaluated_on, causes, analogous_to.
-- Runs consensus check per sub-problem (verified requires >=2 agents from different source
-  buckets with >=1 original provenance).
-- Writes `TOPIC_ROOT/world-model.md`.
-- Returns a ~10-line summary (version, node counts, consensus, gaps).
-
-**Compaction step:** After synthesis finishes, move consumed SEARCH raw files to
-`raw/archived/`. Experiment result files (`raw/*experiment*`) are exempt — they stay in
-`raw/` because Phase 7 needs them.
-
-**Writes:**
-- `RESEARCH_ROOT/log.md` — `[date] world-model | {topic} | Built v{n}, T verified / U unverified findings`
-- Update state.md: set Phase to 2 complete, Next to Phase 3.
-
----
-
-## Phase 3 — PROBE GAPS (Human-Gated)
-
-**Goal:** Present findings to the user and get direction.
-
-Read `TOPIC_ROOT/world-model.md`. Present to user:
-
-1. **Verified findings** — sub-problems with verified solutions (>=2 sources agree).
-2. **Unverified findings** — single-source claims that need more evidence or should be discarded.
-3. **Gaps** — sub-problems with no good solution found.
-4. **Contradictions** — sources that disagree on the same claim.
-5. **Decomposition threats** — evidence suggesting the problem frame is wrong.
-
-Ask the user:
-- Which gaps to investigate further?
-- Which direction to take?
-- Does the decomposition need revision?
-
-Wait for user response. The user's direction shapes what happens next.
-
-**Survey mode:** After Phase 3, skip to Phase 7s (no Phases 4-6).
-
----
-
-## Phase 4 — REASSESS (Automatic, escalates to Phase 0 if threatened)
-
-**Goal:** Check whether the decomposition still holds. Anti-drift mechanism.
-
-For each sub-problem, evaluate:
-1. Do verified findings actually solve it?
-2. Do any limitations block the overall approach?
-3. Does evidence suggest a fundamentally different decomposition?
-
-### If decomposition holds:
-- Continue to Phase 5.
-- Write journal entry: "Reassessment: decomposition held. Evidence: {brief}."
-
-### If decomposition is threatened:
-- Flag to user: "Evidence suggests a different approach: {reasoning}."
-- Return to Phase 0. The world model persists — we do NOT throw away what we learned.
-- The human decides how to re-frame at Phase 0 (human-gated).
-
-### Pivot tracking:
-If REASSESS has triggered a return to Phase 0 three times total, the termination condition
-is PIVOT. Go to Phase 7 instead.
-
-**Writes:**
-- `journal.md` — reassessment entry: what evidence triggered it, held/revised decision, reasoning.
-- `RESEARCH_ROOT/log.md` — `[date] reassess | {topic} | Decomposition {held | revised to v{n+1}}`
-- Update state.md: set Phase to 4 complete, Next to Phase 5 (or Phase 0 if threatened, or Phase 7 if PIVOT).
-
----
-
-## Phase 5 — DEVELOP (Autonomous, feasibility + decision modes)
-
-**Goal:** Design a buildable solution using verified findings. Fill remaining gaps with
-cross-domain search.
-
-### Steps:
-
-1. **Root-cause decomposition** for each remaining gap: why hasn't this been solved? What's the
-   actual blocker?
-
-2. **Cross-domain search** for each gap:
-   a. Look up the sub-problem's abstract mechanism in `references/abstract-mechanisms.md`.
-   b. Identify 2+ non-obvious fields that solve the same abstract mechanism.
-   c. Run bounded search packets across those fields for candidate techniques.
-   d. Run deep extraction packets for promising cross-domain papers/techniques — extract
-      architecture details, methods, and quantitative results.
-   e. **Translation step** (mandatory): explicitly describe how the cross-domain technique maps
-      back to the original problem. Record as `analogous_to` edges in world model.
-
-3. **Solution assembly:** Combine verified techniques into an architecture. Write to
-   `TOPIC_ROOT/wiki/architecture.md`.
-
-4. **New mechanisms:** If cross-domain search discovered new abstract mechanisms, append them to
-   `references/abstract-mechanisms.md`.
-
-### Quality Gate
-
-Run the 10-point rubric from `references/quality-rubric.md` against the architecture.
-All 10 criteria must pass. Binary — no partial credit. Write evaluation to
-`TOPIC_ROOT/quality-gate.md` using `templates/quality-gate.md`.
-
-**If any criterion fails:**
-
-| Failed Criteria | Loop-back Target | Reason |
-|----------------|-----------------|--------|
-| 1, 8 (decomposition/drift) | Phase 0 (human-gated) | Framing problem |
-| 2, 3, 6 (evidence/verification/contradiction) | Phase 1 (re-search) | Need more/better evidence |
-| 5 (cross-domain) | Phase 5 (expand search) | Need to search other fields |
-| 4, 9, 10 (limitations/recency/specificity) | Phase 2 (rebuild world model) | Need updated queries |
-| 7 (experiment targets risk) | Phase 6 (re-select experiment) | Need higher-risk target |
-
-**Loop-back traversal rule:** After looping back to the target phase, resume the current mode's
-normal phase sequence forward from that point. Examples:
-- Feasibility, criterion 4 fails -> Phase 2 -> 2->3->4->5->gate->6->7
-- Decision, criterion 6 fails -> Phase 1 -> 1->2->3->4->5->gate->7d
-- Feasibility, criterion 1 fails -> Phase 0 (human gate) -> 0->1->2->3->4->5->gate->6->7
-
-**Per-criterion retry cap: 2.** If a criterion fails twice on loop-back, it downgrades to
-ADVISORY — recorded in `quality-gate.md` with a note ("criterion {N} downgraded to advisory
-after 2 failures") but does not block progression. Track retry counts in state.md under
-`Quality Gate Retries`.
-
-**If gate passes:** Continue to Phase 6 (feasibility) or Phase 7d (decision).
-
----
-
-## Phase 6 — EXPERIMENT (Autonomous, feasibility mode only)
-
-**Goal:** Validate the highest-risk assumption in the architecture with a proof-of-concept.
-
-Steps:
-1. Read `wiki/architecture.md`.
-2. Identify the **highest-risk assumption** — the thing most likely to be wrong. Quality gate
-   criterion #7 enforces risk-first selection: test the weakest link, not the easiest thing.
-3. Run the experiment in the root by default. A delegated experiment packet requires workspace
-   isolation, explicit mutation authority, and an `allowed: true` Skills Kernel decision. Inputs:
-   - **Architecture doc path:** `TOPIC_ROOT/wiki/architecture.md`
-   - **Hypothesis:** the specific claim to test.
-   - **Success criteria:** measurable threshold that defines pass/fail.
-   - **Experiment type:** `model-probe` (30 min), `integration-spike` (15 min),
-     `feasibility-spike` (15 min), or `scale-test` (30 min).
-   - **Topic path:** `TOPIC_ROOT/`
-   - **Experiment number:** sequential ID.
-4. Write results to `TOPIC_ROOT/raw/YYYY-MM-DD-experiment-{n}.md`
-   and creates reproducible experiment directory under `experiments/`.
-
-### Routing on Failure
-
-| Failure Type | Route | Action |
-|---|---|---|
-| FAIL_TECHNIQUE | Phase 5 | Technique doesn't work — find alternative |
-| FAIL_INTEGRATION | Phase 5 | Components don't connect — redesign interface |
-| FAIL_ASSUMPTION | Phase 4 | Understanding of problem was wrong — REASSESS |
-| FAIL_ENVIRONMENT | Retry (max 2) | Setup issue — fix and retry |
-
-On PASS: continue to Phase 7.
-
----
-
-## Phase 7 / 7d / 7s — CONCLUDE (Human-Gated)
-
-**Goal:** Present verdict and deliver final artifacts.
-
-### Before Writing Any Verdict — Overexcitement Detector
-
-Reference `references/failure-modes.md`. Answer these questions honestly:
-
-1. What is the WEAKEST link in this architecture?
-2. If a senior engineer reviewed this, what would they call bullshit on?
-3. (Feasibility only) Did any experiment actually FAIL? If not, were we testing hard enough?
-4. Am I excited because the evidence is strong, or because I WANT this to work?
-
-If question 4 gives pause, flag it to the user as a concern. Decision mode skips question 3.
-Survey mode skips the entire detector.
-
----
-
-### Phase 7 — Feasibility Conclude
-
-**Quality gate re-check:** Run criteria #4 (limitations), #7 (experiment targets risk), and
-#10 (buildable specificity) only — since only Phase 6 ran between the Phase 5 gate and now.
-If any fail, loop back per the same targets above.
-
-Present to user:
-1. **Verdict:** FEASIBLE / PARTIALLY_FEASIBLE / NOT_FEASIBLE / PIVOT
-2. **Architecture:** link to `wiki/architecture.md`
-3. **Experiment results:** what was tested, PASS/FAIL, evidence
-4. **Remaining risks:** unverified assumptions, known limitations
-5. **Recommended next steps**
-
-Write `wiki/conclusion.md` using `templates/conclusion.md`.
-
----
-
-### Phase 7d — Decision Conclude
-
-**Quality gate:** Run criteria #1-6 and #8-10 (skip #7, no experiments). If any fail, loop
-back per targets.
-
-Write `wiki/decision.md`:
-- Options identified
-- Evidence for/against each (citing verified findings from world model)
-- Recommendation
-- Remaining uncertainties
-
-Write `wiki/conclusion.md` using `templates/conclusion.md`.
-
-Present to user for approval.
-
----
-
-### Phase 7s — Survey Conclude
-
-No quality gate. No overexcitement detector.
-
-Write:
-- `wiki/{subtopic}.md` — one per decomposition branch, compiled from verified world model nodes.
-- `wiki/landscape.md` — overview: what exists, maturity levels, open problems, key players.
-
-Write `wiki/conclusion.md` using `templates/conclusion.md`.
-
-Present to user for approval.
-
----
-
-### Phase 7 Common Writes (all modes)
-
-- `journal.md` — iteration summary: frame version used, per-sub-problem status
-  (SOLVED/PARTIAL/OPEN), what didn't work, what triggered termination.
-  For survey mode (Phase 7s): include coverage assessment and open questions identified.
-- `RESEARCH_ROOT/log.md` — `[date] conclude | {topic} | Verdict: {verdict}, N experiments`
-- `references/abstract-mechanisms.md` — confirm any new mechanisms appended during Phase 5. Remove any that proved incorrect during experimentation; keep those validated by evidence.
-- Update state.md: set Phase to 7 complete.
-
-### Handoff Recommendations
-
-| Verdict | Handoff |
-|---|---|
-| FEASIBLE | `/build` with `wiki/architecture.md` as input |
-| PARTIALLY_FEASIBLE | `/think` — decide: build partial, or research more? |
-| NOT_FEASIBLE | `/think` — decide: pivot, reduce scope, or abandon? |
-| PIVOT | `/deep-research` again with revised question + accumulated KB |
-
----
-
-## Loop Termination
-
-| Condition | Trigger | Action |
-|---|---|---|
-| SUCCESS | Quality gate passes + experiment validates (feasibility) | Phase 7: present verdict |
-| PARTIAL | Some sub-problems solved, others have no verified approach | Phase 7: present what's feasible |
-| PIVOT | REASSESS (Phase 4) triggers return to Phase 0 three times | Phase 7: what we learned + why framing doesn't hold |
-| EXHAUSTED | Phase 1 vocabulary expansion produces no new terms for 2 consecutive full iterations | Phase 7: mapped the frontier of public knowledge |
-| USER_STOP | User says stop at any human gate | Phase 7: compile what we have |
-| MAX_ITERATIONS | 5 full loops (feasibility: Phases 1-6; decision: Phases 1-5; survey: Phases 1-3) | Phase 7: hard stop, present best result |
-
-**Per-mode applicability:** PIVOT and EXHAUSTED apply to feasibility and decision (both iterate).
-Survey is single-pass — it terminates after Phase 3 + 7s, or via USER_STOP. MAX_ITERATIONS
-applies only to modes with iterative loops.
-
----
-
-## Context Management Rules
-
-These rules are architectural. They apply to every phase.
-
-### What the Orchestrator Holds
-
-**Always present:**
-- This system prompt / skill workflow.
-- `TOPIC_ROOT/state.md` (read fresh from disk each phase).
-
-**Per-phase (temporary, replaced each phase):**
-- Agent return summaries (<=30 lines each).
-- User responses at human gates.
-
-### What NEVER Enters the Orchestrator
-
-- Raw web pages.
-- Full paper text.
-- Search result listings.
-- Experiment stdout/stderr.
-- Previous phase agent outputs (they are on disk, not in memory).
-
-### The Critical Rule
-
-Agents communicate through the filesystem, not through context accumulation.
-
-```
-Phase 1: Dispatch research agents -> they write to raw/
-Phase 2: Tell synthesizer "read raw/*.md" -> it writes world-model.md
-Phase 3: Read world-model.md -> present to user
-Phase 5: Dispatch research agents + deep-researchers -> they write to raw/
-Phase 6: Tell experimenter "read wiki/architecture.md" -> it writes results to raw/
-```
-
-Each phase reads the KB, dispatches agents, agents write back to KB. When a new phase starts,
-previous summaries are gone from context — they live on disk.
-
----
-
-## Reference Documents
-
-- `references/quality-rubric.md` — 10-point quality gate criteria and loop-back targets.
-- `references/failure-modes.md` — 6 failure mode defenses and overexcitement detector.
-- `references/abstract-mechanisms.md` — cross-domain translation vocabulary (grows over time).
-
-## Templates
-
-- `templates/state.md` — state file format.
-- `templates/world-model.md` — world model format (nodes, edges, consensus).
-- `templates/raw-finding.md` — raw note format with provenance tag.
-- `templates/experiment-report.md` — experiment output format.
-- `templates/conclusion.md` — conclusion document format.
-- `templates/journal-entry.md` — journal entry format.
-- `templates/quality-gate.md` — quality gate evaluation format.
-
-## Capability packets
-
-| Packet | Used in | Required return |
-|---|---|---|
-| Search | Phase 1, Phase 5 | <=30-line finding with source pointers and gaps |
-| Deep extraction | Phase 1 Pass 2, Phase 5 | Structured evidence, limits, and provenance |
-| Synthesis | Phase 2 | World-model path, consensus result, contradictions, and gaps |
-| Experiment | Phase 6 | Reproducible artifact, measurements, and pass/fail verdict |
-
-Packet names describe work, not permanent roles. Apply `../../../references/skills-kernel.md` before
-delegating any packet; missing or stale runtime capabilities keep the work in the root.
+# Deep Research Guide
+
+Use the entrypoint's budget and scope. One root can perform the entire investigation; delegation
+is optional and follows `../../../references/skills-kernel.md`. Role packets isolate bounded work,
+not evidence standards. Read this guide for the parts relevant to the current deliverable.
+
+## Frame and storage
+
+Record the accepted question, decision criteria, exclusions, mode, budgets, and next action in
+`state.md`. Follow `../../../references/working-artifacts.md` for the topic destination; no KB setup
+or migration is required. Existing state informs resumption; reconcile it with the current request
+and avoid concurrent writes to the same topic.
+
+Decompose only enough to choose useful sources and expose the assumption most likely to invalidate
+the answer. Continue from a reasonable frame within the accepted scope. Ask only when an unresolved
+ambiguity or missing authority materially changes what can be done. No routine frame, gap, or
+conclusion approval is required.
+
+## Search and source routing
+
+Default budgets are two source passes, two full loops, and one reframe across the investigation.
+A source pass is a planned round of acquisition; follow-up queries and cross-domain searches count
+within these limits, not as free extra rounds. Record consumption in state. Stop early when evidence
+suffices; only the user or accepted TaskSpec can raise limits.
+
+Use a broad first pass and, if needed, a second pass targeting learned vocabulary, contradictions,
+and decision-changing gaps. Prefer original papers, authoritative docs, repositories, and observed
+behavior for technical claims. Route source packets to the appropriate capability rather than
+forcing all sources through web search. For logged-in/user-visible discourse, resolve
+`session_backed_reading`, load provider guidance, and use read-only access within the user's scope.
+Record access failures, pagination, and missing metadata as coverage limits, not negative evidence.
+
+The root may inspect raw pages, papers, search results, and safe experiment output directly. Save
+claim-relevant extracts with source URL/path, date, scope, and original/derivative provenance in
+`raw/`; do not accumulate entire source corpora in handoffs. A delegated packet returns a compact
+summary with evidence paths and gaps. Inspect originals when the summary cannot support a claim.
+
+## World model and revision
+
+Keep a claim ledger or graph in `world-model.md` linking conclusions to sources, methods,
+limitations, and contradictions. Use graph nodes and typed edges only when they clarify the topic.
+Assess evidence per claim rather than assigning blanket verification to a whole sub-problem.
+
+Independence is about origin and method: two workers reading one paper are one origin; a README
+and press article repeating that paper are also one origin. Two independent studies in the same
+source bucket can corroborate each other. A single authoritative source can establish a narrowly
+scoped fact about its own API or release; broader performance claims need appropriate independent
+measurement or explicit uncertainty. Record why support is sufficient for the exact claim.
+
+Statuses are revisable: supported, tentative, disputed, refuted, or superseded. Existing verified
+claims must be downgraded or withdrawn when new evidence warrants it. Retain a compact change note
+and provenance so the reversal is auditable; historical support is not current truth. Revisit prior
+source notes when a contradiction requires it. Distinguish measured results from interpretation.
+
+## Gaps, reframing, and quality
+
+Prioritize gaps by whether they can change the requested conclusion. Explain material changes in
+progress updates and continue within scope. Reframe at most once by default; if evidence requires a
+new objective outside the accepted task, deliver the findings and identify the missing decision.
+
+Use `abstract-mechanisms.md` for cross-domain ideas when a gap benefits from them.
+Explain how an analogy maps to the actual problem and where it breaks. Record newly found mechanisms
+inside the topic artifacts. Research must not edit its own skill, plugin, or shared reference library;
+any library improvement is a separate explicitly authorized maintenance task.
+
+Apply `quality-rubric.md` before concluding, and after new evidence materially changes conclusions.
+A failed evidence criterion remains failed regardless of retry count. Spend remaining budget only
+on a useful repair; otherwise narrow the claim or deliver a partial result with the unresolved gap.
+Do not turn repeated failure into advisory status or unsupported success.
+
+## Develop the requested output
+
+- Feasibility: describe a buildable approach, interfaces, constraints, and its highest-risk
+  assumption. Use `wiki/architecture.md` when a separate architecture artifact helps.
+- Decision: compare the relevant options against the user's criteria, recommend when evidence
+  supports it, and state what uncertainty could reverse the choice. An architecture is optional.
+- Survey: map the landscape, coverage, maturity, and open questions. Create subtopic pages only
+  where they make the survey easier to use; no experiment or architecture is required.
+
+Templates are starting shapes, not mandatory filler. Match depth to the requested deliverable.
+
+## Experiment when needed
+
+For feasibility, test the highest-risk buildable assumption through the smallest executable seam.
+Define hypothesis, measurable pass/fail criteria, environment, scope, side effects, and time/cost
+limits before running. Existing authorization governs local and live experiments; a research request
+does not itself authorize purchases, external writes, credentials changes, or destructive actions.
+Proceed with already authorized experiments without re-requesting permission. When authority is
+missing, prepare the concrete experiment and continue independent research before asking.
+
+Keep experiment files isolated under the topic's `experiments/`. Provide a reproducible entrypoint,
+inputs and dependency versions, safe measurements, and a report distinguishing technique,
+integration, assumption, and environment failures. Sanitize logs; do not retain secrets or private
+session payloads. Retry an environment problem only with a changed diagnosis, at most twice and
+within remaining budget. Missing runtime access is an untested assumption, not a technique failure.
+
+## Conclude and preserve continuity
+
+Lead with the answer, then decisive evidence, contradictions, scope limits, and remaining questions.
+For feasibility separate demonstrated, plausible, and untested behavior. For decisions and surveys
+use their natural recommendation or landscape output rather than a feasibility verdict.
+
+Record termination separately from the answer: `SUCCESS` when applicable criteria are met,
+`PARTIAL` when useful but incomplete, `PIVOT` when the frame is invalid, `EXHAUSTED` when source or
+reframe budget cannot resolve a gap, `MAX_ITERATIONS` at the full-loop limit, or `USER_STOP` on stop.
+Exhausted access or budget does not establish the frontier of knowledge. Do not pursue more loops
+merely to fill the budget. Survey normally needs one loop.
+
+Update state with budgets consumed, conclusions and evidence paths, changes of mind, remaining gaps,
+and the next action if any. Keep only artifacts needed by the requested result or continuation.

@@ -1,6 +1,6 @@
 # Verification Reference
 
-Use this file when you need the compact per-method verification loops, not as the default thing to read first.
+Use the methods relevant to affected behavior and the proof contract. Apply `../../../references/stack-minimums.md` for required stacks; docs-only static proof may skip unrelated runtime rows, while T2+ requirements remain mandatory. Verification-only returns findings and evidence without product/test edits; fixes require delegated implementation authority. External writes and test-data creation must stay within authorized effects.
 
 ## UI Features
 
@@ -25,7 +25,7 @@ Include the screenshot path or pixel evidence path when fit, overlap, alignment,
 
 1. Hit endpoints with curl/fetch.
 2. Read: response shape (keys/structure) matches schema, status codes correct, error responses well-formed.
-3. Write: successful mutation returns expected result, validation errors helpful, auth/permissions enforced.
+3. For authorized write tests, verify mutation results, validation, and auth/permissions in the permitted environment; tag and clean up created test data. If a required write probe lacks authority, return that blocked requirement without executing it.
 
 ## Component Library
 
@@ -39,27 +39,16 @@ Include the screenshot path or pixel evidence path when fit, overlap, alignment,
 2. Verify: job completes, expected side effects occurred, error/retry behavior works (only when safe, deterministic, non-destructive).
 3. Check: idempotency, timeout/retry config, failure does not leave inconsistent state.
 
-## Failure Classification
+## Findings and Rechecks
 
-| Type | Action |
-|---|---|
-| Product bug | Fix (verify→fix loop) |
-| Test bug | Fix the test, not product code |
-| Environment failure | Report to user immediately — do not waste rounds |
-| Transient/flaky | Retry once (no round consumed), then report |
+Classify product/test failures separately from environment failures and transient errors. In verification-only work, return product/test findings without fixing files. With implementation authority, fix within scope and rerun the failed path plus directly affected checks. Retry a transient error once when safe; report unresolved flakiness. After three failed attempts on the same bug, return the evidence and next investigation needed rather than continuing speculative fixes.
 
-## Severity Gate
+Add public-interface regression coverage for testable behavior changes. Use existing validation and before/after evidence for non-testable or non-behavioral changes; avoid tests that merely restate the edit. Run required project checks and broaden testing only when changed behavior, shared abstractions, failures, or unresolved risks justify it.
 
-| Severity | Fix | Regression test | Expand |
-|---|---|---|---|
-| Critical | Yes | Yes | Only if fix touched shared abstraction |
-| Moderate | Yes | Yes | No |
-| Minor | Yes | No | No |
-
-Regression test matches the layer: UI → e2e, API → integration, CLI → command-level.
-Test bugs: fix directly, no regression test needed.
+Apply `../../../references/secret-control-policy.md` before credential-related blocking. Missing environment variables alone do not prove unavailable credentials. Keep secrets and PII out of output and evidence. Stop resources and remove fixtures you created, preserve preexisting resources, and report any cleanup failures.
 
 ## Outcome
 
-BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS.
-Only PASS allows /build to proceed to /ship.
+BLOCKED_REAL_ENV > BLOCKED > FAIL_UNRESOLVED > FAIL_FLAKY > PASS. Keep all findings visible even when a blocked outcome takes precedence. Only PASS permits the verification gate to proceed.
+
+Use the canonical `proof-result.json` contract in `../../../references/proof-tiers.md`, including the final verified commit's `verified_head`. Do not claim commit-bound proof while product/test edits remain uncommitted or required evidence is missing.

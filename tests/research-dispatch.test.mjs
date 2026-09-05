@@ -32,11 +32,10 @@ test("portable workflows use capability-gated packets instead of permanent dispa
     assert.doesNotMatch(source, /Codex-hosted|Claude-hosted|spawn_agent|0th_(?:explorer|test_runner|researcher|deep_researcher|synthesizer|experimenter)/);
   }
 
-  for (const packet of ["Search", "Deep extraction", "Synthesis", "Experiment"]) {
-    assert.match(phaseGuide, new RegExp(`\\| ${packet} \\|`));
-  }
-  assert.match(phaseGuide, /Packet names describe work, not permanent roles/);
-  assert.match(phaseGuide, /missing or stale runtime capabilities keep the work in the root/);
+  assert.match(phaseGuide, /One root can perform the entire investigation/);
+  assert.match(phaseGuide, /delegation\s+is optional/);
+  assert.match(phaseGuide, /skills-kernel\.md/);
+  assert.match(phaseGuide, /delegated packet returns a compact\s+summary/);
 
   for (const wrapper of wrappers) {
     assert.match(wrapper, /shared workflow/);
